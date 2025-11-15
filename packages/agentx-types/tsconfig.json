@@ -12,16 +12,16 @@
     "forceConsistentCasingInFileNames": true,
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
-    "baseUrl": "../agentx-core/agentx-types",
+    "baseUrl": ".",
     "paths": {
-      "~/*": ["../agentx-core/agentx-types/src/*"]
+      "~/*": ["src/*"]
     }
   },
-  "include": ["../agentx-core/agentx-types/src/**/*"],
+  "include": ["src/**/*"],
   "exclude": [
-    "../agentx-core/agentx-types/node_modules",
-    "../agentx-core/agentx-types/dist",
-    "../agentx-core/agentx-types/**/*.test.ts",
-    "../agentx-core/agentx-types/**/*.spec.ts"
+    "node_modules",
+    "dist",
+    "**/*.test.ts",
+    "**/*.spec.ts"
   ]
 }

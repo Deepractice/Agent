@@ -1,0 +1,73 @@
+{
+  "name": "@deepractice-ai/agentx-node",
+  "version": "0.1.0",
+  "description": "AgentX SDK for Node.js - Claude Agent integration",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup && pnpm run copy:features",
+    "copy:features": "mkdir -p dist/features && cp -r node_modules/@deepractice-ai/agentx-api/features/* dist/features/",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit",
+    "test": "pnpm run copy:features && vitest run",
+    "test:watch": "pnpm run copy:features && vitest",
+    "test:ui": "pnpm run copy:features && vitest --ui",
+    "test:integration": "pnpm run copy:features && TEST_MODE=integration vitest run"
+  },
+  "keywords": [
+    "agentx",
+    "sdk",
+    "agent",
+    "claude",
+    "anthropic",
+    "ai",
+    "llm",
+    "node",
+    "nodejs"
+  ],
+  "author": "Deepractice AI Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deepractice/Agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Deepractice/Agent/issues"
+  },
+  "homepage": "https://github.com/Deepractice/Agent#readme",
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.30",
+    "@anthropic-ai/sdk": "^0.32.1",
+    "@deepractice-ai/agentx-api": "workspace:*",
+    "@deepractice-ai/agentx-core": "workspace:*",
+    "@deepractice-ai/agentx-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@deepracticex/vitest-cucumber": "^1.4.0",
+    "@types/node": "^24.9.2",
+    "@vitest/ui": "^3.2.4",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  }
+}

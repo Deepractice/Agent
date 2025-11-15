@@ -11,5 +11,8 @@ export default defineConfig({
   external: [
     "@deepractice-ai/agentx-types",
     "@deepractice-ai/agentx-api",
+    "@deepractice-ai/agentx-core",
+    "@anthropic-ai/claude-agent-sdk",
+    "@anthropic-ai/sdk",
   ],
 });

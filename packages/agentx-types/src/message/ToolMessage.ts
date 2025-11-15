@@ -16,8 +16,8 @@ export interface ToolMessage {
   /** Tool execution results */
   content: ToolResultPart[];
 
-  /** When this message was created */
-  timestamp: Date;
+  /** When this message was created (Unix timestamp in milliseconds) */
+  timestamp: number;
 
   /** Parent message ID (usually the assistant message that requested the tool) */
   parentId?: string;

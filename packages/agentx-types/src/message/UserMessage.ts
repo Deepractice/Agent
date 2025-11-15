@@ -18,8 +18,8 @@ export interface UserMessage {
   /** Message content - can be simple string or array of parts */
   content: string | Array<TextPart | ImagePart | FilePart>;
 
-  /** When this message was created */
-  timestamp: Date;
+  /** When this message was created (Unix timestamp in milliseconds) */
+  timestamp: number;
 
   /** Parent message ID for threading (optional) */
   parentId?: string;

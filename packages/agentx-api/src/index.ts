@@ -18,7 +18,7 @@ export type {
 } from "./config";
 
 // === Interfaces ===
-export type { Agent } from "./functions/interfaces";
+export type { Agent } from "./interfaces";
 
 // === Events ===
 export type {

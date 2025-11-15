@@ -4,7 +4,7 @@
  * Factory function to create Agent instances.
  */
 
-import type { Agent } from "~/functions/interfaces";
+import type { Agent } from "~/interfaces";
 import type { AgentConfig } from "~/config";
 
 /**
@@ -30,6 +30,6 @@ import type { AgentConfig } from "~/config";
  * await agent.send("Hello!");
  * ```
  */
-export function createAgent(config: AgentConfig): Agent {
+export function createAgent(_config: AgentConfig): Agent {
   throw new Error("Not implemented - use @deepractice-ai/agentx-core");
 }
