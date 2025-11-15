@@ -19,6 +19,8 @@
   ],
   "scripts": {
     "dev": "vite",
+    "dev:server": "tsx server/dev-server.ts",
+    "dev:full": "concurrently \"pnpm dev:server\" \"pnpm storybook\"",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "typecheck": "tsc --noEmit",
@@ -27,6 +29,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@deepractice-ai/agentx-browser": "workspace:*",
     "allotment": "^1.20.4",
     "class-variance-authority": "^0.7.1",
     "clsx": "^2.1.1",
@@ -40,6 +43,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@deepractice-ai/agentx-node": "workspace:*",
     "@storybook/addon-a11y": "^8.4.7",
     "@storybook/addon-essentials": "^8.4.7",
     "@storybook/addon-interactions": "^8.4.7",
@@ -47,13 +51,16 @@
     "@storybook/react": "^8.4.7",
     "@storybook/react-vite": "^8.4.7",
     "@tailwindcss/typography": "^0.5.19",
+    "@types/node": "^24.9.2",
     "@types/react": "^18.3.12",
     "@types/react-dom": "^18.3.1",
     "@vitejs/plugin-react": "^4.3.4",
     "autoprefixer": "^10.4.20",
+    "concurrently": "^9.1.0",
     "postcss": "^8.4.49",
     "storybook": "^8.4.7",
     "tailwindcss": "^3.4.15",
+    "tsx": "^4.19.2",
     "typescript": "^5.9.3",
     "vite": "^6.0.5",
     "vite-plugin-dts": "^4.3.0"
