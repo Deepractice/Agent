@@ -51,7 +51,10 @@ export class TestContext {
    * Subscribe to an event type and collect events
    */
   subscribeToEvent(eventType: string): void {
+    console.log(`[CONTEXT] Subscribing to event: "${eventType}"`);
+
     if (!this.agent) {
+      console.log(`[CONTEXT] ERROR: Agent not created`);
       throw new Error("Agent not created");
     }
 
@@ -59,13 +62,21 @@ export class TestContext {
       this.events[eventType] = [];
     }
 
+    const handlerName = `on${this.capitalize(eventType)}`;
+    console.log(`[CONTEXT] Handler name: "${handlerName}"`);
+
     const unsubscribe = this.agent.react({
-      [`on${this.capitalize(eventType)}`]: (event: AgentEvent) => {
+      [handlerName]: (event: AgentEvent) => {
+        console.log(`[CONTEXT] Event received: ${eventType}`, {
+          eventType: event.type,
+          dataKeys: Object.keys(event.data || {})
+        });
         this.events[eventType].push(event);
       },
     });
 
     this.unsubscribes.push(unsubscribe);
+    console.log(`[CONTEXT] Subscribed successfully. Total subscriptions: ${this.unsubscribes.length}`);
   }
 
   /**
@@ -93,7 +104,18 @@ export class TestContext {
    * Cleanup subscriptions
    */
   cleanup(): void {
-    this.unsubscribes.forEach((fn) => fn());
+    // Unsubscribe all handlers first
+    try {
+      this.unsubscribes.forEach((fn) => {
+        try {
+          fn();
+        } catch (error) {
+          // Ignore errors during cleanup
+        }
+      });
+    } catch (error) {
+      // Ignore cleanup errors
+    }
     this.unsubscribes = [];
   }
 

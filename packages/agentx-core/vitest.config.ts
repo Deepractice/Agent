@@ -12,7 +12,10 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: ["features/**/*.feature"],
+    include: [
+      "tests/manual/**/*.test.ts",
+      "features/**/*.feature",
+    ],
     exclude: ["**/node_modules/**"],
     setupFiles: ["./tests/setup.ts"],
     testTimeout: 30000, // 30 seconds for unit tests
@@ -20,6 +23,12 @@ export default defineConfig({
     outputFile: {
       html: "./test-results/index.html",
       json: "./test-results/results.json",
+    },
+    pool: "forks",
+    poolOptions: {
+      forks: {
+        singleFork: true,
+      },
     },
   },
   resolve: {

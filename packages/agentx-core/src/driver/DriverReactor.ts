@@ -15,7 +15,8 @@
 import type { Reactor } from "~/reactor/Reactor";
 import type { ReactorContext } from "~/reactor/ReactorContext";
 import type { AgentDriver } from "./AgentDriver";
-import type { UserMessageEvent } from "@deepractice-ai/agentx-event";
+import type { UserMessageEvent, ErrorMessageEvent } from "@deepractice-ai/agentx-event";
+import type { ErrorMessage } from "@deepractice-ai/agentx-types";
 
 /**
  * DriverReactor
@@ -114,17 +115,39 @@ export class DriverReactor implements Reactor {
         messageId: event.data.id,
       });
     } catch (error) {
-      this.context.logger?.error(`[DriverReactor] Error processing stream`, {
-        error,
-        messageId: event.data.id,
-      });
+      // Check if context still exists (might be null if destroyed during processing)
+      if (this.context) {
+        this.context.logger?.error(`[DriverReactor] Error processing stream`, {
+          error,
+          messageId: event.data.id,
+        });
 
-      // TODO: Emit ErrorEvent to EventBus
-      // const errorEvent: ErrorEvent = {
-      //   type: "error",
-      //   ...
-      // };
-      // this.context.producer.produce(errorEvent);
+        // Create and emit ErrorMessageEvent
+        const errorMessage: ErrorMessage = {
+          id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          role: "error",
+          subtype: "llm",
+          severity: "error",
+          message: error instanceof Error ? error.message : String(error),
+          code: "DRIVER_ERROR",
+          recoverable: true,
+          stack: error instanceof Error ? error.stack : undefined,
+          timestamp: Date.now(),
+        };
+
+        const errorEvent: ErrorMessageEvent = {
+          type: "error_message",
+          data: errorMessage,
+          uuid: `evt_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+          agentId: this.context.agentId,
+          timestamp: Date.now(),
+        };
+
+        this.context.producer.produce(errorEvent);
+      } else {
+        // Context was destroyed, just log to console
+        console.error("[DriverReactor] Error processing stream (context destroyed):", error);
+      }
     } finally {
       this.abortController = null;
     }

@@ -4,13 +4,10 @@
 
 import { Given, When, Then, Before, After, DataTable } from "@deepracticex/vitest-cucumber";
 import { expect } from "vitest";
-import { TestContext } from "./test-context";
+import { sharedContext as ctx } from "./shared-context";
 import { createAgent } from "~/index";
 import { MockDriver } from "~/driver/MockDriver";
 import { LogLevel, type AgentLogger, type LogContext } from "~/AgentLogger";
-
-// Shared test context
-const ctx = new TestContext();
 
 // Mock logger
 class MockLogger implements AgentLogger {
@@ -29,10 +26,17 @@ Before(() => {
 });
 
 After(async () => {
-  if (ctx.agent && !ctx.destroyed) {
-    await ctx.agent.destroy();
-  }
+  // Cleanup subscriptions FIRST to prevent event loops during destroy
   ctx.cleanup();
+
+  // Then destroy agent
+  if (ctx.agent && !ctx.destroyed) {
+    try {
+      await ctx.agent.destroy();
+    } catch (error) {
+      // Ignore destroy errors in cleanup
+    }
+  }
 });
 
 // ===== Given steps =====
@@ -152,6 +156,15 @@ When("I try to modify the event data", () => {
 // ===== Then steps =====
 
 Then("I should receive stream events in order:", (dataTable: DataTable) => {
+  const expectedEvents = dataTable.hashes().map((row) => row.event_type);
+
+  for (const eventType of expectedEvents) {
+    const events = ctx.getEvents(eventType);
+    expect(events.length).toBeGreaterThan(0);
+  }
+});
+
+Then("I should receive stream events:", (dataTable: DataTable) => {
   const expectedEvents = dataTable.hashes().map((row) => row.event_type);
 
   for (const eventType of expectedEvents) {

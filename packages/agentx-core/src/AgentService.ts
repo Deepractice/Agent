@@ -188,13 +188,20 @@ export class AgentService {
    * ```
    */
   react(handlers: Record<string, any>): () => void {
+    console.log("[AgentService.react] Called with handlers:", Object.keys(handlers));
+
     if (!this.consumer) {
+      console.log("[AgentService.react] ERROR: No consumer, agent not initialized");
       throw new Error("[AgentService] Agent not initialized. Call initialize() first.");
     }
+
+    console.log("[AgentService.react] Consumer exists, binding handlers...");
 
     // Bind the handlers
     const unsubscribe = this.bindHandlers(this.consumer, handlers);
     this.handlerUnsubscribers.push(unsubscribe);
+
+    console.log("[AgentService.react] Handlers bound successfully. Total: ", this.handlerUnsubscribers.length);
 
     this.logger?.debug("[AgentService] Event handlers registered", {
       agentId: this.id,
@@ -209,13 +216,21 @@ export class AgentService {
    * Clear message history and abort current operation
    */
   clear(): void {
+    const clearedCount = this._messages.length;
+
     this.logger?.info("[AgentService] Clearing messages and aborting", {
       agentId: this.id,
-      clearedMessages: this._messages.length,
+      clearedMessages: clearedCount,
     });
 
     this._messages = [];
     this.engine.abort();
+
+    this.logger?.debug("[AgentService] Messages cleared", {
+      agentId: this.id,
+      previousCount: clearedCount,
+      currentCount: this._messages.length,
+    });
   }
 
   /**
@@ -255,10 +270,14 @@ export class AgentService {
   private bindHandlers(consumer: EventConsumer, handlers: Record<string, any>): Unsubscribe {
     const unsubscribers: Unsubscribe[] = [];
 
+    console.log("[bindHandlers] All handler keys:", Object.keys(handlers));
+
     // Discover all handler methods (methods starting with "on")
     const handlerMethods = Object.keys(handlers).filter(
       (key) => key.startsWith("on") && typeof handlers[key] === "function"
     );
+
+    console.log("[bindHandlers] Handler methods found:", handlerMethods);
 
     // Bind each handler method
     for (const methodName of handlerMethods) {
@@ -267,10 +286,14 @@ export class AgentService {
       // onMessageStop → message_stop
       const eventType = this.methodNameToEventType(methodName);
 
+      console.log(`[bindHandlers] Binding ${methodName} → ${eventType}`);
+
       // Bind the handler
       const handler = handlers[methodName].bind(handlers);
       const unsubscribe = consumer.consumeByType(eventType as any, handler);
       unsubscribers.push(unsubscribe);
+
+      console.log(`[bindHandlers] Successfully bound ${eventType}`);
 
       this.logger?.debug("[AgentService] Event handler bound", {
         agentId: this.id,
@@ -278,6 +301,8 @@ export class AgentService {
         eventType,
       });
     }
+
+    console.log(`[bindHandlers] Total handlers bound: ${unsubscribers.length}`);
 
     // Return combined unsubscribe function
     return () => {

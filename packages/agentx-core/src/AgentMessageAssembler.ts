@@ -32,7 +32,6 @@ import type {
   // Message Events (output)
   AssistantMessageEvent,
   ToolUseMessageEvent,
-  UserMessageEvent,
 } from "@deepractice-ai/agentx-event";
 import type {
   AssistantMessage,
@@ -139,19 +138,23 @@ export class AgentMessageAssembler implements Reactor {
       this.onMessageStop(event as MessageStopEvent);
     });
 
-    // User messages (pass-through)
-    consumer.consumeByType("user_message", (event) => {
-      this.onUserMessage(event as UserMessageEvent);
-    });
+    // Note: user_message events are already complete and emitted by AgentService
+    // No need to subscribe here - they don't require assembly
   }
 
   /**
    * Handle message start
    */
   private onMessageStart(event: any): void {
+    console.log("[AgentMessageAssembler.onMessageStart] Called", {
+      timestamp: event.timestamp
+    });
+
     this.currentMessageId = this.generateId();
     this.messageStartTime = event.timestamp;
     this.pendingContents.clear();
+
+    console.log("[AgentMessageAssembler.onMessageStart] Set currentMessageId:", this.currentMessageId);
   }
 
   /**
@@ -285,7 +288,14 @@ export class AgentMessageAssembler implements Reactor {
    * Assemble complete AssistantMessage from all accumulated content
    */
   private onMessageStop(event: MessageStopEvent): void {
+    console.log("[AgentMessageAssembler.onMessageStop] Called", {
+      currentMessageId: this.currentMessageId,
+      pendingContentsSize: this.pendingContents.size,
+      pendingContents: Array.from(this.pendingContents.entries())
+    });
+
     if (!this.currentMessageId) {
+      console.log("[AgentMessageAssembler.onMessageStop] No currentMessageId, skipping");
       return;
     }
 
@@ -321,6 +331,11 @@ export class AgentMessageAssembler implements Reactor {
       data: assistantMessage,
     };
 
+    console.log("[AgentMessageAssembler.onMessageStop] Emitting assistant_message event", {
+      content: assistantMessage.content,
+      contentLength: assistantMessage.content.length
+    });
+
     this.emitMessageEvent(assistantEvent);
 
     // Reset state
@@ -330,20 +345,10 @@ export class AgentMessageAssembler implements Reactor {
   }
 
   /**
-   * Handle UserMessageEvent (pass-through)
-   * User messages are already complete, just re-emit
-   */
-  private onUserMessage(event: UserMessageEvent): void {
-    // User messages don't need assembly, they're already complete
-    // This is just a pass-through
-    this.emitMessageEvent(event);
-  }
-
-  /**
    * Emit Message event to EventBus
    */
   private emitMessageEvent(
-    event: UserMessageEvent | AssistantMessageEvent | ToolUseMessageEvent
+    event: AssistantMessageEvent | ToolUseMessageEvent
   ): void {
     if (!this.context) return;
     this.context.producer.produce(event as any);

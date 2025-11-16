@@ -4,7 +4,7 @@ Feature: Message Sending and Response Handling
   So that I can build conversational AI applications
 
   Background:
-    Given I create and initialize an agent
+    Given I create and initialize an agent with custom responses
 
   Scenario: Send simple text message
     When I send message "Hello"

@@ -27,10 +27,26 @@ export class MockDriver extends BaseAgentDriver {
   readonly driverSessionId = "mock-driver-session";
 
   private aborted = false;
+  protected customResponses: Map<string, string> = new Map();
+  protected defaultResponse?: string;
 
   constructor(sessionId: string, agentId: string = "mock-agent") {
     super(agentId);
     this.sessionId = sessionId;
+  }
+
+  /**
+   * Set a custom response for a specific user message
+   */
+  setCustomResponse(userMessage: string, response: string): void {
+    this.customResponses.set(userMessage, response);
+  }
+
+  /**
+   * Set a default response for all messages
+   */
+  setDefaultResponse(response: string): void {
+    this.defaultResponse = response;
   }
 
   /**
@@ -49,7 +65,15 @@ export class MockDriver extends BaseAgentDriver {
         ? message.content
         : message.content.map((p) => ("text" in p ? p.text : "")).join("");
 
-    const response = `You said: ${text}`;
+    // Determine response: custom, default, or echo
+    let response: string;
+    if (this.customResponses.has(text)) {
+      response = this.customResponses.get(text)!;
+    } else if (this.defaultResponse) {
+      response = this.defaultResponse;
+    } else {
+      response = `You said: ${text}`;
+    }
 
     // Start text block
     yield this.builder.textContentBlockStart(0);

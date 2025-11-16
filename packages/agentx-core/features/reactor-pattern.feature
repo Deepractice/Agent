@@ -56,6 +56,7 @@ Feature: Reactor Pattern and Custom Reactors
   Scenario: Reactor consumes events by type
     Given I create a reactor using consumeByType
     And the reactor subscribes to "text_delta" events
+    And I create and initialize an agent with the reactor
     When the driver emits multiple text deltas
     Then the reactor should receive only "text_delta" events
     And it should not receive other event types
@@ -63,6 +64,7 @@ Feature: Reactor Pattern and Custom Reactors
   Scenario: Reactor consumes events by pattern
     Given I create a reactor using consumeByPattern
     And the reactor pattern matches "conversation_*" events
+    And I create and initialize an agent with the reactor
     When the agent goes through conversation lifecycle
     Then the reactor should receive:
       | event_type            |
