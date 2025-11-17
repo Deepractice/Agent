@@ -27,8 +27,8 @@ export async function getAgent() {
       model: "claude-sonnet-4",
       mcpServers: {
         promptx: {
-          command: "npx",
-          args: ["-y", "@promptx/mcp-server"],
+          command: "promptx",
+          args: ["mcp-server"],
           env: {
             // Inherit environment variables
             ...process.env,
