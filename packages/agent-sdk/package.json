@@ -1,6 +1,6 @@
 {
   "name": "@deepractice-ai/agent-sdk",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "High-performance Agent SDK with RxJS event-driven architecture",
   "type": "module",
   "main": "dist/index.js",
