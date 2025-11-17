@@ -52,6 +52,8 @@ export class ClaudeAdapter {
         hasApiKey: !!sdkOptions.env?.ANTHROPIC_API_KEY,
         hasBaseUrl: !!sdkOptions.env?.ANTHROPIC_BASE_URL,
         baseUrl: sdkOptions.env?.ANTHROPIC_BASE_URL,
+        mcpServers: sdkOptions.mcpServers,
+        hasMcpServers: !!sdkOptions.mcpServers,
       },
       "Starting Claude SDK stream with options"
     );

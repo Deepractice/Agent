@@ -12,6 +12,9 @@ USER root
 # Install agent globally from npm (includes CLI, server, and web UI)
 RUN npm install -g @deepractice-ai/agent
 
+# Install PromptX CLI globally (includes MCP server, pre-install to avoid npx delays)
+RUN npm install -g @promptx/cli
+
 # Environment variables
 ENV NODE_ENV=production \
     PORT=5200 \
