@@ -4,11 +4,13 @@ import type { Message } from "@deepractice-ai/agentx-framework/browser";
 import type {
   ErrorMessageEvent,
   TextDeltaEvent,
+  ToolResultEvent,
   // UserMessageEvent,  // Removed - no longer used (user messages handled locally)
   AssistantMessageEvent,
   ToolUseMessageEvent,
   ConversationStartStateEvent,
   ConversationEndStateEvent,
+  ExchangeResponseEvent,
   ErrorMessage as ErrorMessageType,
 } from "@deepractice-ai/agentx-framework/browser";
 import { ChatMessageList } from "./ChatMessageList";
@@ -96,9 +98,9 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
         console.log("[Chat] assistant_message:", event.uuid);
         const assistantMsg = event.data;
 
-        // Clear streaming and add complete message atomically
+        // Clear streaming but keep loading (exchange may continue with tool calls)
         setStreaming("");
-        setIsLoading(false);
+        // DON'T set isLoading(false) here - wait for exchange_response
         setMessages((prev) => {
           // Check if message already exists
           if (prev.some((m) => m.id === assistantMsg.id)) {
@@ -121,6 +123,29 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
         });
       },
 
+      // Stream layer - handle tool results
+      onToolResult(event: ToolResultEvent) {
+        console.log("[Chat] tool_result:", event.data.toolId, event.data.content);
+        const { toolId, content, isError } = event.data;
+
+        setMessages((prev) => prev.map((msg) => {
+          // Find the ToolUseMessage with matching toolCall.id
+          if (msg.role === "tool-use" && msg.toolCall.id === toolId) {
+            return {
+              ...msg,
+              toolResult: {
+                ...msg.toolResult,
+                output: {
+                  type: isError ? "error-text" as const : "text" as const,
+                  value: typeof content === "string" ? content : JSON.stringify(content),
+                },
+              },
+            };
+          }
+          return msg;
+        }));
+      },
+
       // Message layer - handle error messages
       onErrorMessage(event: ErrorMessageEvent) {
         console.error("[Chat] error_message:", event);
@@ -137,6 +162,13 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
       onConversationEnd(_event: ConversationEndStateEvent) {
         console.log("[Chat] conversation_end");
         setIsLoading(false);
+      },
+
+      // Exchange layer - exchange completion (handles multi-turn agentic flows)
+      onExchangeResponse(_event: ExchangeResponseEvent) {
+        console.log("[Chat] exchange_response - exchange complete");
+        setIsLoading(false);
+        setStreaming("");
       },
     });
 
@@ -188,7 +220,7 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
       {/* Input area */}
       <div className="p-2 sm:p-4 md:p-4 flex-shrink-0 pb-2 sm:pb-4 md:pb-6">
         <div className="max-w-4xl mx-auto">
-          <ChatInput onSend={handleSend} disabled={isLoading} />
+          <ChatInput onSend={handleSend} disabled={false} />
         </div>
       </div>
     </div>

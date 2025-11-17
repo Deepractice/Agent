@@ -21,6 +21,8 @@ import type {
   ToolUseContentBlockStartEvent,
   InputJsonDeltaEvent,
   ToolUseContentBlockStopEvent,
+  ToolCallEvent,
+  ToolResultEvent,
   StopReason,
 } from "@deepractice-ai/agentx-event";
 
@@ -205,6 +207,52 @@ export class StreamEventBuilder {
       timestamp: Date.now(),
       index,
       data: { id: toolId },
+    };
+  }
+
+  /**
+   * Create ToolCallEvent
+   *
+   * Emitted when a complete tool call has been assembled.
+   *
+   * @param id - Tool call ID
+   * @param name - Tool name
+   * @param input - Tool input (parsed from JSON)
+   */
+  toolCall(id: string, name: string, input: any): ToolCallEvent {
+    return {
+      type: "tool_call",
+      uuid: this.generateId(),
+      agentId: this.agentId,
+      timestamp: Date.now(),
+      data: {
+        id,
+        name,
+        input,
+      },
+    };
+  }
+
+  /**
+   * Create ToolResultEvent
+   *
+   * Emitted when a tool execution result is received.
+   *
+   * @param toolId - Tool call ID this result corresponds to
+   * @param content - Tool result content
+   * @param isError - Whether this is an error result
+   */
+  toolResult(toolId: string, content: string | any[], isError?: boolean): ToolResultEvent {
+    return {
+      type: "tool_result",
+      uuid: this.generateId(),
+      agentId: this.agentId,
+      timestamp: Date.now(),
+      data: {
+        toolId,
+        content,
+        isError,
+      },
     };
   }
 

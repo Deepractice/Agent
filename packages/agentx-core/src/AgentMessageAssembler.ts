@@ -29,6 +29,7 @@ import type {
   ToolUseContentBlockStartEvent,
   ToolUseContentBlockStopEvent,
   MessageStopEvent,
+  ToolCallEvent,
   // Message Events (output)
   AssistantMessageEvent,
   ToolUseMessageEvent,
@@ -253,6 +254,20 @@ export class AgentMessageAssembler implements Reactor {
         : {};
 
       console.log("[AgentMessageAssembler] Parsed tool input:", toolInput);
+
+      // Emit high-level tool_call event (complete tool call assembled)
+      const toolCallEvent: ToolCallEvent = {
+        type: "tool_call",
+        uuid: this.generateId(),
+        agentId: this.context!.agentId,
+        timestamp: Date.now(),
+        data: {
+          id: pending.toolId!,
+          name: pending.toolName!,
+          input: toolInput,
+        },
+      };
+      this.context!.producer.produce(toolCallEvent as any);
 
       // Create ToolCallPart
       const toolCall: ToolCallPart = {

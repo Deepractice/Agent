@@ -66,6 +66,8 @@ export type {
   ToolUseContentBlockStartEvent,
   InputJsonDeltaEvent,
   ToolUseContentBlockStopEvent,
+  ToolCallEvent,
+  ToolResultEvent,
 } from "@deepractice-ai/agentx-event";
 
 // State layer events

@@ -104,21 +104,6 @@ export interface ClaudeSDKDriverConfig {
 }
 
 /**
- * Helper: Extract first message from single or iterable
- */
-async function getFirstMessage(
-  messages: UserMessage | AsyncIterable<UserMessage>
-): Promise<UserMessage> {
-  if (Symbol.asyncIterator in Object(messages)) {
-    for await (const msg of messages as AsyncIterable<UserMessage>) {
-      return msg;
-    }
-    throw new Error("[ClaudeSDKDriver] No messages in async iterable");
-  }
-  return messages as UserMessage;
-}
-
-/**
  * Helper: Build prompt from UserMessage
  */
 function buildPrompt(message: UserMessage): string {
@@ -210,6 +195,8 @@ async function* processAssistantContent(
       yield builder.toolUseContentBlockStart(block.id, block.name, i);
       yield builder.inputJsonDelta(JSON.stringify(block.input), i);
       yield builder.toolUseContentBlockStop(block.id, i);
+      // Emit high-level tool_call event (complete tool call assembled)
+      yield builder.toolCall(block.id, block.name, block.input);
     }
   }
 }
@@ -250,6 +237,8 @@ async function* processStreamEvent(
 
     case "content_block_stop":
       yield builder.textContentBlockStop(event.index);
+      // Note: tool_call event will be emitted by AgentMessageAssembler
+      // after it parses the complete JSON input
       break;
 
     case "message_delta":
@@ -327,6 +316,19 @@ async function* transformSDKMessages(
         break;
 
       case "user":
+        // Handle tool result blocks from Claude SDK
+        if (sdkMsg.message && Array.isArray(sdkMsg.message.content)) {
+          for (const block of sdkMsg.message.content) {
+            if (block.type === "tool_result") {
+              // Tool execution result from Claude SDK
+              yield builder.toolResult(
+                block.tool_use_id,
+                block.content,
+                block.is_error || false
+              );
+            }
+          }
+        }
         break;
 
       default:
@@ -342,31 +344,42 @@ export const ClaudeSDKDriver = defineDriver<ClaudeSDKDriverConfig>({
   name: "ClaudeSDK",
 
   async *sendMessage(message, config) {
-    // 1. Extract first message
-    const firstMessage = await getFirstMessage(message);
-
-    // 2. Build prompt
-    const prompt = buildPrompt(firstMessage);
-
-    // 3. Create abort controller
-    const abortController = config.abortController || new AbortController();
-
-    // 4. Build SDK options
-    const options = buildOptions(config, abortController);
-
-    // 5. Create builder
+    // 1. Create shared resources
     const agentId = `claude_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
     const builder = new StreamEventBuilder(agentId);
+    const abortController = config.abortController || new AbortController();
 
-    try {
-      // 6. Call Claude SDK
-      const result = query({ prompt, options });
+    // 2. Normalize input to AsyncIterable
+    const messages = Symbol.asyncIterator in Object(message)
+      ? (message as AsyncIterable<UserMessage>)
+      : (async function* () { yield message as UserMessage; })();
 
-      // 7. Transform SDK messages to Stream events
-      yield* transformSDKMessages(result, builder);
-    } catch (error) {
-      console.error("[ClaudeSDKDriver] Error during SDK query:", error);
-      throw error;
+    // 3. Process each message sequentially
+    let isFirstMessage = true;
+
+    for await (const msg of messages) {
+      // Build prompt from message
+      const prompt = buildPrompt(msg);
+
+      // Build SDK options (use continue: true for subsequent messages)
+      const options = buildOptions(
+        { ...config, continue: !isFirstMessage },
+        abortController
+      );
+
+      try {
+        // Call Claude SDK
+        const result = query({ prompt, options });
+
+        // Transform SDK messages to Stream events
+        yield* transformSDKMessages(result, builder);
+
+        // Mark subsequent messages to use continue mode
+        isFirstMessage = false;
+      } catch (error) {
+        console.error("[ClaudeSDKDriver] Error during SDK query:", error);
+        throw error;
+      }
     }
   },
 

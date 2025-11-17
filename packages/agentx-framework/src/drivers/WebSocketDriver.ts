@@ -123,6 +123,8 @@ function setupGlobalMessageHandler(ws: WebSocket) {
         "tool_use_content_block_start",
         "input_json_delta",
         "tool_use_content_block_stop",
+        "tool_call", // Complete tool call assembled
+        "tool_result", // Tool execution results from Claude SDK
         // State Layer events (for UI state management)
         "stream_start",
         "stream_complete",

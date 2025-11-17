@@ -40,6 +40,8 @@ import type {
   ToolUseContentBlockStartEvent,
   InputJsonDeltaEvent,
   ToolUseContentBlockStopEvent,
+  ToolCallEvent,
+  ToolResultEvent,
   // State events
   AgentReadyStateEvent,
   ConversationStartStateEvent,
@@ -96,6 +98,8 @@ export interface ReactorDefinition<TConfig = any> {
   onToolUseContentBlockStart?: (event: ToolUseContentBlockStartEvent, config: TConfig) => void | Promise<void>;
   onInputJsonDelta?: (event: InputJsonDeltaEvent, config: TConfig) => void | Promise<void>;
   onToolUseContentBlockStop?: (event: ToolUseContentBlockStopEvent, config: TConfig) => void | Promise<void>;
+  onToolCall?: (event: ToolCallEvent, config: TConfig) => void | Promise<void>;
+  onToolResult?: (event: ToolResultEvent, config: TConfig) => void | Promise<void>;
 
   // ==================== State Layer ====================
   onAgentReady?: (event: AgentReadyStateEvent, config: TConfig) => void | Promise<void>;
@@ -201,6 +205,12 @@ class SimpleReactor implements Reactor {
     }
     if (def.onToolUseContentBlockStop) {
       context.consumer.consumeByType("tool_use_content_block_stop", (e) => def.onToolUseContentBlockStop!(e, this.config));
+    }
+    if (def.onToolCall) {
+      context.consumer.consumeByType("tool_call", (e) => def.onToolCall!(e, this.config));
+    }
+    if (def.onToolResult) {
+      context.consumer.consumeByType("tool_result", (e) => def.onToolResult!(e, this.config));
     }
 
     // State layer

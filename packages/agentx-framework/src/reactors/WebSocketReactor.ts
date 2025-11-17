@@ -62,6 +62,8 @@ export const WebSocketReactor = defineReactor<WebSocketReactorConfig>({
   onToolUseContentBlockStart: (e, cfg) => sendEvent(cfg.ws, e),
   onInputJsonDelta: (e, cfg) => sendEvent(cfg.ws, e),
   onToolUseContentBlockStop: (e, cfg) => sendEvent(cfg.ws, e),
+  onToolCall: (e, cfg) => sendEvent(cfg.ws, e),
+  onToolResult: (e, cfg) => sendEvent(cfg.ws, e),
 
   // ==================== State Layer ====================
   onAgentReady: (e, cfg) => sendEvent(cfg.ws, e),

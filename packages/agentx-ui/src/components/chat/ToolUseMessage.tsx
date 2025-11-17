@@ -60,6 +60,7 @@ export function ToolUseMessage({ message }: ToolUseMessageProps) {
             id={message.toolCall.id}
             name={message.toolCall.name}
             input={message.toolCall.input}
+            defaultCollapsed={true}
           />
 
           {/* Tool result */}
@@ -67,6 +68,7 @@ export function ToolUseMessage({ message }: ToolUseMessageProps) {
             id={message.toolResult.id}
             name={message.toolResult.name}
             output={message.toolResult.output}
+            defaultCollapsed={true}
           />
         </div>
       </div>

@@ -27,6 +27,8 @@ export type {
   ToolUseContentBlockStartEvent,
   InputJsonDeltaEvent,
   ToolUseContentBlockStopEvent,
+  ToolCallEvent,
+  ToolResultEvent,
 } from "./stream";
 
 // ===== State Layer =====
