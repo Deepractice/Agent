@@ -128,10 +128,17 @@ function validateField(
 ): string[] {
   const errors: string[] = [];
 
-  // Check required
-  if (field.required && (value === undefined || value === null)) {
-    errors.push(`${path}: Required field is missing`);
-    return errors;
+  // Check required (also reject empty strings for string fields)
+  if (field.required) {
+    if (value === undefined || value === null) {
+      errors.push(`${path}: Required field is missing`);
+      return errors;
+    }
+    // For string fields, also reject empty strings
+    if (field.type === "string" && value === "") {
+      errors.push(`${path}: Required field cannot be empty`);
+      return errors;
+    }
   }
 
   // Skip validation if optional and undefined

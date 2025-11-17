@@ -14,8 +14,8 @@ import { fileURLToPath } from "url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables from .env.test file
-const envPath = resolve(__dirname, "../../agentx-node/.env.test");
+// Load environment variables from .env.test file in same directory
+const envPath = resolve(__dirname, ".env.test");
 config({ path: envPath });
 
 async function startDevServer() {

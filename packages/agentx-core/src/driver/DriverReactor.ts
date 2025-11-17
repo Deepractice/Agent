@@ -35,6 +35,9 @@ export class DriverReactor implements Reactor {
   async initialize(context: ReactorContext): Promise<void> {
     this.context = context;
 
+    console.log("[DriverReactor] ========== INITIALIZING ==========");
+    console.log("[DriverReactor] About to subscribe to user_message events");
+
     context.logger?.debug(`[DriverReactor] Initializing`, {
       driverId: this.id,
       sessionId: context.sessionId,
@@ -42,6 +45,8 @@ export class DriverReactor implements Reactor {
 
     // Subscribe to user_message events
     context.consumer.consumeByType("user_message", this.handleUserMessage.bind(this));
+
+    console.log("[DriverReactor] Successfully subscribed to user_message");
 
     context.logger?.info(`[DriverReactor] Initialized`, {
       driverId: this.id,
@@ -79,8 +84,13 @@ export class DriverReactor implements Reactor {
    * Calls driver.sendMessage() and forwards all Stream events to EventBus.
    */
   private async handleUserMessage(event: UserMessageEvent): Promise<void> {
+    console.log("[DriverReactor] ========== HANDLING USER MESSAGE ==========");
+    console.log("[DriverReactor] Event UUID:", event.uuid);
+    console.log("[DriverReactor] Message ID:", event.data.id);
+    console.log("[DriverReactor] Message content:", event.data.content);
+
     if (!this.context) {
-      console.error("[DriverReactor] No context available");
+      console.error("[DriverReactor] ERROR: No context available");
       return;
     }
 
@@ -95,10 +105,21 @@ export class DriverReactor implements Reactor {
     this.abortController = new AbortController();
 
     try {
-      console.log("[DriverReactor] Starting to iterate driver stream");
+      console.log("[DriverReactor] About to call driver.sendMessage()");
+      console.log("[DriverReactor] Driver type:", this.driver.constructor.name);
 
       // Iterate through Stream events from driver
+      let eventCount = 0;
       for await (const streamEvent of this.driver.sendMessage(event.data)) {
+        eventCount++;
+
+        // Log tool-related events and message_delta with full data
+        if (streamEvent.type.includes('tool') || streamEvent.type.includes('json') || streamEvent.type === 'message_delta') {
+          console.log(`[DriverReactor] Received stream event #${eventCount}:`, streamEvent.type, streamEvent);
+        } else {
+          console.log(`[DriverReactor] Received stream event #${eventCount}:`, streamEvent.type);
+        }
+
         // Check if aborted (null-safe check)
         if (this.abortController?.signal.aborted) {
           context.logger?.debug(`[DriverReactor] Stream aborted`, {
@@ -116,15 +137,12 @@ export class DriverReactor implements Reactor {
         });
       }
 
-      console.log("[DriverReactor] Stream iteration completed successfully");
       context.logger?.info(`[DriverReactor] Message processing complete`, {
         messageId: event.data.id,
+        eventCount,
       });
     } catch (error) {
-      console.log("[DriverReactor] CAUGHT ERROR:", error);
-
-      // Use saved context reference (always available even if this.context became null)
-      console.log("[DriverReactor] Emitting error_message event");
+      console.error("[DriverReactor] Error processing stream:", error);
 
       context.logger?.error(`[DriverReactor] Error processing stream`, {
         error,
@@ -152,9 +170,7 @@ export class DriverReactor implements Reactor {
         timestamp: Date.now(),
       };
 
-      console.log("[DriverReactor] About to produce error event:", errorEvent);
       context.producer.produce(errorEvent);
-      console.log("[DriverReactor] Error event produced");
     } finally {
       this.abortController = null;
     }

@@ -11,6 +11,10 @@ export type { AgentEvent, AgentEventType } from "./base";
 // ===== Bus Layer =====
 export type { EventBus, EventProducer, EventConsumer, Unsubscribe } from "./bus";
 
+// ===== Types =====
+export type { StopReason } from "./types/StopReason";
+export { isStopReason } from "./types/StopReason";
+
 // ===== Stream Layer =====
 export type {
   StreamEventType,

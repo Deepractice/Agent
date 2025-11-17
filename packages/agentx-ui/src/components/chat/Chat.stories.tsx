@@ -8,10 +8,18 @@ import type { AgentService } from "@deepractice-ai/agentx-framework/browser";
  * Wrapper component to handle agent initialization
  */
 function ChatStory({ children, agent }: { children: (agent: AgentService) => ReactNode; agent: AgentService }) {
+  const [isInitialized, setIsInitialized] = useState(false);
+
   useEffect(() => {
-    agent.initialize().catch((error) => {
-      console.error("[Story] Failed to initialize agent:", error);
-    });
+    agent
+      .initialize()
+      .then(() => {
+        console.log("[Story] Agent initialized successfully");
+        setIsInitialized(true);
+      })
+      .catch((error) => {
+        console.error("[Story] Failed to initialize agent:", error);
+      });
 
     return () => {
       agent.destroy().catch((error) => {
@@ -19,6 +27,17 @@ function ChatStory({ children, agent }: { children: (agent: AgentService) => Rea
       });
     };
   }, [agent]);
+
+  if (!isInitialized) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center">
+          <div className="text-lg mb-2">Initializing agent...</div>
+          <div className="text-sm text-gray-500">Connecting to ws://localhost:5200/ws</div>
+        </div>
+      </div>
+    );
+  }
 
   return <>{children(agent)}</>;
 }

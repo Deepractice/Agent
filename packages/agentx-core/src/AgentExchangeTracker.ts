@@ -23,6 +23,8 @@
 import type { Reactor } from "./reactor/Reactor";
 import type { ReactorContext } from "./reactor/ReactorContext";
 import type {
+  // Stream Events (input)
+  MessageDeltaEvent,
   // Message Events (input)
   UserMessageEvent,
   AssistantMessageEvent,
@@ -39,6 +41,7 @@ interface PendingExchange {
   exchangeId: string;
   userMessage: UserMessage;
   requestedAt: number;
+  lastStopReason?: string; // Track stop reason to determine exchange completion
 }
 
 /**
@@ -109,7 +112,12 @@ export class AgentExchangeTracker implements Reactor {
       this.onUserMessage(event as UserMessageEvent);
     });
 
-    // Assistant messages complete exchanges
+    // Message delta events contain stop reason
+    consumer.consumeByType("message_delta", (event) => {
+      this.onMessageDelta(event as MessageDeltaEvent);
+    });
+
+    // Assistant messages may complete exchanges (depending on stop reason)
     consumer.consumeByType("assistant_message", (event) => {
       this.onAssistantMessage(event as AssistantMessageEvent);
     });
@@ -127,6 +135,7 @@ export class AgentExchangeTracker implements Reactor {
       exchangeId,
       userMessage: event.data,
       requestedAt: event.timestamp,
+      lastStopReason: undefined,
     };
 
     // Emit ExchangeRequestEvent
@@ -146,21 +155,51 @@ export class AgentExchangeTracker implements Reactor {
   }
 
   /**
-   * Handle AssistantMessageEvent
-   * Completes pending exchange and emits ExchangeResponseEvent
+   * Handle MessageDeltaEvent
+   * Captures stop reason and immediately completes exchange if stop_reason === "end_turn"
    */
-  private onAssistantMessage(event: AssistantMessageEvent): void {
+  private onMessageDelta(event: MessageDeltaEvent): void {
     if (!this.pendingExchange) {
-      // No pending exchange, skip
+      return;
+    }
+
+    // Save stop reason from message delta
+    if (event.data.delta.stopReason) {
+      this.pendingExchange.lastStopReason = event.data.delta.stopReason;
+      console.log("[AgentExchangeTracker] Captured stop reason:", event.data.delta.stopReason);
+
+      // If stop_reason is "end_turn", complete the exchange immediately
+      // (Don't wait for assistant_message which might be empty or delayed)
+      if (event.data.delta.stopReason === "end_turn") {
+        this.completeExchange(event.timestamp);
+      }
+    }
+  }
+
+  /**
+   * Handle AssistantMessageEvent
+   * (Exchange completion is now handled in onMessageDelta)
+   */
+  private onAssistantMessage(_event: AssistantMessageEvent): void {
+    // Exchange completion is now handled in onMessageDelta when stopReason === "end_turn"
+    // This method is kept for backward compatibility but doesn't complete exchanges anymore
+  }
+
+  /**
+   * Complete the exchange and emit ExchangeResponseEvent
+   */
+  private completeExchange(completedAt: number): void {
+    if (!this.pendingExchange) {
       return;
     }
 
     const { exchangeId, requestedAt } = this.pendingExchange;
-    const completedAt = event.timestamp;
+    console.log("[AgentExchangeTracker] Completing exchange:", exchangeId);
+
     const duration = completedAt - requestedAt;
 
-    // Calculate cost from token usage
-    const usage = event.data.usage || { input: 0, output: 0 };
+    // Calculate cost (we don't have usage here, will be 0)
+    const usage = { input: 0, output: 0 };
     const cost = this.calculateCost(usage);
 
     // Emit ExchangeResponseEvent
@@ -171,10 +210,15 @@ export class AgentExchangeTracker implements Reactor {
       timestamp: Date.now(),
       exchangeId,
       data: {
-        assistantMessage: event.data,
+        assistantMessage: {
+          id: this.generateId(),
+          role: "assistant",
+          content: "",
+          timestamp: completedAt,
+        },
         respondedAt: completedAt,
         durationMs: duration,
-        usage: usage,
+        usage,
         costUsd: cost,
       },
     };

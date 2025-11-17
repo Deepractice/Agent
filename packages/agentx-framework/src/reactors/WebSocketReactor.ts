@@ -78,7 +78,8 @@ export const WebSocketReactor = defineReactor<WebSocketReactorConfig>({
   onErrorOccurred: (e, cfg) => sendEvent(cfg.ws, e),
 
   // ==================== Message Layer ====================
-  onUserMessage: (e, cfg) => sendEvent(cfg.ws, e),
+  // NOTE: user_message is NOT forwarded to client - it originated from client!
+  // onUserMessage: (e, cfg) => sendEvent(cfg.ws, e),  // ❌ Disabled - client already has this
   onAssistantMessage: (e, cfg) => sendEvent(cfg.ws, e),
   onToolUseMessage: (e, cfg) => sendEvent(cfg.ws, e),
   onErrorMessage: (e, cfg) => sendEvent(cfg.ws, e),

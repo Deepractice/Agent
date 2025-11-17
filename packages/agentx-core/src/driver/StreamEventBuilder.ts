@@ -21,6 +21,7 @@ import type {
   ToolUseContentBlockStartEvent,
   InputJsonDeltaEvent,
   ToolUseContentBlockStopEvent,
+  StopReason,
 } from "@deepractice-ai/agentx-event";
 
 export class StreamEventBuilder {
@@ -57,7 +58,7 @@ export class StreamEventBuilder {
    * @param stopReason - Stop reason if message is ending
    * @param stopSequence - Stop sequence that triggered the stop
    */
-  messageDelta(stopReason?: string, stopSequence?: string): MessageDeltaEvent {
+  messageDelta(stopReason?: StopReason, stopSequence?: string): MessageDeltaEvent {
     return {
       type: "message_delta",
       uuid: this.generateId(),

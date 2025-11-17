@@ -147,15 +147,9 @@ export class AgentMessageAssembler implements Reactor {
    * Handle message start
    */
   private onMessageStart(event: any): void {
-    console.log("[AgentMessageAssembler.onMessageStart] Called", {
-      timestamp: event.timestamp
-    });
-
     this.currentMessageId = this.generateId();
     this.messageStartTime = event.timestamp;
     this.pendingContents.clear();
-
-    console.log("[AgentMessageAssembler.onMessageStart] Set currentMessageId:", this.currentMessageId);
   }
 
   /**
@@ -193,6 +187,11 @@ export class AgentMessageAssembler implements Reactor {
    * Initialize tool use accumulator
    */
   private onToolUseContentBlockStart(event: ToolUseContentBlockStartEvent): void {
+    console.log("[AgentMessageAssembler] Tool use content block start:", {
+      toolId: event.data.id,
+      toolName: event.data.name,
+    });
+
     // Use index 1 for tool content (separate from text block)
     const index = 1;
 
@@ -216,6 +215,12 @@ export class AgentMessageAssembler implements Reactor {
 
     if (pending && pending.type === "tool_use") {
       pending.toolInputJson! += event.data.partialJson;
+      console.log("[AgentMessageAssembler] Input JSON delta accumulated:", {
+        partialJson: event.data.partialJson,
+        totalLength: pending.toolInputJson!.length,
+      });
+    } else {
+      console.warn("[AgentMessageAssembler] Input JSON delta received but no pending tool_use content!");
     }
   }
 
@@ -224,19 +229,30 @@ export class AgentMessageAssembler implements Reactor {
    * Assemble complete ToolUseMessage event
    */
   private onToolUseContentBlockStop(_event: ToolUseContentBlockStopEvent): void {
+    console.log("[AgentMessageAssembler] Tool use content block stop");
+
     // Use index 1 for tool content
     const index = 1;
     const pending = this.pendingContents.get(index);
 
     if (!pending || pending.type !== "tool_use") {
+      console.warn("[AgentMessageAssembler] No pending tool_use content found!");
       return;
     }
+
+    console.log("[AgentMessageAssembler] Assembling tool use message:", {
+      toolId: pending.toolId,
+      toolName: pending.toolName,
+      toolInputJson: pending.toolInputJson,
+    });
 
     try {
       // Parse accumulated JSON
       const toolInput = pending.toolInputJson
         ? JSON.parse(pending.toolInputJson)
         : {};
+
+      console.log("[AgentMessageAssembler] Parsed tool input:", toolInput);
 
       // Create ToolCallPart
       const toolCall: ToolCallPart = {
@@ -275,6 +291,8 @@ export class AgentMessageAssembler implements Reactor {
         data: toolUseMessage,
       };
 
+      console.log("[AgentMessageAssembler] Emitting tool_use_message event:", toolUseEvent);
+
       this.emitMessageEvent(toolUseEvent);
 
       // Remove from pending
@@ -306,14 +324,7 @@ export class AgentMessageAssembler implements Reactor {
    * Assemble complete AssistantMessage from all accumulated content
    */
   private onMessageStop(event: MessageStopEvent): void {
-    console.log("[AgentMessageAssembler.onMessageStop] Called", {
-      currentMessageId: this.currentMessageId,
-      pendingContentsSize: this.pendingContents.size,
-      pendingContents: Array.from(this.pendingContents.entries())
-    });
-
     if (!this.currentMessageId) {
-      console.log("[AgentMessageAssembler.onMessageStop] No currentMessageId, skipping");
       return;
     }
 
@@ -331,11 +342,23 @@ export class AgentMessageAssembler implements Reactor {
       }
     }
 
+    const content = textParts.join(""); // Combine all text parts
+
+    // Skip empty messages (e.g., tool-only messages with no text)
+    if (!content || content.trim().length === 0) {
+      console.log("[AgentMessageAssembler] Skipping empty assistant message");
+      // Reset state
+      this.currentMessageId = null;
+      this.messageStartTime = null;
+      this.pendingContents.clear();
+      return;
+    }
+
     // Create AssistantMessage
     const assistantMessage: AssistantMessage = {
       id: this.currentMessageId,
       role: "assistant",
-      content: textParts.join(""), // Combine all text parts
+      content,
       timestamp: this.messageStartTime || Date.now(),
       usage: event.data.usage,
     };
@@ -348,11 +371,6 @@ export class AgentMessageAssembler implements Reactor {
       timestamp: Date.now(),
       data: assistantMessage,
     };
-
-    console.log("[AgentMessageAssembler.onMessageStop] Emitting assistant_message event", {
-      content: assistantMessage.content,
-      contentLength: assistantMessage.content.length
-    });
 
     this.emitMessageEvent(assistantEvent);
 

@@ -4,7 +4,7 @@ import type { Message } from "@deepractice-ai/agentx-framework/browser";
 import type {
   ErrorMessageEvent,
   TextDeltaEvent,
-  UserMessageEvent,
+  // UserMessageEvent,  // Removed - no longer used (user messages handled locally)
   AssistantMessageEvent,
   ToolUseMessageEvent,
   ConversationStartStateEvent,
@@ -79,24 +79,26 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
       },
 
       // Message layer - handle complete messages
-      onUserMessage(event: UserMessageEvent) {
-        console.log("[Chat] user_message:", event.uuid);
-        // User messages are already added when handleSend is called
-        // But we update here to ensure consistency with server state
-        const userMsg = event.data;
-        setMessages((prev) => {
-          // Check if message already exists
-          if (prev.some((m) => m.id === userMsg.id)) {
-            return prev;
-          }
-          return [...prev, userMsg];
-        });
-      },
+      // NOTE: onUserMessage is REMOVED - user messages are added locally in handleSend
+      // Server should NOT echo user_message back to client (see Issue #002)
+      // onUserMessage(event: UserMessageEvent) {
+      //   console.log("[Chat] user_message:", event.uuid);
+      //   const userMsg = event.data;
+      //   setMessages((prev) => {
+      //     if (prev.some((m) => m.id === userMsg.id)) {
+      //       return prev;
+      //     }
+      //     return [...prev, userMsg];
+      //   });
+      // },
 
       onAssistantMessage(event: AssistantMessageEvent) {
         console.log("[Chat] assistant_message:", event.uuid);
         const assistantMsg = event.data;
 
+        // Clear streaming and add complete message atomically
+        setStreaming("");
+        setIsLoading(false);
         setMessages((prev) => {
           // Check if message already exists
           if (prev.some((m) => m.id === assistantMsg.id)) {
@@ -104,10 +106,6 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
           }
           return [...prev, assistantMsg];
         });
-
-        // Clear streaming when complete message arrives
-        setStreaming("");
-        setIsLoading(false);
       },
 
       onToolUseMessage(event: ToolUseMessageEvent) {
@@ -149,10 +147,14 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
   }, [agent]);
 
   const handleSend = async (text: string) => {
+    console.log("[Chat.handleSend] Called with text:", text);
+    // console.trace("[Chat.handleSend] Stack trace");
+
     setIsLoading(true);
     onMessageSend?.(text);
 
-    // Add user message immediately to UI
+    // Add user message to local state immediately (for instant UI feedback)
+    // Server will NOT echo it back - user_message is client-to-server only
     const userMessage: Message = {
       id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
       role: "user",
@@ -161,8 +163,12 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
     };
     setMessages((prev) => [...prev, userMessage]);
 
-    // Send to agent
-    await agent.send(text);
+    try {
+      await agent.send(text);
+      console.log("[Chat.handleSend] Send completed");
+    } catch (error) {
+      console.error("[Chat.handleSend] Send failed:", error);
+    }
   };
 
   return (

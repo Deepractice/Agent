@@ -90,8 +90,14 @@ class AgentSession {
   }
 
   async handleMessage(data: string): Promise<void> {
+    console.log("[AgentSession.handleMessage] ========== RECEIVED WS MESSAGE ==========");
+    console.log("[AgentSession.handleMessage] Raw data:", data);
+    // console.trace("[AgentSession.handleMessage] WebSocket message received");
+
     try {
       const message: ClientMessage = JSON.parse(data);
+      console.log("[AgentSession.handleMessage] Parsed message type:", message.type);
+      console.log("[AgentSession.handleMessage] Message content:", message.message?.content);
 
       switch (message.type) {
         case "user":

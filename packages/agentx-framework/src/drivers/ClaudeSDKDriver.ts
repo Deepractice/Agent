@@ -41,6 +41,7 @@ import { defineDriver } from "../defineDriver";
 export interface ClaudeSDKDriverConfig {
   // ==================== Basic Configuration ====================
   apiKey?: string;
+  baseUrl?: string;
   cwd?: string;
   env?: Record<string, string>;
 
@@ -145,7 +146,21 @@ function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortContr
   };
 
   if (config.cwd) options.cwd = config.cwd;
-  if (config.env) options.env = config.env;
+
+  // Build env - merge process.env, user config, and custom values
+  const env: Record<string, string> = {
+    ...process.env as Record<string, string>,  // Inherit system env (PATH, etc)
+    ...config.env,  // User-provided env overrides
+  };
+  if (config.baseUrl) {
+    env.ANTHROPIC_BASE_URL = config.baseUrl;
+  }
+  options.env = env;
+
+  // Use current Node.js executable (works with nvm, volta, etc)
+  if (!config.executable) {
+    options.executable = process.execPath as any;  // SDK accepts full path despite type definition
+  }
   if (config.model) options.model = config.model;
   if (config.fallbackModel) options.fallbackModel = config.fallbackModel;
   if (config.systemPrompt) options.systemPrompt = config.systemPrompt;
@@ -239,7 +254,8 @@ async function* processStreamEvent(
 
     case "message_delta":
       if (event.delta.stop_reason) {
-        yield builder.messageDelta(event.delta.stop_reason, event.delta.stop_sequence || undefined);
+        // Claude SDK returns stop_reason as string, cast to StopReason
+        yield builder.messageDelta(event.delta.stop_reason as any, event.delta.stop_sequence || undefined);
       }
       break;
 
@@ -269,6 +285,19 @@ async function* transformSDKMessages(
         break;
 
       case "assistant":
+        // Check if this is a synthetic error message from Claude SDK
+        if (sdkMsg.message.model === "<synthetic>") {
+          // Extract error text from content
+          const errorText = sdkMsg.message.content
+            .filter((block) => block.type === "text")
+            .map((block) => block.text)
+            .join(" ");
+
+          // Throw error instead of yielding as assistant message
+          throw new Error(`Claude SDK error: ${errorText}`);
+        }
+
+        // Normal assistant message processing
         messageId = sdkMsg.message.id;
         if (!hasStartedMessage) {
           yield builder.messageStart(messageId, sdkMsg.message.model);
@@ -291,6 +320,12 @@ async function* transformSDKMessages(
         break;
 
       case "result":
+        // Check if SDK returned an error
+        if (sdkMsg.subtype !== "success") {
+          throw new Error(`Claude SDK error: ${sdkMsg.subtype}`);
+        }
+        break;
+
       case "user":
         break;
 

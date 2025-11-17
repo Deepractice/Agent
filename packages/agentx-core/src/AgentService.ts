@@ -121,9 +121,16 @@ export class AgentService implements AgentDriver {
    * Send a message to the agent
    */
   async send(message: string): Promise<void> {
+    console.log("[AgentService.send] ========== START ==========");
+    console.log("[AgentService.send] Message:", message);
+    // console.trace("[AgentService.send] Call stack");
+
     if (!this.consumer) {
+      console.error("[AgentService.send] ERROR: No consumer!");
       throw new Error("[AgentService] Agent not initialized. Call initialize() first.");
     }
+
+    console.log("[AgentService.send] Consumer exists, proceeding...");
 
     // Validate message
     if (!message || message.trim().length === 0) {
@@ -157,8 +164,11 @@ export class AgentService implements AgentDriver {
       timestamp: Date.now(),
     };
 
+    console.log("[AgentService.send] Created UserMessage:", userMessage.id);
+
     // Add to history
     this._messages.push(userMessage);
+    console.log("[AgentService.send] Added to history. Total messages:", this._messages.length);
 
     // Create UserMessageEvent and emit to EventBus
     const userEvent: UserMessageEvent = {
@@ -169,13 +179,19 @@ export class AgentService implements AgentDriver {
       data: userMessage,
     };
 
+    console.log("[AgentService.send] Created UserMessageEvent:", userEvent.uuid);
+
     const producer = this.engine.eventBus.createProducer();
+    console.log("[AgentService.send] About to produce event to EventBus...");
     producer.produce(userEvent);
+    console.log("[AgentService.send] Event produced successfully!");
 
     this.logger?.debug("[AgentService] User message emitted", {
       agentId: this.id,
       eventUuid: userEvent.uuid,
     });
+
+    console.log("[AgentService.send] ========== END ==========");
   }
 
   /**
