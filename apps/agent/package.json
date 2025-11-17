@@ -1,6 +1,6 @@
 {
   "name": "@deepractice-ai/agent",
-  "version": "0.12.0",
+  "version": "0.13.0",
   "description": "Deepractice AI Agent - Full-stack application (Server + Web UI + CLI)",
   "type": "module",
   "main": "./dist/server/index.js",
