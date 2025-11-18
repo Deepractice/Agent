@@ -11,7 +11,8 @@
     "forceConsistentCasingInFileNames": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "noEmit": true
+    "outDir": "../dist/server",
+    "rootDir": "."
   },
   "include": ["./**/*.ts"],
   "exclude": ["node_modules"]

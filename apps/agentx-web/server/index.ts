@@ -7,19 +7,15 @@
  */
 
 import { createWebSocketServer, ClaudeAgent } from "@deepractice-ai/agentx-framework";
-import { config } from "dotenv";
-import { resolve, dirname, join, extname } from "path";
+import { dirname, join, extname } from "path";
 import { fileURLToPath } from "url";
 import { readFile, stat } from "fs/promises";
 import type { IncomingMessage, ServerResponse } from "http";
-import { mcpServers } from "./mcp";
+import { mcpServers } from "./mcp.js";
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
-
-// Load environment variables
-config({ path: resolve(__dirname, "../.env.local") });
 
 const isDev = process.env.NODE_ENV !== "production";
 const PORT = parseInt(process.env.PORT || "5200", 10);
@@ -66,7 +62,7 @@ async function serveStaticFile(req: IncomingMessage, res: ServerResponse): Promi
     }
 
     // Build full path to file in dist/
-    const fullPath = join(__dirname, "../dist", filePath);
+    const fullPath = join(__dirname, "..", filePath);
 
     // Check if file exists
     try {
@@ -76,7 +72,7 @@ async function serveStaticFile(req: IncomingMessage, res: ServerResponse): Promi
       }
     } catch {
       // File not found, serve index.html for SPA routing
-      const indexPath = join(__dirname, "../dist/index.html");
+      const indexPath = join(__dirname, "../index.html");
       const indexContent = await readFile(indexPath);
       res.writeHead(200, { "Content-Type": "text/html" });
       res.end(indexContent);
