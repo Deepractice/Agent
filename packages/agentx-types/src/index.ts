@@ -2,109 +2,17 @@
  * AgentX Types
  *
  * Core type definitions for the Deepractice AgentX ecosystem.
+ *
+ * ## Domain Structure
+ *
+ * - **agent/** - Agent's internal world (messages, tools, llm config)
+ * - **environment/** - Agent's external world (sessions, channels, groups)
  */
 
-// LLM domain
-export type {
-  LLMProvider,
-  LLMConfig,
-  LLMRequest,
-  LLMResponse,
-  StopReason,
-  StreamChunk,
-  TextChunk,
-  ThinkingChunk,
-  ToolUseChunk,
-  TokenUsage,
-} from "./llm";
+// ==================== Agent Domain ====================
+// Re-export everything from agent domain
+export * from "./agent";
 
-// Message domain
-export type {
-  Message,
-  UserMessage,
-  AssistantMessage,
-  SystemMessage,
-  ToolUseMessage,
-  ErrorMessage,
-  ErrorSubtype,
-  ErrorSeverity,
-  MessageRole,
-  ContentPart,
-  TextPart,
-  ThinkingPart,
-  ImagePart,
-  FilePart,
-  ToolCallPart,
-  ToolResultPart,
-  ToolResultOutput,
-} from "./message";
-
-// Session domain
-export type { Session } from "./session";
-
-// Agent domain
-export type { AgentMetadata } from "./agent";
-
-// MCP (Model Context Protocol) domain
-export {
-  LATEST_PROTOCOL_VERSION,
-  SUPPORTED_PROTOCOL_VERSIONS,
-  type McpProtocolVersion,
-} from "./mcp";
-export type {
-  // Tools
-  JsonSchema,
-  JsonSchemaProperty,
-  McpTool,
-  TextContent,
-  ImageContent,
-  ResourceContent,
-  McpToolResult,
-  ListToolsResult,
-  // Resources
-  McpResource,
-  McpResourceTemplate,
-  McpResourceContents,
-  ListResourcesResult,
-  ListResourceTemplatesResult,
-  ReadResourceResult,
-  // Prompts
-  McpPromptArgument,
-  McpPrompt,
-  PromptTextContent,
-  PromptImageContent,
-  PromptResourceContent,
-  McpPromptMessage,
-  ListPromptsResult,
-  GetPromptResult,
-  // Server
-  McpServerCapabilities,
-  McpServerInfo,
-  McpInitializeResult,
-  // Transport
-  McpStdioTransport,
-  McpSseTransport,
-  McpHttpTransport,
-  McpSdkTransport,
-  McpTransportConfig,
-  // Request
-  McpBaseParams,
-  McpPaginatedParams,
-  McpRequest,
-  McpRequestOptions,
-} from "./mcp";
-
-// Type guards
-export {
-  isUserMessage,
-  isAssistantMessage,
-  isSystemMessage,
-  isToolUseMessage,
-  isErrorMessage,
-  isTextPart,
-  isThinkingPart,
-  isImagePart,
-  isFilePart,
-  isToolCallPart,
-  isToolResultPart,
-} from "./guards";
+// ==================== Environment Domain ====================
+// Re-export everything from environment domain
+export * from "./environment";

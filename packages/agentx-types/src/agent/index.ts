@@ -1,8 +1,24 @@
 /**
- * Agent Types
+ * Agent Domain Types
  *
- * Note: Agent itself is NOT a type, it's an implementation in agentx-core.
- * This module only exports metadata types for Agent.
+ * All types related to AI agent's internal world:
+ * - Agent data structure
+ * - Messages (how agent communicates)
+ * - MCP tools (agent capabilities)
+ * - LLM configuration (agent's brain)
+ * - Type guards (type safety)
  */
 
-export type { AgentMetadata } from "./AgentMetadata";
+export type { Agent } from "./Agent";
+
+// Message types
+export * from "./message";
+
+// MCP types
+export * from "./mcp";
+
+// LLM types
+export * from "./llm";
+
+// Type guards
+export * from "./guards";

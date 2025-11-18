@@ -104,17 +104,19 @@ export type {
 } from "@deepractice-ai/agentx-event";
 
 // ==================== Reactors ====================
+// Low-level Reactor pattern
 export type {
-  Reactor,
-  ReactorContext,
+  AgentReactor,
+  AgentReactorContext,
 } from "@deepractice-ai/agentx-core";
 
+// 4-Layer Reactor interfaces (user-friendly)
 export type {
   StreamReactor,
   StateReactor,
   MessageReactor,
   ExchangeReactor,
-} from "./interfaces";
+} from "@deepractice-ai/agentx-core";
 
 // ==================== Platform Abstraction ====================
 export type { AgentDriver } from "@deepractice-ai/agentx-core";

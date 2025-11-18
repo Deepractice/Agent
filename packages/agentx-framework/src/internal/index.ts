@@ -5,6 +5,7 @@
  * Users should use the public APIs instead.
  */
 
+// Re-export reactor adapters from core (now in core/utils)
 export {
   StreamReactorAdapter,
   StateReactorAdapter,
@@ -12,4 +13,4 @@ export {
   ExchangeReactorAdapter,
   wrapUserReactor,
   type UserReactor,
-} from "./ReactorAdapter";
+} from "@deepractice-ai/agentx-core";

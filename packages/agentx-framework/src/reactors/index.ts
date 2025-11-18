@@ -1,16 +1,16 @@
 /**
  * Reactors
  *
- * - Interfaces: Pure interface definitions (re-exported from ../interfaces)
+ * - Interfaces: Pure interface definitions (re-exported from @deepractice-ai/agentx-core)
  * - Adapters: Internal adapter implementations
  * - Implementations: Concrete reactor implementations (WebSocketReactor, etc.)
  */
 
-// Re-export interfaces from interfaces/
-export type { StreamReactor } from "../interfaces/StreamReactor";
-export type { StateReactor } from "../interfaces/StateReactor";
-export type { MessageReactor } from "../interfaces/MessageReactor";
-export type { ExchangeReactor } from "../interfaces/ExchangeReactor";
+// Re-export interfaces from agentx-core
+export type { StreamReactor } from "@deepractice-ai/agentx-core";
+export type { StateReactor } from "@deepractice-ai/agentx-core";
+export type { MessageReactor } from "@deepractice-ai/agentx-core";
+export type { ExchangeReactor } from "@deepractice-ai/agentx-core";
 
 // Export adapters (from internal/)
 export {
