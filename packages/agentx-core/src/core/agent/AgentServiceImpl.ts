@@ -39,6 +39,7 @@
 
 import type { AgentService } from "~/interfaces/AgentService";
 import type { AgentDriver } from "~/interfaces/AgentDriver";
+import type { AgentContext } from "~/interfaces/AgentContext";
 import { AgentEngine, type EngineConfig } from "./AgentEngine";
 // Reactor type removed - users just pass event handler objects
 import type { Agent, Message, UserMessage, Session } from "@deepractice-ai/agentx-types";
@@ -63,8 +64,11 @@ export class AgentServiceImpl implements AgentService {
   readonly id: string;
   readonly sessionId: string;
 
-  // Agent data (from agentx-types)
+  // Agent data (from agentx-types) - static definition
   private readonly agentData: Agent;
+
+  // Agent context (runtime state)
+  private readonly context: AgentContext;
 
   // Core engine
   private engine: AgentEngine;
@@ -86,11 +90,20 @@ export class AgentServiceImpl implements AgentService {
     this.driver = driver;
     this.id = agent.id;
     this.sessionId = this.engine.sessionId;
+
+    // Create runtime context
+    this.context = {
+      sessionId: this.engine.sessionId,
+      driverSessionId: driver.driverSessionId || undefined,
+      createdAt: Date.now(),
+    };
+
     this.logger = createLogger(`core/agent/AgentServiceImpl/${agent.id}`);
 
     this.logger.debug("AgentService created", {
       agentId: agent.id,
-      sessionId: this.sessionId,
+      sessionId: this.context.sessionId,
+      driverSessionId: this.context.driverSessionId,
       driverType: driver.constructor.name,
     });
   }

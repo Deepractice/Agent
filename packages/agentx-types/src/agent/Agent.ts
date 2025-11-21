@@ -1,12 +1,20 @@
 /**
  * Agent
  *
- * Complete data structure of an AI agent.
- * Pure data, can be serialized and persisted.
+ * Static definition of an AI agent.
+ * Pure data structure describing agent identity and capabilities.
+ *
+ * This represents "WHO am I?" - the agent's identity and metadata.
+ * For runtime state ("WHAT am I doing?"), see AgentContext.
+ *
+ * Think of it as:
+ * - Agent: "I am Claude, a writing assistant created on 2025-01-01"
+ * - AgentContext: "I'm currently in session-456 talking to user-123"
  */
 export interface Agent {
   /**
    * Agent unique identifier
+   * Identifies the agent type/definition
    */
   id: string;
 
@@ -22,7 +30,7 @@ export interface Agent {
   description?: string;
 
   /**
-   * When this agent was created
+   * When this agent definition was created
    */
   createdAt: number;
 
@@ -40,7 +48,7 @@ export interface Agent {
 
   /**
    * Optional metadata for application-layer extensions
-   * Examples: userId, teamId, custom properties, etc.
+   * Examples: teamId, ownerId, custom properties, etc.
    */
-  [key: string]: unknown;
+  metadata?: Record<string, unknown>;
 }

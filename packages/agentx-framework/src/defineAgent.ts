@@ -38,7 +38,8 @@
  * ```
  */
 
-import { createAgent, type AgentService, type AgentDriver } from "@deepractice-ai/agentx-core";
+import { AgentServiceImpl, type AgentService, type AgentDriver, type EngineConfig } from "@deepractice-ai/agentx-core";
+import type { Agent } from "@deepractice-ai/agentx-types";
 import type { DefinedDriver } from "./defineDriver";
 import type { DefinedReactor } from "./defineReactor";
 import type { DefinedConfig, ConfigSchema, InferConfig } from "./defineConfig";
@@ -190,15 +191,21 @@ export function defineAgent<TConfig extends ConfigSchema = any>(
         throw new Error(`[defineAgent] Invalid driver type for agent "${definition.name}"`);
       }
 
-      // 3. Create reactors (optional)
+      // 3. Create Agent data structure
+      const agentData: Agent = {
+        id: definition.name,
+        name: definition.name,
+        createdAt: Date.now(),
+      };
+
+      // 4. Create reactors (optional)
       const reactors = definition.reactors?.map((reactor) => reactor.create(config));
 
-      // 4. Create agent using core API
-      return createAgent(
-        definition.name, // id
-        driver,          // driver
-        reactors ? { reactors } : undefined // options
-      );
+      // 5. Build engine config
+      const engineConfig: EngineConfig | undefined = reactors ? { reactors } : undefined;
+
+      // 6. Create and return AgentService instance
+      return new AgentServiceImpl(agentData, driver, engineConfig);
     },
 
     getDefinition: () => definition,

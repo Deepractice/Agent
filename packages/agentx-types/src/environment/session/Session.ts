@@ -31,9 +31,9 @@ import type { Message } from "~/agent/message/Message";
  * ## Usage Patterns
  *
  * ```typescript
- * // User selects an agent and starts conversation
+ * // Peer (user/system/agent) starts conversation with an agent
  * const session = createSession({
- *   userId: "user-123",
+ *   peerId: "user-123",  // or "agent-456", "system-789", etc.
  *   agentId: "writing-assistant",
  *   title: "My writing project"
  * });
@@ -69,18 +69,25 @@ export interface Session {
   agentId: string;
 
   /**
-   * Which user owns this session (optional)
+   * Who is the peer (counterpart) in this conversation (optional)
+   *
+   * From Agent's perspective, the peer can be:
+   * - A user (human)
+   * - Another agent (agent-to-agent conversation)
+   * - A system/service (API, automation)
+   * - Background task (no peer)
    *
    * Optional because:
-   * - Some sessions are agent-initiated (no user involved)
+   * - Some sessions are agent-initiated (no peer involved)
    * - Background tasks or automated workflows
-   * - Agent-to-agent conversations
+   * - Internal agent operations
    *
    * When present:
-   * - Essential for multi-user scenarios and permission control
-   * - Used for session filtering and user-specific history
+   * - Essential for multi-peer scenarios and permission control
+   * - Used for session filtering and peer-specific history
+   * - Enables peer-to-agent relationship tracking
    */
-  userId?: string;
+  peerId?: string;
 
   /** All messages in this session (conversation history) */
   messages: Message[];

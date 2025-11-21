@@ -11,22 +11,6 @@
 // Re-export from @deepractice-ai/agentx-core
 
 /**
- * Low-level agent creation (directly from driver)
- *
- * Most users should use the high-level createAgent() from ./createAgent instead.
- *
- * @example
- * ```typescript
- * import { createAgent as createAgentFromDriver } from "@deepractice-ai/agentx-core";
- * import { ClaudeDriver } from "@deepractice-ai/agentx-node";
- *
- * const agent = createAgentFromDriver(new ClaudeDriver(config));
- * await agent.initialize();
- * ```
- */
-export { createAgent as createAgentFromDriver } from "@deepractice-ai/agentx-core";
-
-/**
  * High-level agent creation (from DefinedAgent)
  *
  * @example

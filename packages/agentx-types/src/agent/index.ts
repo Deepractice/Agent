@@ -2,7 +2,7 @@
  * Agent Domain Types
  *
  * All types related to AI agent's internal world:
- * - Agent data structure
+ * - Agent data structure (static definition)
  * - Messages (how agent communicates)
  * - MCP tools (agent capabilities)
  * - LLM configuration (agent's brain)

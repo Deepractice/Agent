@@ -17,6 +17,9 @@
 // Agent runtime interface
 export type { AgentService } from "./AgentService";
 
+// Agent runtime context
+export type { AgentContext } from "./AgentContext";
+
 // Driver interface (SPI)
 export type { AgentDriver } from "./AgentDriver";
 
@@ -30,3 +33,8 @@ export type { StreamReactor } from "./StreamReactor";
 export type { StateReactor } from "./StateReactor";
 export type { MessageReactor } from "./MessageReactor";
 export type { TurnReactor } from "./TurnReactor";
+
+// ==================== Environment Interfaces ====================
+
+// Session management
+export type { SessionService, SessionQueryOptions } from "./SessionService";
