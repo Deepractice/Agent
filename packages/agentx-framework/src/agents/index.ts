@@ -5,5 +5,3 @@
  */
 
 export { ClaudeAgent } from "./ClaudeAgent";
-export { WebSocketServerAgent } from "./WebSocketServerAgent";
-export { WebSocketBrowserAgent } from "./WebSocketBrowserAgent";

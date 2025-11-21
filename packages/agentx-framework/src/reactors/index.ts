@@ -3,7 +3,6 @@
  *
  * - Interfaces: Pure interface definitions (re-exported from @deepractice-ai/agentx-core)
  * - Adapters: Internal adapter implementations
- * - Implementations: Concrete reactor implementations (WebSocketReactor, etc.)
  */
 
 // Re-export interfaces and adapters from agentx-core
@@ -21,6 +20,3 @@ export {
   wrapUserReactor,
   type UserReactor,
 } from "@deepractice-ai/agentx-core";
-
-// Export reactor implementations
-export { WebSocketReactor, type WebSocketLike, type WebSocketReactorConfig } from "./WebSocketReactor";

@@ -12,7 +12,7 @@
  * ```
  */
 
-import { defineReactor } from "../defineReactor";
+import { defineReactor } from "@deepractice-ai/agentx-framework";
 
 /**
  * WebSocket-like interface for platform independence

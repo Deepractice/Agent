@@ -11,9 +11,8 @@
 import http from "http";
 import { WebSocketServer as WsServer, WebSocket } from "ws";
 import type { AgentService } from "@deepractice-ai/agentx-core";
-import { WebSocketReactor } from "../reactors/WebSocketReactor";
-import { defineAgent } from "../defineAgent";
-import type { DefinedAgent } from "../defineAgent";
+import { WebSocketReactor } from "./WebSocketReactor.js";
+import { defineAgent, type DefinedAgent } from "@deepractice-ai/agentx-framework";
 
 /**
  * WebSocket Server configuration

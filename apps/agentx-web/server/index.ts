@@ -6,12 +6,13 @@
  * - Static file serving (production only)
  */
 
-import { createWebSocketServer, ClaudeAgent } from "@deepractice-ai/agentx-framework";
+import { ClaudeAgent } from "@deepractice-ai/agentx-framework";
 import { dirname, join, extname } from "path";
 import { fileURLToPath } from "url";
 import { readFile, stat } from "fs/promises";
 import type { IncomingMessage, ServerResponse } from "http";
 import { mcpServers } from "./mcp.js";
+import { createWebSocketServer } from "./WebSocketServer.js";
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
