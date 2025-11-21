@@ -66,13 +66,29 @@ function sendEvent(session: Session, event: any): void {
 export const SSEReactor = defineReactor<SSEReactorConfig>({
   name: "SSE",
 
+  onInit: (context, config) => {
+    console.log("[SSEReactor] Initialized", {
+      sessionActive: config.session.isConnected,
+      agentId: context.agentId,
+    });
+  },
+
   // ==================== Stream Layer (底层事件) ====================
   // Only forward Stream Layer - other layers will be auto-assembled by browser-side Agent
-  onMessageStart: (e, cfg) => sendEvent(cfg.session, e),
+  onMessageStart: (e, cfg) => {
+    console.log("[SSEReactor] onMessageStart called");
+    sendEvent(cfg.session, e);
+  },
   onMessageDelta: (e, cfg) => sendEvent(cfg.session, e),
   onMessageStop: (e, cfg) => sendEvent(cfg.session, e),
-  onTextContentBlockStart: (e, cfg) => sendEvent(cfg.session, e),
-  onTextDelta: (e, cfg) => sendEvent(cfg.session, e),
+  onTextContentBlockStart: (e, cfg) => {
+    console.log("[SSEReactor] onTextContentBlockStart called");
+    sendEvent(cfg.session, e);
+  },
+  onTextDelta: (e, cfg) => {
+    console.log("[SSEReactor] onTextDelta called");
+    sendEvent(cfg.session, e);
+  },
   onTextContentBlockStop: (e, cfg) => sendEvent(cfg.session, e),
   onToolUseContentBlockStart: (e, cfg) => sendEvent(cfg.session, e),
   onInputJsonDelta: (e, cfg) => sendEvent(cfg.session, e),

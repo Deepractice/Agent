@@ -170,15 +170,10 @@ async function startServer() {
   };
 
   // Create agent server with static file fallback
-  const server = createAgentServer({
+  const server = createAgentServer(ClaudeAgent, {
     port: PORT,
     host: HOST,
-    createAgent: (sessionId) => {
-      return ClaudeAgent.create({
-        ...agentConfig,
-        sessionId,
-      });
-    },
+    config: agentConfig,
     fallbackHandler: !isDev ? serveStaticFile : undefined,
   });
 

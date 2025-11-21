@@ -81,21 +81,12 @@ importers:
 
   apps/agentx-web:
     dependencies:
-      '@deepractice-ai/agentx-core':
-        specifier: workspace:*
-        version: link:../../packages/agentx-core
       '@deepractice-ai/agentx-framework':
         specifier: workspace:*
         version: link:../../packages/agentx-framework
-      '@deepractice-ai/agentx-sdk-browser':
-        specifier: workspace:*
-        version: link:../../packages/agentx-sdk-browser
       '@deepractice-ai/agentx-sdk-claude':
         specifier: workspace:*
         version: link:../../packages/agentx-sdk-claude
-      '@deepractice-ai/agentx-sdk-server':
-        specifier: workspace:*
-        version: link:../../packages/agentx-sdk-server
       '@deepractice-ai/agentx-ui':
         specifier: workspace:*
         version: link:../../packages/agentx-ui
@@ -251,34 +242,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/agentx-sdk-browser:
-    dependencies:
-      '@deepractice-ai/agentx-core':
-        specifier: workspace:*
-        version: link:../agentx-core
-      '@deepractice-ai/agentx-event':
-        specifier: workspace:*
-        version: link:../agentx-event
-      '@deepractice-ai/agentx-framework':
-        specifier: workspace:*
-        version: link:../agentx-framework
-      '@deepractice-ai/agentx-logger':
-        specifier: workspace:*
-        version: link:../agentx-logger
-      '@deepractice-ai/agentx-types':
-        specifier: workspace:*
-        version: link:../agentx-types
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.2
-        version: 22.19.1
-      tsup:
-        specifier: ^8.3.5
-        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
-
   packages/agentx-sdk-claude:
     dependencies:
       '@anthropic-ai/claude-agent-sdk':
@@ -302,37 +265,6 @@ importers:
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.2
-        version: 22.19.1
-      tsup:
-        specifier: ^8.3.5
-        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
-
-  packages/agentx-sdk-server:
-    dependencies:
-      '@deepractice-ai/agentx-core':
-        specifier: workspace:*
-        version: link:../agentx-core
-      '@deepractice-ai/agentx-event':
-        specifier: workspace:*
-        version: link:../agentx-event
-      '@deepractice-ai/agentx-framework':
-        specifier: workspace:*
-        version: link:../agentx-framework
-      '@deepractice-ai/agentx-logger':
-        specifier: workspace:*
-        version: link:../agentx-logger
-      '@deepractice-ai/agentx-types':
-        specifier: workspace:*
-        version: link:../agentx-types
-      better-sse:
-        specifier: ^0.13.0
-        version: 0.13.0
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
@@ -395,6 +327,9 @@ importers:
         specifier: ^5.0.2
         version: 5.0.8(@types/react@18.3.26)(react@18.3.1)
     devDependencies:
+      '@deepractice-ai/agentx-sdk-claude':
+        specifier: workspace:*
+        version: link:../agentx-sdk-claude
       '@storybook/addon-a11y':
         specifier: ^8.4.7
         version: 8.6.14(storybook@8.6.14(prettier@3.6.2))
@@ -2090,10 +2025,6 @@ packages:
   better-path-resolve@1.0.0:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
-
-  better-sse@0.13.0:
-    resolution: {integrity: sha512-lKkxrKUrkzsn8xh4ROmbb+CLAlPmxRtgQXKEvblArSVbhOnV9mUY1Qa6qnp6VJSD5xXHsPCQdMJOae9gKpRWEg==}
-    engines: {node: '>=12', pnpm: '>=9'}
 
   better-sse@0.15.1:
     resolution: {integrity: sha512-E8YmmIs7P2T5nHM8VG5Pmtp8CgDsIhT+6CYhg+8Gmke5kJb11ohN1jtEXn/2taSr7WkcU3yNTgoqNYvZ/GQ4sw==}
@@ -6316,8 +6247,6 @@ snapshots:
   better-path-resolve@1.0.0:
     dependencies:
       is-windows: 1.0.2
-
-  better-sse@0.13.0: {}
 
   better-sse@0.15.1: {}
 

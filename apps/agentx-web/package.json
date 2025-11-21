@@ -14,11 +14,8 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@deepractice-ai/agentx-core": "workspace:*",
     "@deepractice-ai/agentx-framework": "workspace:*",
-    "@deepractice-ai/agentx-sdk-browser": "workspace:*",
     "@deepractice-ai/agentx-sdk-claude": "workspace:*",
-    "@deepractice-ai/agentx-sdk-server": "workspace:*",
     "@deepractice-ai/agentx-ui": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

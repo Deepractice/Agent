@@ -1,9 +1,9 @@
 import { useRef, useEffect } from "react";
 import type { Message } from "@deepractice-ai/agentx-types";
-import { UserMessage } from "./UserMessage";
-import { AssistantMessage } from "./AssistantMessage";
-import { ToolUseMessage } from "./ToolUseMessage";
-import { SystemMessage } from "./SystemMessage";
+import { UserMessage } from "./messages/UserMessage";
+import { AssistantMessage } from "./messages/AssistantMessage";
+import { ToolUseMessage } from "./messages/ToolUseMessage";
+import { SystemMessage } from "./messages/SystemMessage";
 
 export interface ChatMessageListProps {
   /**

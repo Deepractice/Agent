@@ -28,7 +28,6 @@ export {
   type AgentServerConfig,
   type AgentFactory,
   type RequestHandler,
-  createAgentFactory,
 } from "./server/AgentServer";
 
 /**

@@ -6,17 +6,17 @@
  */
 
 import {
-  createWebSocketServer,
-  ClaudeAgent,
   configure,
   LogLevel,
   type LoggerProvider,
   type LogContext,
 } from "@deepractice-ai/agentx-framework";
+import { createAgentServer } from "@deepractice-ai/agentx-framework/server";
+import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
 import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { appendFileSync, writeFileSync, existsSync } from "fs";
+import { appendFileSync, writeFileSync } from "fs";
 import http from "http";
 import { WebSocketServer } from "ws";
 
@@ -222,27 +222,22 @@ async function startDevServer() {
   // Start log collector server (port 5201)
   const logCollector = createLogCollectorServer(5201, frontendLogPath);
 
-  // Create WebSocket Server with automatic session management
-  const server = createWebSocketServer({
-    // Agent definition - ClaudeAgent will be instantiated for each connection
-    agentDefinition: ClaudeAgent,
-
-    // Agent config factory - called for each new connection
-    createAgentConfig: () => ({
+  // Create SSE Server with automatic session management
+  const server = createAgentServer(ClaudeAgent, {
+    port: 5200,
+    host: "0.0.0.0",
+    config: {
       apiKey,
       baseUrl,
       model: "claude-sonnet-4-20250514",
       systemPrompt: "You are a helpful AI assistant for UI development testing.",
-    }),
-
-    // Server configuration
-    port: 5200,
-    host: "0.0.0.0",
-    path: "/ws",
+    },
   });
 
-  console.log("✅ WebSocket Server Started");
-  console.log(`   URL: ${server.getUrl()}\n`);
+  await server.start();
+
+  console.log("✅ SSE Server Started");
+  console.log(`   URL: http://0.0.0.0:5200\n`);
   console.log("💡 Ready for UI development!");
   console.log("   Run 'pnpm storybook' in another terminal\n");
   console.log("📦 Framework: AgentX Framework v2");
@@ -253,7 +248,7 @@ async function startDevServer() {
   // Graceful shutdown
   process.on("SIGINT", async () => {
     console.log("\n\n🛑 Shutting down...");
-    await server.close();
+    await server.stop();
     logCollector.close();
     console.log("✅ Server stopped");
     process.exit(0);

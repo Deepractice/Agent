@@ -56,10 +56,15 @@ function buildPrompt(message: UserMessage): string {
 /**
  * Helper: Receive and parse SSE stream
  */
-async function* receiveSSEStream(sseUrl: string): AsyncIterable<StreamEventType> {
+async function* receiveSSEStream(
+  sseUrl: string,
+  serverUrl: string
+): AsyncIterable<StreamEventType> {
   return new Promise<AsyncIterable<StreamEventType>>((resolve, reject) => {
     const events: StreamEventType[] = [];
-    const eventSource = new EventSource(sseUrl);
+    // Normalize SSE URL: if relative, prepend serverUrl
+    const fullSseUrl = sseUrl.startsWith("http") ? sseUrl : `${serverUrl}${sseUrl}`;
+    const eventSource = new EventSource(fullSseUrl);
 
     eventSource.onmessage = (event) => {
       try {
@@ -143,8 +148,8 @@ export const SSEDriver = defineDriver<SSEDriverConfig>({
 
       console.log("[SSEDriver] SSE URL:", sseUrl);
 
-      // Connect to SSE stream
-      yield* receiveSSEStream(sseUrl);
+      // Connect to SSE stream (pass serverUrl to build full URL)
+      yield* receiveSSEStream(sseUrl, serverUrl);
     }
   },
 

@@ -11,10 +11,15 @@ import { createSession } from "better-sse";
 import type { AgentServer, AgentServerConfig } from "~/server/AgentServer";
 import type { AgentService } from "@deepractice-ai/agentx-core";
 import { SSEReactor } from "~/server/SSEReactor";
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("SSEServer");
 
 interface SessionData {
   agent: AgentService;
   reactor?: ReturnType<typeof SSEReactor.create>;
+  unsubscribe?: () => void;
+  pendingMessages: string[];
 }
 
 /**
@@ -52,7 +57,7 @@ export class SSEServer implements AgentServer {
 
     this.server = http.createServer((req, res) => {
       this.handleRequest(req, res).catch((error) => {
-        console.error("[SSEServer] Request handler error:", error);
+        logger.error("Request handler error", { error });
         res.writeHead(500, { "Content-Type": "text/plain" });
         res.end("Internal Server Error");
       });
@@ -60,7 +65,7 @@ export class SSEServer implements AgentServer {
 
     return new Promise((resolve) => {
       this.server!.listen(port, host, () => {
-        console.log(`✅ SSEServer listening on http://${host}:${port}`);
+        logger.info(`SSEServer listening on http://${host}:${port}`);
         resolve();
       });
     });
@@ -69,7 +74,7 @@ export class SSEServer implements AgentServer {
   async stop(): Promise<void> {
     // Destroy all agent sessions
     for (const [sessionId, session] of this.sessions.entries()) {
-      console.log(`[SSEServer] Destroying session: ${sessionId}`);
+      logger.info(`Destroying session: ${sessionId}`);
       await session.agent.destroy();
     }
     this.sessions.clear();
@@ -84,6 +89,18 @@ export class SSEServer implements AgentServer {
 
   async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = req.url || "/";
+
+    // Handle CORS preflight
+    if (req.method === "OPTIONS") {
+      res.writeHead(204, {
+        "Access-Control-Allow-Origin": "*",
+        "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+        "Access-Control-Allow-Headers": "Content-Type",
+        "Access-Control-Max-Age": "86400",
+      });
+      res.end();
+      return;
+    }
 
     // POST /api/message - Send message to agent
     if (req.method === "POST" && url === "/api/message") {
@@ -111,35 +128,50 @@ export class SSEServer implements AgentServer {
       const { sessionId, message } = await parseJSONBody(req);
 
       if (!sessionId || !message) {
-        res.writeHead(400, { "Content-Type": "application/json" });
+        res.writeHead(400, {
+          "Content-Type": "application/json",
+          "Access-Control-Allow-Origin": "*",
+        });
         res.end(JSON.stringify({ error: "Missing sessionId or message" }));
         return;
       }
 
-      console.log(`[SSEServer] POST /api/message - Session: ${sessionId}`);
+      logger.info(`POST /api/message - Session: ${sessionId}`);
 
       // Get or create agent for this session
       let session = this.sessions.get(sessionId);
       if (!session) {
         const agent = await this.config.createAgent(sessionId);
         await agent.initialize();
-        session = { agent };
+        session = { agent, pendingMessages: [] };
         this.sessions.set(sessionId, session);
-        console.log(`[SSEServer] Created new agent for session: ${sessionId}`);
+        logger.info(`Created new agent for session: ${sessionId}`);
       }
 
-      // Send message to agent (async, don't wait)
-      session.agent.send(message).catch((error) => {
-        console.error(`[SSEServer] Agent error in session ${sessionId}:`, error);
-      });
+      // Queue message if SSE not connected yet, otherwise send immediately
+      if (!session.reactor) {
+        logger.info(`Queueing message for session ${sessionId} (SSE not connected yet)`);
+        session.pendingMessages.push(message);
+      } else {
+        logger.info(`Sending message immediately for session ${sessionId}`);
+        session.agent.send(message).catch((error) => {
+          logger.error(`Agent error in session ${sessionId}`, { error });
+        });
+      }
 
       // Return SSE URL
       const sseUrl = `/api/sse/${sessionId}`;
-      res.writeHead(200, { "Content-Type": "application/json" });
+      res.writeHead(200, {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      });
       res.end(JSON.stringify({ sseUrl }));
     } catch (error) {
-      console.error("[SSEServer] POST /api/message error:", error);
-      res.writeHead(500, { "Content-Type": "application/json" });
+      logger.error("POST /api/message error", { error });
+      res.writeHead(500, {
+        "Content-Type": "application/json",
+        "Access-Control-Allow-Origin": "*",
+      });
       res.end(JSON.stringify({ error: "Internal server error" }));
     }
   }
@@ -157,23 +189,48 @@ export class SSEServer implements AgentServer {
         return;
       }
 
-      console.log(`[SSEServer] GET /api/sse/${sessionId} - Opening SSE connection`);
+      logger.info(`GET /api/sse/${sessionId} - Opening SSE connection`);
 
-      // Create SSE session
-      const sseSession = await createSession(req, res);
+      // Create SSE session with CORS headers
+      const sseSession = await createSession(req, res, {
+        headers: {
+          "Access-Control-Allow-Origin": "*",
+          "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
+          "Access-Control-Allow-Headers": "Content-Type",
+        },
+      });
 
-      // Attach SSEReactor to agent
+      // Attach SSEReactor to agent using react()
       const reactor = SSEReactor.create({ session: sseSession as any });
-      (session.agent as any).addReactor(reactor);
+      logger.info(`Registering SSEReactor for session: ${sessionId}`);
+      const unsubscribe = session.agent.react(reactor);
+      logger.debug(`SSEReactor registered`, {
+        sessionId,
+        unsubscribeType: typeof unsubscribe,
+      });
       session.reactor = reactor;
+      session.unsubscribe = unsubscribe;
+
+      // Send any pending messages now that SSE is connected
+      if (session.pendingMessages.length > 0) {
+        logger.info(`Processing ${session.pendingMessages.length} pending messages`);
+        for (const pendingMessage of session.pendingMessages) {
+          session.agent.send(pendingMessage).catch((error) => {
+            logger.error(`Agent error processing pending message`, { error });
+          });
+        }
+        session.pendingMessages = [];
+      }
 
       // Handle SSE disconnect
       sseSession.on("disconnected", () => {
-        console.log(`[SSEServer] SSE disconnected: ${sessionId}`);
-        (session.agent as any).removeReactor(reactor);
+        logger.info(`SSE disconnected: ${sessionId}`);
+        unsubscribe();
+        session.reactor = undefined;
+        session.unsubscribe = undefined;
       });
     } catch (error) {
-      console.error(`[SSEServer] GET /api/sse/${sessionId} error:`, error);
+      logger.error(`GET /api/sse/${sessionId} error`, { error });
       res.writeHead(500, { "Content-Type": "application/json" });
       res.end(JSON.stringify({ error: "Internal server error" }));
     }

@@ -2,726 +2,392 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Language
-
-Always response user in Chinese。
-
-Always do work in English。
-
 ## Project Overview
 
-**Deepractice Agent** is a visual AI agent interface providing Claude capabilities through a web UI. It's a modular, full-stack application built as a monorepo with separate packages for different platforms.
+**Deepractice Agent (AgentX)** - Visual AI Agent interface without CLI. A full-stack TypeScript monorepo providing a browser-based interface for AI agents powered by Claude.
 
-**Key Characteristics**:
+**Key Value Proposition**: Traditional AI agent tools require command-line expertise. AgentX provides full AI agent capabilities through a web interface, making AI agents accessible to everyone.
 
-- Monorepo using pnpm workspaces + Turbo
-- Modular architecture with `agentx-*` packages
-- Platform-agnostic core with Node.js and Browser providers
-- Event-driven architecture with standardized error handling
-- Single-port deployment (5200) with embedded frontend
+## Repository Structure
 
-## ⚠️ CRITICAL: Contract-First Development
-
-**BEFORE any development iteration, you MUST understand these contracts:**
-
-### 1. `agentx-api` - THE Source of Truth for Events & Interfaces
-
-```typescript
-// ALL event types MUST be defined here
-export const ALL_EVENT_TYPES = [
-  "user",
-  "assistant",
-  "stream_event",
-  "result",
-  "system",
-  "error",
-] as const;
-
-// ALL error structures MUST follow this schema
-export interface ErrorEvent extends BaseAgentEvent {
-  type: "error";
-  subtype: "system" | "agent" | "llm" | "validation" | "unknown";
-  severity: "fatal" | "error" | "warning";
-  message: string;
-  code?: string;
-  details?: unknown;
-  recoverable?: boolean;
-  // ... base fields (uuid, sessionId, timestamp)
-}
-```
-
-### 2. `agentx-types` - THE Source of Truth for Messages & Content
-
-```typescript
-// ALL message types MUST follow this
-export type Message = UserMessage | AssistantMessage | SystemMessage;
-
-// ALL content parts MUST follow this
-export type ContentPart = TextPart | ImagePart | FilePart;
-```
-
-### Golden Rules
-
-1. ✅ **READ CONTRACTS FIRST** - Always check `agentx-api` and `agentx-types` before implementing
-2. ✅ **NEVER bypass contracts** - Don't create ad-hoc event/message formats
-3. ✅ **UPDATE contracts FIRST** - If you need new event types, update `agentx-api` first
-4. ✅ **ALL layers must comply** - Core, Providers, UI must all follow the same contracts
-5. ✅ **TypeScript is your guardian** - If types don't match, you're breaking the contract
-
-### Example: Adding New Feature
-
-❌ **WRONG** - Implement first, define types later:
-
-```typescript
-// In BrowserProvider.ts
-ws.send(
-  JSON.stringify({
-    type: "my_new_event", // ← Not in contract!
-    myData: "...",
-  })
-);
-```
-
-✅ **CORRECT** - Contract first, implementation second:
-
-```typescript
-// 1. FIRST: Update agentx-api/src/events/MyNewEvent.ts
-export interface MyNewEvent extends BaseAgentEvent {
-  type: "my_new_event";
-  data: string;
-}
-
-// 2. Add to AgentEvent union
-export type AgentEvent = ... | MyNewEvent;
-
-// 3. Add to ALL_EVENT_TYPES
-export const ALL_EVENT_TYPES = [..., "my_new_event"] as const satisfies readonly EventType[];
-
-// 4. THEN: Implement in providers/UI
-ws.send(JSON.stringify(event));  // ← Now type-safe!
-```
-
-### What Happens When You Break Contracts?
-
-- 🔴 **Runtime errors**: `Cannot read property 'toUpperCase' of undefined`
-- 🔴 **Silent failures**: Events not forwarded, errors not displayed
-- 🔴 **Type mismatches**: TypeScript errors across packages
-- 🔴 **Integration bugs**: Frontend and backend out of sync
-
-**Remember**: `agentx-api` and `agentx-types` are your **API contracts**. Treat them like database schemas - change them deliberately and propagate changes everywhere.
-
-## Architecture Overview
-
-### Package Structure
+This is a **pnpm monorepo** with Turborepo build orchestration:
 
 ```
-Agent/
+/Agent
 ├── apps/
-│   └── agent/                  # Full-stack application (deprecated, being refactored)
+│   ├── agentx-web/       # Full-stack web application (Vite + React + Node.js server)
+│   └── agentx-cli/       # CLI tool (@deepractice-ai/agent npm package)
 └── packages/
-    ├── agentx-api/             # Event types, interfaces, errors (pure types)
-    ├── agentx-types/           # Message types, content types (pure types)
-    ├── agentx-core/            # Platform-agnostic core (Agent, EventBus, Logger)
-    ├── agentx-node/            # Node.js provider (Claude SDK adapter, WebSocket server)
-    ├── agentx-browser/         # Browser provider (WebSocket client)
-    └── agentx-ui/              # React UI components (Storybook)
+    ├── agentx-core/      # Core engine (platform-agnostic)
+    ├── agentx-framework/ # Framework API (defineAgent, defineDriver, defineReactor)
+    ├── agentx-sdk-claude/# Claude SDK integration
+    ├── agentx-event/     # Event type definitions
+    ├── agentx-types/     # Message & type definitions
+    ├── agentx-logger/    # SLF4J-style logging facade
+    └── agentx-ui/        # React UI components (Storybook)
 ```
 
-### Dependency Graph
-
-```
-agentx-ui ──────→ agentx-browser ──→ agentx-core ──→ agentx-api
-                                              ↘
-                                                agentx-types
-                                              ↗
-agentx-node ──────────────────────→ agentx-core ──→ agentx-api
-```
-
-**Principles**:
-
-- **Bottom-up**: Pure types → Core logic → Platform providers → UI
-- **No circular dependencies**: Strict layering enforced by TypeScript
-- **Single source of truth**: Event types defined once in `agentx-api`
-
-### Package Responsibilities
-
-#### `agentx-api` - API Contracts
-
-**Purpose**: Public API types and interfaces (no implementation)
-
-```typescript
-// Event types with single source of truth
-export const ALL_EVENT_TYPES = [
-  "user",
-  "assistant",
-  "stream_event",
-  "result",
-  "system",
-  "error",
-] as const;
-export type EventType = AgentEvent["type"];
-
-// Error categorization
-export type ErrorSubtype = "system" | "agent" | "llm" | "validation" | "unknown";
-export type ErrorSeverity = "fatal" | "error" | "warning";
-```
-
-**Key exports**:
-
-- Event types: `AgentEvent`, `ErrorEvent`, `UserMessageEvent`, etc.
-- Interfaces: `Agent`, `AgentConfig`
-- Errors: `AgentConfigError`, `AgentAbortError`
-- Constants: `ALL_EVENT_TYPES`
-
-#### `agentx-types` - Domain Types
-
-**Purpose**: Message and content types (pure data structures)
-
-```typescript
-// Message types
-export type Message = UserMessage | AssistantMessage | SystemMessage;
-
-// Content types
-export type ContentPart = TextPart | ImagePart | FilePart;
-```
-
-#### `agentx-core` - Platform-Agnostic Core
-
-**Purpose**: Core agent logic that works on any platform
-
-**Key classes**:
-
-- `Agent` - Main agent implementation
-- `AgentEventBus` - Event communication (RxJS-based)
-- `LoggerProvider` - Logging abstraction
-
-**Architecture**:
-
-```typescript
-class Agent {
-  constructor(config, provider: AgentProvider, logger?: LoggerProvider);
-  async send(message: string): Promise<void>;
-  on<T>(event: EventType, handler): () => void;
-  clear(): void;
-  destroy(): void;
-}
-```
-
-**Error handling**:
-
-```typescript
-// Centralized error handling in Agent
-private emitErrorEvent(
-  error: Error | string,
-  subtype: ErrorSubtype,
-  severity: ErrorSeverity,
-  code?: string,
-  recoverable?: boolean
-): void
-```
-
-#### `agentx-node` - Node.js Provider
-
-**Purpose**: Node.js-specific implementation
-
-**Key classes**:
-
-- `ClaudeAgentProvider` - Adapts `@anthropic-ai/claude-agent-sdk` to AgentProvider
-- `WebSocketServer` - Real-time communication for browser clients
-- `WebSocketBridge` - Forwards all Agent events to WebSocket clients
-
-**WebSocketBridge Pattern**:
-
-```typescript
-// Automatically subscribes to ALL event types
-ALL_EVENT_TYPES.forEach((eventType) => {
-  agent.on(eventType, (payload) => {
-    ws.send(JSON.stringify(payload));
-  });
-});
-```
-
-**Error format compliance**:
-
-```typescript
-// All errors sent to clients MUST follow ErrorEvent schema
-const errorEvent: ErrorEvent = {
-  type: "error",
-  subtype: "system",
-  severity: "error",
-  message: "Error description",
-  code: "ERROR_CODE",
-  recoverable: true,
-  uuid: generateId(),
-  sessionId: session.id,
-  timestamp: Date.now(),
-};
-```
-
-#### `agentx-browser` - Browser Provider
-
-**Purpose**: Browser-side WebSocket client
-
-**Key classes**:
-
-- `BrowserProvider` - Implements AgentProvider via WebSocket
-- Handles reconnection, error events, message forwarding
-
-**Pattern**:
-
-```typescript
-// Browser has its own Agent instance
-const agent = createAgent({
-  wsUrl: "ws://localhost:5200/ws",
-  sessionId: "my-session",
-});
-
-// BrowserProvider bridges to server-side Agent via WebSocket
-```
-
-#### `agentx-ui` - React Components
-
-**Purpose**: Reusable React components (Storybook-driven)
-
-**Key components**:
-
-- `<Chat>` - Complete chat interface
-- `<ErrorMessage>` - Error display component
-- `<ChatMessageList>` - Message rendering
-- `<ChatInput>` - User input
-
-**Error handling pattern**:
-
-```typescript
-// Chat.tsx listens to error events
-agent.on("error", (event) => {
-  setErrors((prev) => [...prev, event]);
-});
-
-// Displays ErrorMessage components
-{errors.map((error) => (
-  <ErrorMessage key={error.uuid} error={error} showDetails={true} />
-))}
-```
-
-## Event System Architecture
-
-### Event Types (Single Source of Truth)
-
-```typescript
-// agentx-api/src/events/AgentEvent.ts
-export const ALL_EVENT_TYPES = [
-  "user", // User message
-  "assistant", // Assistant response (complete)
-  "stream_event", // Streaming delta (incremental)
-  "result", // Success result with stats
-  "system", // System initialization
-  "error", // Error event
-] as const satisfies readonly EventType[];
-```
-
-**Benefits**:
-
-- TypeScript enforces completeness at compile time
-- Runtime iteration for event subscriptions
-- Cannot miss event types (will get type error)
-
-**Usage**:
-
-```typescript
-// WebSocketBridge uses it to subscribe to all events
-import { ALL_EVENT_TYPES } from "@deepractice-ai/agentx-api";
-
-ALL_EVENT_TYPES.forEach((eventType) => {
-  agent.on(eventType, forwardToWebSocket);
-});
-```
-
-### Error Event Architecture
-
-**Error flow**:
-
-```
-Error occurs → emitErrorEvent() → ErrorEvent → EventBus → ErrorMessage UI
-```
-
-**ErrorEvent structure**:
-
-```typescript
-interface ErrorEvent {
-  type: "error";
-  subtype: "system" | "agent" | "llm" | "validation" | "unknown";
-  severity: "fatal" | "error" | "warning";
-  message: string;
-  code?: string;
-  details?: unknown;
-  recoverable?: boolean;
-  uuid: string;
-  sessionId: string;
-  timestamp: number;
-}
-```
-
-**Error categorization**:
-
-- `system` - WebSocket, network, infrastructure errors
-- `agent` - Agent logic, validation errors
-- `llm` - Claude SDK errors (rate limit, max turns, etc.)
-- `validation` - Input validation errors
-- `unknown` - Uncategorized errors
-
-**Centralized handling**:
-
-```typescript
-// Core layer: Agent.ts
-private emitErrorEvent(
-  error: Error | string,
-  subtype: ErrorSubtype,
-  severity: ErrorSeverity = "error",
-  code?: string,
-  recoverable?: boolean
-): void {
-  // Constructs ErrorEvent
-  // Logs error
-  // Emits to EventBus
-  // Warns if no error handler registered
-}
-```
-
-**Provider layer examples**:
-
-```typescript
-// ClaudeAgentProvider (Node.js)
-catch (error) {
-  this.emitErrorEvent(
-    error.message,
-    "llm",
-    "error",
-    "LLM_ERROR",
-    true
-  );
-}
-
-// BrowserProvider (Browser)
-ws.onerror = () => {
-  this.emitErrorEvent(
-    "WebSocket connection error",
-    "system",
-    "error",
-    "WS_ERROR",
-    true
-  );
-};
-```
-
-**UI layer**:
-
-```typescript
-// ErrorMessage component with defensive defaults
-const severity = error.severity || "error";
-const subtype = error.subtype || "unknown";
-const errorMessage = error.message || "Unknown error";
-```
-
-## Commands
+## Common Commands
 
 ### Development
 
 ```bash
-# Start full development environment
+# Install all dependencies
+pnpm install
+
+# Start development (web app with hot reload)
 pnpm dev
 
-# Start Storybook for UI development
-cd packages/agentx-ui && pnpm storybook
-
-# Start only server (port 5200)
-cd apps/agent && pnpm dev:server
+# Start specific package in dev mode
+pnpm dev --filter=@deepractice-ai/agentx-ui
 ```
 
-**Access**:
-
-- Frontend: http://localhost:5173 (development with HMR)
-- Storybook: http://localhost:6006 (UI components)
-- Server: http://localhost:5200 (API + WebSocket)
-
-### Build & Quality
+### Building
 
 ```bash
-# Build all packages in dependency order
+# Build all packages (respects dependency order)
 pnpm build
 
 # Build specific package
-pnpm --filter @deepractice-ai/agentx-core build
+pnpm build --filter=@deepractice-ai/agentx-core
+```
 
-# Lint all packages
-pnpm lint
+### Code Quality
 
-# Type check all packages
+```bash
+# Type checking across all packages
 pnpm typecheck
 
-# Run tests
-pnpm test
+# Lint all code
+pnpm lint
 
-# Clean all build outputs
-pnpm clean
+# Format code
+pnpm format
+
+# Check formatting (CI)
+pnpm format:check
 ```
 
 ### Testing
 
 ```bash
-# Run tests in watch mode
-pnpm --filter @deepractice-ai/agentx-node test:watch
+# Run tests across all packages
+pnpm test
+```
 
-# Run BDD tests for specific package
-pnpm --filter <package-name> test
+### Cleanup
+
+```bash
+# Clean all build artifacts and node_modules
+pnpm clean
+```
+
+## Architecture
+
+### Core Concepts
+
+**AgentX uses a 4-layer reactive event architecture:**
+
+1. **Stream Layer** - Real-time incremental events (text deltas, tool calls)
+2. **State Layer** - State machine transitions (thinking, responding, executing)
+3. **Message Layer** - Complete messages (user/assistant/tool messages)
+4. **Turn Layer** - Request-response analytics (cost, duration, tokens)
+
+### Key Design Patterns
+
+**Agent-as-Driver Pattern**: Since `AgentService extends AgentDriver`, agents can be composed as nested drivers, enabling unlimited agent chaining:
+
+```typescript
+// Agent A: Base Claude
+const agentA = ClaudeAgent.create({ apiKey: "xxx" });
+
+// Agent B: A + Translation (Agent as Driver!)
+const agentB = defineAgent({
+  driver: agentA,
+  reactors: [TranslationReactor],
+});
+
+// Agent C: B + WebSocket (Chain continues!)
+const agentC = defineAgent({
+  driver: agentB,
+  reactors: [WebSocketReactor],
+});
+```
+
+**Reactor Pattern**: Event processors with managed lifecycles. All reactors implement `AgentReactor` interface with `initialize()` and `destroy()` methods called by `AgentEngine`.
+
+**Define API**: Framework provides `defineDriver()`, `defineReactor()`, `defineConfig()`, and `defineAgent()` for composable agent creation.
+
+### Package Layering
+
+All packages follow strict directory structure:
+
+```
+packages/[package-name]/
+├── src/
+│   ├── api/           # Public API (user-facing interfaces)
+│   ├── types/         # Exported type definitions
+│   ├── core/          # Internal implementation (not exported)
+│   └── index.ts       # Exports api/ and types/, NOT core/
+```
+
+**Philosophy**: Clear API boundaries. `core/` is implementation detail that can be freely refactored without breaking user code.
+
+### Cross-platform Architecture
+
+```
+┌─────────────────────┐          ┌─────────────────────┐
+│   Server (Node.js)  │          │   Browser (Web)     │
+├─────────────────────┤          ├─────────────────────┤
+│ AgentServer         │          │ defineAgent({       │
+│ = ClaudeDriver      │  ←───→   │   driver: SSEDriver │
+│   + SSEReactor      │   SSE    │ })                  │
+│                     │          │                     │
+│ • Generates Events  │  ─────→  │ • Receives Events   │
+│ • Forwards via SSE  │  Events  │ • Renders to UI     │
+└─────────────────────┘          └─────────────────────┘
 ```
 
 ## Development Workflow
 
-### Making Changes
+### Working with Packages
 
-**🚨 STEP 0: CHECK THE CONTRACTS FIRST! 🚨**
+**Important**: This is a Turborepo monorepo. Dependencies between packages are resolved by Turbo's task pipeline.
 
-Before writing ANY code, always:
+1. **Always build dependencies first**: If you modify `agentx-core`, run `pnpm build --filter=@deepractice-ai/agentx-core` before working with packages that depend on it.
 
-1. Read `agentx-api` - Check event types, interfaces, error schemas
-2. Read `agentx-types` - Check message and content types
-3. Understand the contract - Know what you're implementing against
+2. **Use workspace references**: Packages use `"workspace:*"` protocol. Never use file paths.
 
-**THEN proceed:**
+3. **Path aliases**:
+   - `~` - Internal package imports (e.g., `~/api`, `~/core`)
+   - `@deepractice-ai/*` - Cross-package imports
 
-1. **Identify the layer**:
-   - **Contract change needed?** → Update `agentx-api` or `agentx-types` FIRST
-   - Core logic? → `agentx-core`
-   - Node.js specific? → `agentx-node`
-   - Browser specific? → `agentx-browser`
-   - UI components? → `agentx-ui`
+### Working with agentx-web
 
-2. **Make changes**:
-
-   ```bash
-   # Edit files (Vite HMR for frontend, Storybook hot reload for UI)
-   ```
-
-3. **Rebuild affected packages**:
-
-   ```bash
-   pnpm --filter @deepractice-ai/agentx-api build
-   ```
-
-4. **Test**:
-
-   ```bash
-   pnpm --filter <package-name> test
-   ```
-
-5. **Build everything** (validates dependencies):
-   ```bash
-   pnpm build
-   ```
-
-### Adding New Event Types
-
-**CRITICAL**: Follow this checklist to avoid missing event forwarding:
-
-1. ✅ Add event interface to `agentx-api/src/events/`
-2. ✅ Add to `AgentEvent` union type
-3. ✅ **Add to `ALL_EVENT_TYPES` array** (TypeScript will error if type doesn't match)
-4. ✅ Export from `agentx-api/src/events/index.ts`
-5. ✅ Export from `agentx-api/src/index.ts`
-6. ✅ Rebuild: `pnpm --filter @deepractice-ai/agentx-api build`
-
-**Example**:
-
-```typescript
-// 1. Create event interface
-export interface MyEvent extends BaseAgentEvent {
-  type: "my_event";
-  data: string;
-}
-
-// 2. Add to union
-export type AgentEvent = UserMessageEvent | AssistantMessageEvent | MyEvent; // ← Add here
-
-// 3. Update ALL_EVENT_TYPES (TypeScript will validate)
-export const ALL_EVENT_TYPES = [
-  "user",
-  "assistant",
-  "my_event", // ← Add here (will error if type doesn't exist)
-] as const satisfies readonly EventType[];
-```
-
-**Benefits**:
-
-- WebSocketBridge automatically forwards new event type
-- TypeScript catches forgotten updates
-- No manual synchronization needed
-
-### Creating Changesets
-
-Before submitting PRs:
+The web app has both server and client:
 
 ```bash
-# Create file directly in .changeset/ directory
-# Example: .changeset/fix-error-handling.md
+# Development (runs both concurrently)
+pnpm dev --filter=@deepractice-ai/agentx-web
+
+# Server only
+pnpm dev:server --filter=@deepractice-ai/agentx-web
+
+# Client only
+pnpm dev:client --filter=@deepractice-ai/agentx-web
 ```
 
-**Format**:
+**Environment Setup**: Copy `.env.example` to `.env.local` and configure:
 
-```yaml
----
-"@deepractice-ai/agentx-core": patch
-"@deepractice-ai/agentx-node": patch
----
-Fix error handling in WebSocketBridge
+```env
+ANTHROPIC_API_KEY=sk-ant-xxxxx
+ANTHROPIC_BASE_URL=https://api.anthropic.com
 ```
 
-## Code Style & Conventions
+### Working with agentx-ui
 
-### Language
+UI components are built with Storybook:
 
-- **Code, comments, logs, errors**: Always English
-- **Documentation**: English
-- **User-facing**: Chinese
-
-### Naming
-
-**Files**:
-
-- **PascalCase**: One file, one primary type (e.g., `Agent.ts` → `export class Agent`)
-- **camelCase**: Multiple exports or utilities (e.g., `helpers.ts`)
-
-**Types**:
-
-```typescript
-// Classes - PascalCase
-class AgentCore { }
-class WebSocketBridge { }
-
-// Interfaces - PascalCase (NO 'I' prefix)
-interface Agent { }
-interface ErrorEvent { }
-
-// Type aliases - PascalCase
-type EventType = AgentEvent["type"];
-type ErrorSeverity = "fatal" | "error" | "warning";
-
-// Constants - UPPER_SNAKE_CASE or ALL_EVENT_TYPES style
-const DEFAULT_PORT = 5200;
-export const ALL_EVENT_TYPES = [...] as const;
+```bash
+# Start Storybook
+pnpm dev --filter=@deepractice-ai/agentx-ui
 ```
 
-### Import Aliases
-
-- `~/*` - Internal package imports
-- `@/*` - External package imports
-
-```typescript
-import { getConfig } from "~/core/config"; // Internal
-import { Agent } from "@deepractice-ai/agentx-api"; // External
-```
+**Message Components Structure**:
+- `/components/chat/messages/` - Message containers (UserMessage, AssistantMessage, etc.)
+- `/components/chat/messages/parts/` - Content parts (TextContent, ImageContent, ToolCallContent, etc.)
 
 ## Testing Strategy
 
-**Philosophy**: BDD (80%) for behavior + Unit tests (20%) for edge cases
+- **E2E Testing**: Test `api/` layer (user-facing API)
+- **Unit Testing**: Test `core/` layer (internal implementation)
+- **Storybook**: Visual testing for UI components
 
-### BDD with Cucumber
+## Coding Standards
 
-- Test user-facing behavior
-- Feature files in `features/` directory
-- Step definitions in `tests/steps/`
-- Use `@deepractice-ai/vitest-cucumber` plugin
+**Language**: Use English for all code comments, logs, error messages, and documentation.
 
-### Unit Tests
+**Naming**: Use interface-first naming (not Hungarian notation):
+- Good: `User`, `Session`, `Driver`
+- Bad: `IUser`, `strName`, `arrItems`
 
-- Test algorithms, edge cases, error handling
-- Co-locate with source: `Agent.ts` → `Agent.test.ts`
-- Use standard Vitest API
+**OOP Style**: Prefer class-based architecture (one class per file) following Java conventions.
 
-## Common Issues
+**File Organization**: One type per file. Export via `index.ts` barrel files.
 
-### Port Already in Use
+## Environment Variables (via turbo.json)
 
-```bash
-lsof -ti:5200 | xargs kill -9
-# Or
-cd apps/agent && pnpm dev:clean
+The following environment variables are passed to all tasks:
+
+```env
+NODE_ENV              # Environment mode
+PORT                  # Server port (default: 5200)
+ANTHROPIC_API_KEY     # Claude API key (required)
+ANTHROPIC_BASE_URL    # API endpoint
+PROJECT_PATH          # Project directory mount point
+CONTEXT_WINDOW        # Context window size
+LOG_LEVEL             # Logging level
+DATABASE_PATH         # SQLite database path
 ```
 
-### Build Cache Issues
+## Docker Deployment
 
+**Image**: `deepracticexs/agent:latest`
+
+**Quick Start**:
 ```bash
-pnpm clean
-pnpm build
+docker run -d \
+  --name agent \
+  -p 5200:5200 \
+  -e ANTHROPIC_API_KEY=sk-ant-xxxxx \
+  -v $(pwd):/project \
+  deepracticexs/agent:latest
 ```
 
-### Changes Not Reflected
+**Docker Compose**: See `docker/agent/docker-compose.yml` for production setup.
 
+## Release Process
+
+**Changesets**: This project uses `@changesets/cli` for version management.
+
+**Before Creating PR**:
 ```bash
-# Rebuild specific package
-pnpm --filter @deepractice-ai/agentx-core build
-
-# Or rebuild everything
-pnpm build
+# Create changeset file directly (interactive CLI is not available)
+# Create file in .changeset/ directory with format:
+# ---
+# "@deepractice-ai/package-name": patch|minor|major
+# ---
+# Description of changes
 ```
 
-### Dev Server Not Hot Reloading
-
-**Node.js server**: Manual restart required
-
+**Publishing** (maintainers only):
 ```bash
-# Stop (Ctrl+C) and restart
-pnpm dev
+pnpm changeset version  # Bump versions
+pnpm build              # Build all packages
+pnpm changeset publish  # Publish to npm
 ```
 
-**Frontend/Storybook**: Should auto-reload (Vite HMR)
+## Key Implementation Details
 
-### TypeScript Errors After Adding Event Type
+### Error Handling
 
-**Symptom**: `Type 'xxx' is not assignable to type 'EventType'`
-
-**Cause**: Forgot to add to `ALL_EVENT_TYPES`
-
-**Fix**:
+AgentX uses unified error architecture where all errors flow through `ErrorMessageEvent`:
 
 ```typescript
-// agentx-api/src/events/AgentEvent.ts
-export const ALL_EVENT_TYPES = [
-  // ... existing types
-  "new_event_type", // ← Add here
-] as const satisfies readonly EventType[];
+interface ErrorMessage {
+  role: "error";
+  subtype: "system" | "agent" | "llm" | "validation" | "unknown";
+  severity: "fatal" | "error" | "warning";
+  message: string;
+  code?: string;
+  recoverable?: boolean;
+  stack?: string;
+}
 ```
 
-## Architecture Decisions
+Use `emitError()` utility from `agentx-core` to emit errors to EventBus.
 
-### Why Modular Packages?
+### Event Bus (RxJS-based)
 
-- **Separation of concerns**: Types, core, providers, UI all independent
-- **Platform flexibility**: Core works on Node.js and Browser
-- **Testability**: Each package can be tested in isolation
-- **Reusability**: UI components can be used in any React app
+`AgentEventBus` is the communication backbone:
+- Producers emit events via `EventProducer`
+- Consumers subscribe via `EventConsumer`
+- Type-safe event filtering with `consumeByType()`
+- Automatic cleanup on `destroy()`
 
-### Why Event-Driven Architecture?
+### Reactor Lifecycle
 
-- **Decoupling**: Providers don't need to know about UI
-- **Flexibility**: Easy to add new event types
-- **Real-time**: Natural fit for streaming responses
-- **Error propagation**: Errors flow through the same event system
+All reactors follow managed lifecycle:
+1. `initialize(context)` - Called by AgentEngine on agent.initialize()
+2. Event processing - Handle events via EventBus subscriptions
+3. `destroy()` - Called in reverse order on agent.destroy()
 
-### Why Single Source of Truth for Events?
+### Driver Contract
 
-- **Type safety**: TypeScript validates at compile time
-- **Maintainability**: Update once, affects everywhere
-- **Prevents bugs**: Cannot forget to forward new event types
+Drivers must implement `AgentDriver`:
+```typescript
+interface AgentDriver {
+  readonly sessionId: string;
+  sendMessage(messages: UserMessage | AsyncIterable<UserMessage>):
+    AsyncIterable<StreamEventType>;
+  abort(): void;
+  destroy(): Promise<void>;
+}
+```
 
-### Why Centralized Error Handling?
+**Built-in Drivers**:
+- `ClaudeDriver` (agentx-sdk-claude) - Node.js Claude SDK integration
+- `SSEDriver` (agentx-framework) - Browser SSE client
 
-- **Consistency**: All errors follow same format
-- **Debugging**: Errors logged and propagated systematically
-- **User experience**: UI can display all errors uniformly
+## Common Patterns
+
+### Creating an Agent
+
+```typescript
+import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
+
+const agent = ClaudeAgent.create({
+  apiKey: process.env.ANTHROPIC_API_KEY,
+  model: "claude-sonnet-4-5-20250929",
+});
+
+await agent.initialize();
+
+agent.react({
+  onAssistantMessage(event) {
+    console.log(event.data.content);
+  },
+});
+
+await agent.send("Hello!");
+await agent.destroy();
+```
+
+### Defining Custom Components
+
+```typescript
+import { defineAgent, defineDriver, defineReactor } from "@deepractice-ai/agentx-framework";
+
+const MyDriver = defineDriver({
+  name: "MyDriver",
+  generate: async function* (message) {
+    // Stream events
+    yield builder.messageStart("msg_1", "model");
+    yield builder.textDelta("Hello", 0);
+    yield builder.messageStop();
+  }
+});
+
+const MyReactor = defineReactor({
+  name: "MyReactor",
+  onTextDelta: (event) => {
+    process.stdout.write(event.data.text);
+  }
+});
+
+const MyAgent = defineAgent({
+  name: "MyAgent",
+  driver: MyDriver,
+  reactors: [MyReactor],
+  config: defineConfig({
+    apiKey: { type: "string", required: true }
+  })
+});
+```
+
+## Troubleshooting
+
+**Build Failures**: Run `pnpm clean` then `pnpm install` to clear stale artifacts.
+
+**Type Errors**: Run `pnpm typecheck` to see all type errors across packages.
+
+**Dependency Issues**: Check `turbo.json` task dependencies. Some tasks depend on `^build` (dependencies built first).
+
+**Hot Reload Not Working**: In `agentx-web`, ensure both server and client are running via `pnpm dev`.
 
 ## Related Documentation
 
-- [README.md](README.md) - User-facing documentation
-- [Architecture Overview](docs/ARCHITECTURE.md) - Detailed system design (if exists)
-- [Testing Strategy](docs/testing-strategy.md) - BDD + Unit testing approach (if exists)
+- **Main README**: `/README.md` - User-facing documentation
+- **Framework README**: `/packages/agentx-framework/README.md` - Framework API guide
+- **Core README**: `/packages/agentx-core/README.md` - Architecture deep dive
+- **Docker Guide**: `/docker/agent/README.md` - Deployment details

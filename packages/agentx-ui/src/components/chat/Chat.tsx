@@ -15,7 +15,7 @@ import type {
 } from "@deepractice-ai/agentx-framework";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
-import { ErrorMessage } from "./ErrorMessage";
+import { ErrorMessage } from "./messages/ErrorMessage";
 import { LoggerFactory } from "../../../dev-tools/WebSocketLogger";
 
 const logger = LoggerFactory.getLogger("Chat");

@@ -12,42 +12,6 @@ import type { IncomingMessage, ServerResponse } from "http";
  */
 export type AgentFactory = (sessionId: string) => AgentService | Promise<AgentService>;
 
-/**
- * Create a factory function for agent creation
- *
- * Simplifies agent creation by providing a base config and injecting sessionId.
- * Works with any DefinedAgent (created by defineAgent).
- *
- * @param definedAgent - The defined agent (from defineAgent)
- * @param baseConfig - Base configuration for all agent instances (without sessionId)
- * @returns Factory function that injects sessionId and creates agent instances
- *
- * @example
- * ```typescript
- * import { createAgentServer, createAgentFactory } from "@deepractice-ai/agentx-framework/server";
- * import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
- *
- * const server = createAgentServer({
- *   port: 5200,
- *   createAgent: createAgentFactory(ClaudeAgent, {
- *     apiKey: process.env.ANTHROPIC_API_KEY,
- *     model: "claude-sonnet-4-5-20250929",
- *     cwd: "/workspace",
- *   }),
- * });
- * ```
- */
-export function createAgentFactory<TConfig extends Record<string, any>>(
-  definedAgent: { create: (config?: TConfig) => AgentService },
-  baseConfig: Omit<TConfig, "sessionId">
-): AgentFactory {
-  return (sessionId: string) => {
-    return definedAgent.create({
-      ...baseConfig,
-      sessionId,
-    } as unknown as TConfig);
-  };
-}
 
 /**
  * HTTP request handler function
