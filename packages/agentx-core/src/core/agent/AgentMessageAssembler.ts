@@ -236,9 +236,7 @@ export class AgentMessageAssembler implements AgentReactor {
 
     try {
       // Parse accumulated JSON
-      const toolInput = pending.toolInputJson
-        ? JSON.parse(pending.toolInputJson)
-        : {};
+      const toolInput = pending.toolInputJson ? JSON.parse(pending.toolInputJson) : {};
 
       this.logger.debug("Parsed tool input", { toolInput });
 
@@ -336,8 +334,9 @@ export class AgentMessageAssembler implements AgentReactor {
     const textParts: string[] = [];
 
     // Sort by index to maintain order
-    const sortedContents = Array.from(this.pendingContents.values())
-      .sort((a, b) => a.index - b.index);
+    const sortedContents = Array.from(this.pendingContents.values()).sort(
+      (a, b) => a.index - b.index
+    );
 
     for (const pending of sortedContents) {
       if (pending.type === "text" && pending.textDeltas) {
@@ -387,9 +386,7 @@ export class AgentMessageAssembler implements AgentReactor {
   /**
    * Emit Message event to EventBus
    */
-  private emitMessageEvent(
-    event: AssistantMessageEvent | ToolUseMessageEvent
-  ): void {
+  private emitMessageEvent(event: AssistantMessageEvent | ToolUseMessageEvent): void {
     if (!this.context) return;
     this.context.producer.produce(event as any);
   }

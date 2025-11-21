@@ -81,8 +81,8 @@ export type InferConfig<T extends ConfigSchema> = {
       ? V
       : V | undefined
     : T[K] extends ConfigSchema
-    ? InferConfig<T[K]>
-    : never;
+      ? InferConfig<T[K]>
+      : never;
 };
 
 /**
@@ -121,11 +121,7 @@ class ConfigValidationError extends Error {
 /**
  * Validate a single field
  */
-function validateField(
-  path: string,
-  value: any,
-  field: FieldDefinition
-): string[] {
+function validateField(path: string, value: any, field: FieldDefinition): string[] {
   const errors: string[] = [];
 
   // Check required (also reject empty strings for string fields)
@@ -168,9 +164,7 @@ function validateField(
 
     case "enum":
       if (!field.values || !field.values.includes(value)) {
-        errors.push(
-          `${path}: Expected one of [${field.values?.join(", ")}], got ${value}`
-        );
+        errors.push(`${path}: Expected one of [${field.values?.join(", ")}], got ${value}`);
       }
       break;
 
@@ -191,9 +185,7 @@ function validateField(
   if (field.validate) {
     const result = field.validate(value);
     if (result !== true) {
-      errors.push(
-        typeof result === "string" ? `${path}: ${result}` : `${path}: Validation failed`
-      );
+      errors.push(typeof result === "string" ? `${path}: ${result}` : `${path}: Validation failed`);
     }
   }
 
@@ -203,11 +195,7 @@ function validateField(
 /**
  * Validate config against schema
  */
-function validateConfig(
-  config: any,
-  schema: ConfigSchema,
-  path = ""
-): string[] {
+function validateConfig(config: any, schema: ConfigSchema, path = ""): string[] {
   const errors: string[] = [];
 
   for (const [key, fieldOrSchema] of Object.entries(schema)) {
@@ -231,10 +219,7 @@ function validateConfig(
 /**
  * Apply defaults to config
  */
-function applyDefaults(
-  config: any,
-  schema: ConfigSchema
-): any {
+function applyDefaults(config: any, schema: ConfigSchema): any {
   const result: any = { ...config };
 
   for (const [key, fieldOrSchema] of Object.entries(schema)) {
@@ -293,10 +278,7 @@ export function defineConfig<TSchema extends ConfigSchema>(
       const errors = validateConfig(config, schema);
 
       if (errors.length > 0) {
-        throw new ConfigValidationError(
-          `Config validation failed:\n${errors.join("\n")}`,
-          errors
-        );
+        throw new ConfigValidationError(`Config validation failed:\n${errors.join("\n")}`, errors);
       }
 
       return config as InferConfig<TSchema>;

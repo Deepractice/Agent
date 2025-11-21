@@ -103,6 +103,7 @@ export type {
   ToolUseContentBlockStartEvent,
   InputJsonDeltaEvent,
   ToolUseContentBlockStopEvent,
+  ToolResultEvent,
 } from "@deepractice-ai/agentx-event";
 
 // State layer events (lifecycle & state transitions)
@@ -141,10 +142,7 @@ export type {
 // ==================== Reactors (Event Handlers) ====================
 
 // Core reactor types (from @deepractice-ai/agentx-core)
-export type {
-  AgentReactor,
-  AgentReactorContext,
-} from "@deepractice-ai/agentx-core";
+export type { AgentReactor, AgentReactorContext } from "@deepractice-ai/agentx-core";
 
 // 4-layer user-facing reactor interfaces (framework-provided)
 export type {
@@ -193,10 +191,7 @@ export type { AgentDriver } from "@deepractice-ai/agentx-core";
  * ```
  */
 export { defineDriver } from "./defineDriver";
-export type {
-  DriverDefinition,
-  DefinedDriver,
-} from "./defineDriver";
+export type { DriverDefinition, DefinedDriver } from "./defineDriver";
 
 /**
  * defineReactor - Simplified reactor creation
@@ -210,10 +205,7 @@ export type {
  * ```
  */
 export { defineReactor } from "./defineReactor";
-export type {
-  ReactorDefinition,
-  DefinedReactor,
-} from "./defineReactor";
+export type { ReactorDefinition, DefinedReactor } from "./defineReactor";
 
 /**
  * defineConfig - Schema-based configuration
@@ -251,10 +243,7 @@ export type {
  * ```
  */
 export { defineAgent } from "./defineAgent";
-export type {
-  AgentDefinition,
-  DefinedAgent,
-} from "./defineAgent";
+export type { AgentDefinition, DefinedAgent } from "./defineAgent";
 
 // ==================== Global Configuration ====================
 // Framework-level configuration
@@ -353,7 +342,4 @@ export type {
   McpHttpTransport,
 } from "@deepractice-ai/agentx-types";
 
-export {
-  LATEST_PROTOCOL_VERSION,
-  SUPPORTED_PROTOCOL_VERSIONS,
-} from "@deepractice-ai/agentx-types";
+export { LATEST_PROTOCOL_VERSION, SUPPORTED_PROTOCOL_VERSIONS } from "@deepractice-ai/agentx-types";

@@ -117,15 +117,15 @@ export interface ClaudeSDKDriverConfig {
   abortController?: AbortController;
 
   // ==================== Internal (Framework) ====================
-  sessionId?: string;  // Framework session ID (for session mapping)
+  sessionId?: string; // Framework session ID (for session mapping)
 }
 
 /**
  * Shared state for ClaudeSDKDriver instances (per driver definition)
  */
 interface DriverState {
-  promptSubject: Subject<SDKUserMessage>;  // Input: sendMessage pushes SDK-formatted messages
-  responseSubject: Subject<SDKMessage>;  // Output: broadcasts responses to all consumers
+  promptSubject: Subject<SDKUserMessage>; // Input: sendMessage pushes SDK-formatted messages
+  responseSubject: Subject<SDKMessage>; // Output: broadcasts responses to all consumers
   claudeQuery: Query | null;
   abortController: AbortController;
   sessionMap: Map<string, string>; // Framework sessionId -> Claude SDK session_id
@@ -185,8 +185,8 @@ function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortContr
 
   // Build env - merge process.env, user config, and custom values
   const env: Record<string, string> = {
-    ...process.env as Record<string, string>,  // Inherit system env (PATH, etc)
-    ...config.env,  // User-provided env overrides
+    ...(process.env as Record<string, string>), // Inherit system env (PATH, etc)
+    ...config.env, // User-provided env overrides
   };
   if (config.baseUrl) {
     env.ANTHROPIC_BASE_URL = config.baseUrl;
@@ -198,7 +198,7 @@ function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortContr
 
   // Use current Node.js executable (works with nvm, volta, etc)
   if (!config.executable) {
-    options.executable = process.execPath as any;  // SDK accepts full path despite type definition
+    options.executable = process.execPath as any; // SDK accepts full path despite type definition
   }
   if (config.model) options.model = config.model;
   if (config.fallbackModel) options.fallbackModel = config.fallbackModel;
@@ -210,7 +210,8 @@ function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortContr
   if (config.forkSession) options.forkSession = config.forkSession;
   if (config.permissionMode) options.permissionMode = config.permissionMode;
   if (config.canUseTool) options.canUseTool = config.canUseTool;
-  if (config.permissionPromptToolName) options.permissionPromptToolName = config.permissionPromptToolName;
+  if (config.permissionPromptToolName)
+    options.permissionPromptToolName = config.permissionPromptToolName;
   if (config.allowedTools) options.allowedTools = config.allowedTools;
   if (config.disallowedTools) options.disallowedTools = config.disallowedTools;
   if (config.additionalDirectories) options.additionalDirectories = config.additionalDirectories;
@@ -221,7 +222,8 @@ function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortContr
   if (config.plugins) options.plugins = config.plugins;
   if (config.executable) options.executable = config.executable;
   if (config.executableArgs) options.executableArgs = config.executableArgs;
-  if (config.pathToClaudeCodeExecutable) options.pathToClaudeCodeExecutable = config.pathToClaudeCodeExecutable;
+  if (config.pathToClaudeCodeExecutable)
+    options.pathToClaudeCodeExecutable = config.pathToClaudeCodeExecutable;
   if (config.stderr) options.stderr = config.stderr;
   if (config.hooks) options.hooks = config.hooks;
   if (config.extraArgs) options.extraArgs = config.extraArgs;
@@ -298,7 +300,10 @@ async function* processStreamEvent(
     case "message_delta":
       if (event.delta.stop_reason) {
         // Claude SDK returns stop_reason as string, cast to StopReason
-        yield builder.messageDelta(event.delta.stop_reason as any, event.delta.stop_sequence || undefined);
+        yield builder.messageDelta(
+          event.delta.stop_reason as any,
+          event.delta.stop_sequence || undefined
+        );
       }
       break;
 
@@ -382,11 +387,7 @@ async function* transformSDKMessages(
           for (const block of sdkMsg.message.content) {
             if (block.type === "tool_result") {
               // Tool execution result from Claude SDK
-              yield builder.toolResult(
-                block.tool_use_id,
-                block.content,
-                block.is_error || false
-              );
+              yield builder.toolResult(block.tool_use_id, block.content, block.is_error || false);
             }
           }
         }
@@ -449,16 +450,18 @@ export const ClaudeSDKDriver = defineDriver<ClaudeSDKDriverConfig>({
       maxTurns: config.maxTurns || "unlimited",
       mcpServers: config.mcpServers ? Object.keys(config.mcpServers).join(", ") : "none",
       systemPrompt: config.systemPrompt
-        ? (typeof config.systemPrompt === "string"
-            ? config.systemPrompt.substring(0, 50) + (config.systemPrompt.length > 50 ? "..." : "")
-            : "preset")
+        ? typeof config.systemPrompt === "string"
+          ? config.systemPrompt.substring(0, 50) + (config.systemPrompt.length > 50 ? "..." : "")
+          : "preset"
         : "default",
     });
     logger.info("========================================");
 
     // Get stored Claude SDK session ID (if exists)
     const frameworkSessionId = config.sessionId;
-    const claudeSessionId = frameworkSessionId ? state.sessionMap.get(frameworkSessionId) : undefined;
+    const claudeSessionId = frameworkSessionId
+      ? state.sessionMap.get(frameworkSessionId)
+      : undefined;
 
     if (claudeSessionId) {
       logger.info(`Resuming Claude session: ${claudeSessionId}`);
@@ -504,7 +507,9 @@ export const ClaudeSDKDriver = defineDriver<ClaudeSDKDriverConfig>({
         logger.info("Claude SDK query completed");
         state.responseSubject.complete();
       } catch (error) {
-        logger.error("Background listener error:", { error: error instanceof Error ? error.message : String(error) });
+        logger.error("Background listener error:", {
+          error: error instanceof Error ? error.message : String(error),
+        });
         state.responseSubject.error(error);
       }
     })();
@@ -522,9 +527,12 @@ export const ClaudeSDKDriver = defineDriver<ClaudeSDKDriverConfig>({
     }
 
     // 1. Normalize input to AsyncIterable
-    const messages = Symbol.asyncIterator in Object(message)
-      ? (message as AsyncIterable<UserMessage>)
-      : (async function* () { yield message as UserMessage; })();
+    const messages =
+      Symbol.asyncIterator in Object(message)
+        ? (message as AsyncIterable<UserMessage>)
+        : (async function* () {
+            yield message as UserMessage;
+          })();
 
     // 2. Create builder for this message stream
     const builder = new StreamEventBuilder(state.agentId);
@@ -558,15 +566,11 @@ export const ClaudeSDKDriver = defineDriver<ClaudeSDKDriverConfig>({
       })();
 
       // Transform SDK messages to Stream events
-      yield* transformSDKMessages(
-        responseStream,
-        builder,
-        (capturedSessionId) => {
-          if (config.sessionId && capturedSessionId) {
-            state.sessionMap.set(config.sessionId, capturedSessionId);
-          }
+      yield* transformSDKMessages(responseStream, builder, (capturedSessionId) => {
+        if (config.sessionId && capturedSessionId) {
+          state.sessionMap.set(config.sessionId, capturedSessionId);
         }
-      );
+      });
     }
   },
 

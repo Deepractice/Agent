@@ -128,15 +128,11 @@ function setupWatchers() {
   console.log("👀 Watching for changes...");
   console.log(`   - ${AGENTX_FRAMEWORK_SRC}`);
 
-  const watcher = watch(
-    AGENTX_FRAMEWORK_SRC,
-    { recursive: true },
-    (eventType, filename) => {
-      if (filename && filename.endsWith(".ts")) {
-        handleChange(filename);
-      }
+  const watcher = watch(AGENTX_FRAMEWORK_SRC, { recursive: true }, (eventType, filename) => {
+    if (filename && filename.endsWith(".ts")) {
+      handleChange(filename);
     }
-  );
+  });
 
   // Graceful shutdown
   process.on("SIGINT", async () => {

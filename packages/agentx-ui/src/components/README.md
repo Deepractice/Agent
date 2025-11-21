@@ -5,7 +5,9 @@ This directory contains all React components for the AgentX UI library.
 ## Directory Structure
 
 ### `/layout`
+
 Layout components for structuring application UI:
+
 - `ActivityBar` - Vertical activity bar with icons
 - `Header` - Application header with left/center/right sections
 - `MainContent` - Main content area wrapper
@@ -15,7 +17,9 @@ Layout components for structuring application UI:
 - `StatusBar` - Bottom status bar with items
 
 ### `/elements`
+
 Atomic UI building blocks (previously `/ui`):
+
 - `ActionBar` - Action button bar
 - `AgentLogo` - Agent logo component
 - `AppHeader` - Application header variant
@@ -36,7 +40,9 @@ Atomic UI building blocks (previously `/ui`):
 - `TokenUsagePie` - Token usage pie chart
 
 ### `/typography`
+
 Text rendering and formatting components:
+
 - `DiffViewer` - Code diff viewer
 - `JSONRenderer` - JSON syntax highlighter
 - `MarkdownText` - Markdown renderer with syntax highlighting
@@ -60,12 +66,14 @@ function App() {
 ## Development
 
 All components include:
+
 - TypeScript definitions
 - Storybook stories (`.stories.tsx`)
 - Tailwind CSS styling
 - Accessibility support
 
 To view components in Storybook:
+
 ```bash
 pnpm storybook
 ```

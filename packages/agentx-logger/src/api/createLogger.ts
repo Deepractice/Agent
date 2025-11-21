@@ -77,9 +77,7 @@ export interface CreateLoggerOptions {
  * }
  * ```
  */
-export function createLogger(
-  nameOrOptions: string | CreateLoggerOptions
-): LoggerProvider {
+export function createLogger(nameOrOptions: string | CreateLoggerOptions): LoggerProvider {
   const name = typeof nameOrOptions === "string" ? nameOrOptions : nameOrOptions.name;
 
   // For now, just delegate to LoggerFactory

@@ -8,7 +8,11 @@
 /**
  * Schema field types
  */
-export type SchemaFieldType = StringConstructor | NumberConstructor | BooleanConstructor | ObjectConstructor;
+export type SchemaFieldType =
+  | StringConstructor
+  | NumberConstructor
+  | BooleanConstructor
+  | ObjectConstructor;
 
 /**
  * Schema field definition
@@ -35,8 +39,8 @@ export type InferConfig<TSchema extends ConfigSchema> = {
     ? TSchema[K]["required"] extends true
       ? U
       : TSchema[K]["optional"] extends true
-      ? U | undefined
-      : U
+        ? U | undefined
+        : U
     : never;
 };
 

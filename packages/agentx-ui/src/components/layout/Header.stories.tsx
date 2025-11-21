@@ -63,7 +63,11 @@ export const WithSearch: Story = {
         }
         center={
           <div className="max-w-xl w-full">
-            <SearchInput value={search} onChange={setSearch} placeholder="Search sessions, messages..." />
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search sessions, messages..."
+            />
           </div>
         }
         right={
@@ -209,7 +213,14 @@ export const InLayout: Story = {
               <span className="font-semibold">Deepractice Agent</span>
             </div>
           }
-          center={<SearchInput value={search} onChange={setSearch} placeholder="Search..." className="max-w-md" />}
+          center={
+            <SearchInput
+              value={search}
+              onChange={setSearch}
+              placeholder="Search..."
+              className="max-w-md"
+            />
+          }
           right={
             <div className="flex items-center gap-2">
               <Button variant="ghost" size="sm">

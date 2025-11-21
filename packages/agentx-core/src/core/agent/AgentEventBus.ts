@@ -7,7 +7,13 @@
 
 import { Subject, type Observable, type Subscription } from "rxjs";
 import { filter } from "rxjs/operators";
-import type { EventBus, EventProducer, EventConsumer, Unsubscribe, AgentEventType } from "@deepractice-ai/agentx-event";
+import type {
+  EventBus,
+  EventProducer,
+  EventConsumer,
+  Unsubscribe,
+  AgentEventType,
+} from "@deepractice-ai/agentx-event";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 
 const logger = createLogger("core/agent/AgentEventBus");

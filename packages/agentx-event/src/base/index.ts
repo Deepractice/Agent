@@ -14,8 +14,4 @@ export type { AgentEvent } from "./AgentEvent";
 /**
  * Complete union of all AgentX events across all layers
  */
-export type AgentEventType =
-  | StreamEventType
-  | StateEventType
-  | MessageEventType
-  | TurnEventType;
+export type AgentEventType = StreamEventType | StateEventType | MessageEventType | TurnEventType;

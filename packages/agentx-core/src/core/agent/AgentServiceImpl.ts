@@ -150,7 +150,7 @@ export class AgentServiceImpl implements AgentService {
    * Export current state to Session
    * Used for saving/persisting conversation state
    */
-  exportToSession(): Omit<Session, 'id'> {
+  exportToSession(): Omit<Session, "id"> {
     return {
       title: `Conversation with ${this.agentData.name}`,
       agentId: this.agentData.id,

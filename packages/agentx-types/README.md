@@ -7,6 +7,7 @@
 `agentx-types` is a **pure TypeScript type library** that defines the domain models for building AI agents. It provides the foundational data structures for messages, LLM interactions, sessions, and Model Context Protocol (MCP) integration.
 
 **Key Characteristics:**
+
 - **Zero runtime dependencies** - Pure TypeScript types
 - **Platform-agnostic** - Works in Node.js, Browser, and Edge runtimes
 - **Contract-first design** - Single source of truth for data structures
@@ -61,6 +62,7 @@ Think of it like a human in a room:
   - Group (future): Collaboration spaces (many-to-many)
 
 **Key Insight:**
+
 - Session is a **snapshot** (data) that can be saved/restored
 - Agent is a **runtime instance** that reads the snapshot and operates
 - Session doesn't belong to Agent - Agent loads Session to "revive"
@@ -70,23 +72,25 @@ Think of it like a human in a room:
 ## 📦 Import Paths
 
 ### Before (Old - Don't Use)
+
 ```typescript
-import { Message } from '@deepractice-ai/agentx-types/message';
-import { Session } from '@deepractice-ai/agentx-types/session';
+import { Message } from "@deepractice-ai/agentx-types/message";
+import { Session } from "@deepractice-ai/agentx-types/session";
 ```
 
 ### After (New - Use This)
+
 ```typescript
 // Agent domain (internal world)
-import { Message } from '@deepractice-ai/agentx-types/agent/message';
-import { McpTool } from '@deepractice-ai/agentx-types/agent/mcp';
-import { LLMConfig } from '@deepractice-ai/agentx-types/agent/llm';
+import { Message } from "@deepractice-ai/agentx-types/agent/message";
+import { McpTool } from "@deepractice-ai/agentx-types/agent/mcp";
+import { LLMConfig } from "@deepractice-ai/agentx-types/agent/llm";
 
 // Environment domain (external world)
-import { Session } from '@deepractice-ai/agentx-types/environment/session';
+import { Session } from "@deepractice-ai/agentx-types/environment/session";
 
 // Or import everything from root
-import { Message, Session, Agent } from '@deepractice-ai/agentx-types';
+import { Message, Session, Agent } from "@deepractice-ai/agentx-types";
 ```
 
 ---
@@ -98,7 +102,7 @@ import { Message, Session, Agent } from '@deepractice-ai/agentx-types';
 The complete data structure of an AI agent (pure data, no runtime state).
 
 ```typescript
-import { Agent } from '@deepractice-ai/agentx-types';
+import { Agent } from "@deepractice-ai/agentx-types";
 
 interface Agent {
   id: string;
@@ -107,11 +111,12 @@ interface Agent {
   createdAt: number;
   version?: string;
   tags?: string[];
-  [key: string]: unknown;  // Extension point
+  [key: string]: unknown; // Extension point
 }
 ```
 
 **Example:**
+
 ```typescript
 const agent: Agent = {
   id: "agent-001",
@@ -130,14 +135,14 @@ const agent: Agent = {
 Messages are how agents communicate. Discriminated union based on `role` field.
 
 ```typescript
-import { Message, UserMessage, AssistantMessage } from '@deepractice-ai/agentx-types';
+import { Message, UserMessage, AssistantMessage } from "@deepractice-ai/agentx-types";
 
 type Message =
-  | UserMessage         // role: "user"
-  | AssistantMessage    // role: "assistant"
-  | SystemMessage       // role: "system"
-  | ToolUseMessage      // role: "tool-use"
-  | ErrorMessage;       // role: "error"
+  | UserMessage // role: "user"
+  | AssistantMessage // role: "assistant"
+  | SystemMessage // role: "system"
+  | ToolUseMessage // role: "tool-use"
+  | ErrorMessage; // role: "error"
 ```
 
 #### UserMessage
@@ -150,11 +155,12 @@ interface UserMessage {
   role: "user";
   content: string | Array<TextPart | ImagePart | FilePart>;
   timestamp: number;
-  parentId?: string;  // For threading
+  parentId?: string; // For threading
 }
 ```
 
 **Example:**
+
 ```typescript
 const textMessage: UserMessage = {
   id: "msg-001",
@@ -185,11 +191,12 @@ interface AssistantMessage {
   content: string | Array<TextPart | ThinkingPart | ToolCallPart | FilePart>;
   timestamp: number;
   parentId?: string;
-  usage?: TokenUsage;  // Token consumption stats
+  usage?: TokenUsage; // Token consumption stats
 }
 ```
 
 **Example:**
+
 ```typescript
 const response: AssistantMessage = {
   id: "msg-003",
@@ -216,12 +223,12 @@ Multi-modal content through `ContentPart` types:
 
 ```typescript
 type ContentPart =
-  | TextPart          // { type: "text", text: string }
-  | ThinkingPart      // { type: "thinking", reasoning: string }
-  | ImagePart         // { type: "image", data: string, mediaType: string }
-  | FilePart          // { type: "file", data: string, mediaType: string }
-  | ToolCallPart      // { type: "tool-call", id, name, input }
-  | ToolResultPart;   // { type: "tool-result", id, name, output }
+  | TextPart // { type: "text", text: string }
+  | ThinkingPart // { type: "thinking", reasoning: string }
+  | ImagePart // { type: "image", data: string, mediaType: string }
+  | FilePart // { type: "file", data: string, mediaType: string }
+  | ToolCallPart // { type: "tool-call", id, name, input }
+  | ToolResultPart; // { type: "tool-result", id, name, output }
 ```
 
 ---
@@ -233,16 +240,17 @@ Agent's capabilities: tools, resources, and prompts.
 #### MCP Tools
 
 ```typescript
-import { McpTool } from '@deepractice-ai/agentx-types/agent/mcp';
+import { McpTool } from "@deepractice-ai/agentx-types/agent/mcp";
 
 interface McpTool {
   name: string;
   description?: string;
-  inputSchema: JsonSchema;  // JSON Schema for parameters
+  inputSchema: JsonSchema; // JSON Schema for parameters
 }
 ```
 
 **Example:**
+
 ```typescript
 const weatherTool: McpTool = {
   name: "get_weather",
@@ -285,11 +293,11 @@ interface McpPrompt {
 How agents interact with language models.
 
 ```typescript
-import { LLMConfig, LLMRequest, LLMResponse } from '@deepractice-ai/agentx-types/agent/llm';
+import { LLMConfig, LLMRequest, LLMResponse } from "@deepractice-ai/agentx-types/agent/llm";
 
 interface LLMConfig {
   model: string;
-  temperature?: number;         // 0-2
+  temperature?: number; // 0-2
   maxTokens?: number;
   topP?: number;
   stopSequences?: string[];
@@ -321,8 +329,8 @@ import {
   isUserMessage,
   isAssistantMessage,
   isTextPart,
-  isImagePart
-} from '@deepractice-ai/agentx-types';
+  isImagePart,
+} from "@deepractice-ai/agentx-types";
 
 function processMessage(message: Message) {
   if (isUserMessage(message)) {
@@ -336,6 +344,7 @@ function processMessage(message: Message) {
 ```
 
 **Available guards:**
+
 - Messages: `isUserMessage`, `isAssistantMessage`, `isSystemMessage`, `isToolUseMessage`, `isErrorMessage`
 - Content: `isTextPart`, `isThinkingPart`, `isImagePart`, `isFilePart`, `isToolCallPart`, `isToolResultPart`
 
@@ -348,15 +357,15 @@ function processMessage(message: Message) {
 A session represents the conversation history and context between a user and an agent.
 
 ```typescript
-import { Session } from '@deepractice-ai/agentx-types/environment/session';
+import { Session } from "@deepractice-ai/agentx-types/environment/session";
 
 interface Session {
   id: string;
   title: string;
 
   // Records the relationship
-  agentId: string;       // Which agent created/served this session
-  userId?: string;       // Which user (optional)
+  agentId: string; // Which agent created/served this session
+  userId?: string; // Which user (optional)
 
   // Conversation data
   messages: Message[];
@@ -371,6 +380,7 @@ interface Session {
 ```
 
 **Example:**
+
 ```typescript
 const session: Session = {
   id: "session-001",
@@ -389,12 +399,14 @@ const session: Session = {
 #### Why agentId and userId?
 
 **agentId (required):**
+
 - Records which agent created/served the conversation
 - Users expect continuity - they chose this specific agent
 - Like your chat history with a specific friend in WeChat
 - You don't randomly switch friends mid-conversation
 
 **userId (optional):**
+
 - Optional because some sessions don't involve users:
   - Agent-initiated tasks
   - Background workflows
@@ -419,7 +431,7 @@ await saveSession(session);
 // Later: Load session and revive agent
 const session = await loadSession("session-1");
 const agent = new AgentService(config);
-agent.loadFromSession(session);  // Revive from snapshot
+agent.loadFromSession(session); // Revive from snapshot
 await agent.send("Continue from where we left off");
 ```
 
@@ -444,7 +456,7 @@ interface Message {
 // ❌ Bad - Behavior mixed in
 interface Message {
   id: string;
-  send(): Promise<void>;  // Behavior belongs in services
+  send(): Promise<void>; // Behavior belongs in services
 }
 ```
 
@@ -460,9 +472,9 @@ type ContentPart =
 function render(part: ContentPart) {
   switch (part.type) {
     case "text":
-      return part.text;      // TypeScript knows: part.text exists
+      return part.text; // TypeScript knows: part.text exists
     case "image":
-      return `<img src="${part.data}" />`;  // TypeScript knows: part.data exists
+      return `<img src="${part.data}" />`; // TypeScript knows: part.data exists
   }
 }
 ```
@@ -474,12 +486,12 @@ Types work everywhere - Node.js, Browser, Edge, Deno.
 ```typescript
 // ✅ Platform-agnostic
 interface Message {
-  timestamp: number;  // Unix timestamp
+  timestamp: number; // Unix timestamp
 }
 
 // ❌ Platform-specific
 interface Message {
-  timestamp: Buffer;  // Buffer only in Node.js
+  timestamp: Buffer; // Buffer only in Node.js
 }
 ```
 
@@ -495,7 +507,7 @@ const session: Session = {
   messages: [],
   metadata: {
     tags: ["important"],
-    customField: "value",  // ✅ Extensible
+    customField: "value", // ✅ Extensible
   },
 };
 ```

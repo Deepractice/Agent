@@ -17,8 +17,7 @@ type Story = StoryObj<typeof meta>;
 const samplePdfBase64 =
   "data:application/pdf;base64,JVBERi0xLjQKJeLjz9MKMyAwIG9iago8PC9UeXBlL1BhZ2UvUGFyZW50IDIgMCBSL1Jlc291cmNlczw8L0ZvbnQ8PC9GMSA1IDAgUj4+Pj4vTWVkaWFCb3hbMCAwIDYxMiA3OTJdL0NvbnRlbnRzIDQgMCBSPj4KZW5kb2JqCjQgMCBvYmoKPDwvTGVuZ3RoIDQ0Pj4Kc3RyZWFtCkJUCi9GMSA0OCBUZgoxMCA3MDAgVGQKKEhlbGxvIFdvcmxkKSBUagpFVAplbmRzdHJlYW0KZW5kb2JqCjEgMCBvYmoKPDwvVHlwZS9DYXRhbG9nL1BhZ2VzIDIgMCBSPj4KZW5kb2JqCjIgMCBvYmoKPDwvVHlwZS9QYWdlcy9LaWRzWzMgMCBSXS9Db3VudCAxPj4KZW5kb2JqCjUgMCBvYmoKPDwvVHlwZS9Gb250L1N1YnR5cGUvVHlwZTEvQmFzZUZvbnQvVGltZXMtUm9tYW4+PgplbmRvYmoKeHJlZgowIDYKMDAwMDAwMDAwMCA2NTUzNSBmDQowMDAwMDAwMjU4IDAwMDAwIG4NCjAwMDAwMDAzMDcgMDAwMDAgbg0KMDAwMDAwMDAxNSAwMDAwMCBuDQowMDAwMDAwMTI0IDAwMDAwIG4NCjAwMDAwMDAzNjQgMDAwMDAgbg0KdHJhaWxlcgo8PC9TaXplIDYvUm9vdCAxIDAgUj4+CnN0YXJ0eHJlZgo0NDQKJSVFT0Y=";
 
-const sampleTextBase64 =
-  "data:text/plain;base64,SGVsbG8sIHRoaXMgaXMgYSBzYW1wbGUgdGV4dCBmaWxlIQ==";
+const sampleTextBase64 = "data:text/plain;base64,SGVsbG8sIHRoaXMgaXMgYSBzYW1wbGUgdGV4dCBmaWxlIQ==";
 
 const sampleJsonBase64 =
   "data:application/json;base64,eyJuYW1lIjogIkpvaG4gRG9lIiwgImFnZSI6IDMwfQ==";
@@ -50,8 +49,7 @@ export const JSONFile: Story = {
 export const ExcelFile: Story = {
   args: {
     data: "data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,UEsDBBQA...",
-    mediaType:
-      "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+    mediaType: "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
     filename: "spreadsheet.xlsx",
   },
 };
@@ -59,8 +57,7 @@ export const ExcelFile: Story = {
 export const WordFile: Story = {
   args: {
     data: "data:application/vnd.openxmlformats-officedocument.wordprocessingml.document;base64,UEsDBBQA...",
-    mediaType:
-      "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
+    mediaType: "application/vnd.openxmlformats-officedocument.wordprocessingml.document",
     filename: "report.docx",
   },
 };
@@ -93,16 +90,8 @@ export const MultipleFiles: Story = {
         mediaType="application/pdf"
         filename="project-proposal.pdf"
       />
-      <FileContent
-        data={sampleTextBase64}
-        mediaType="text/plain"
-        filename="notes.txt"
-      />
-      <FileContent
-        data={sampleJsonBase64}
-        mediaType="application/json"
-        filename="config.json"
-      />
+      <FileContent data={sampleTextBase64} mediaType="text/plain" filename="notes.txt" />
+      <FileContent data={sampleJsonBase64} mediaType="application/json" filename="config.json" />
       <FileContent
         data="data:application/vnd.openxmlformats-officedocument.spreadsheetml.sheet;base64,UEsDBBQA..."
         mediaType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"

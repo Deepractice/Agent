@@ -57,7 +57,8 @@ export function AssistantMessage({ message, isStreaming = false }: AssistantMess
             <TextContent text={message.content} isStreaming={isStreaming} />
           ) : (
             message.content.map((part, idx) => {
-              const isLastPart = Array.isArray(message.content) && idx === message.content.length - 1;
+              const isLastPart =
+                Array.isArray(message.content) && idx === message.content.length - 1;
 
               switch (part.type) {
                 case "text":
@@ -79,12 +80,7 @@ export function AssistantMessage({ message, isStreaming = false }: AssistantMess
                   );
                 case "tool-call":
                   return (
-                    <ToolCallContent
-                      key={idx}
-                      id={part.id}
-                      name={part.name}
-                      input={part.input}
-                    />
+                    <ToolCallContent key={idx} id={part.id} name={part.name} input={part.input} />
                   );
                 case "file":
                   return (

@@ -42,7 +42,7 @@ providerConsumer.consumeByType("user_message", async (event: UserMessageEvent) =
   console.log("[Provider] Received user message:", event.data.content);
 
   // Simulate processing
-  await new Promise(resolve => setTimeout(resolve, 1000));
+  await new Promise((resolve) => setTimeout(resolve, 1000));
 
   // Produce assistant response
   providerProducer.produce({

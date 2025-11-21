@@ -34,16 +34,13 @@ loggerConsumer.consume((event) => {
 // ============================================
 
 const uiConsumer = bus.createConsumer();
-uiConsumer.consumeByTypes(
-  ["user_message", "assistant_message"],
-  (event) => {
-    if (event.type === "user_message") {
-      console.log("[UI] User:", event.data.content);
-    } else {
-      console.log("[UI] Assistant:", event.data.content);
-    }
+uiConsumer.consumeByTypes(["user_message", "assistant_message"], (event) => {
+  if (event.type === "user_message") {
+    console.log("[UI] User:", event.data.content);
+  } else {
+    console.log("[UI] Assistant:", event.data.content);
   }
-);
+});
 
 // ============================================
 // Producer: Simulate conversation

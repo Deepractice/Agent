@@ -24,17 +24,16 @@ export interface FileContentProps {
  * <FileContent data="https://example.com/file.xlsx" mediaType="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" filename="data.xlsx" />
  * ```
  */
-export function FileContent({
-  data,
-  mediaType,
-  filename,
-}: FileContentProps) {
+export function FileContent({ data, mediaType, filename }: FileContentProps) {
   // Get file icon based on MIME type
   const getFileIcon = (mimeType: string): string => {
     if (mimeType.startsWith("application/pdf")) return "📄";
-    if (mimeType.startsWith("application/vnd.openxmlformats-officedocument.spreadsheetml")) return "📊";
-    if (mimeType.startsWith("application/vnd.openxmlformats-officedocument.wordprocessingml")) return "📝";
-    if (mimeType.startsWith("application/vnd.openxmlformats-officedocument.presentationml")) return "📽️";
+    if (mimeType.startsWith("application/vnd.openxmlformats-officedocument.spreadsheetml"))
+      return "📊";
+    if (mimeType.startsWith("application/vnd.openxmlformats-officedocument.wordprocessingml"))
+      return "📝";
+    if (mimeType.startsWith("application/vnd.openxmlformats-officedocument.presentationml"))
+      return "📽️";
     if (mimeType.includes("zip") || mimeType.includes("compressed")) return "🗜️";
     if (mimeType.startsWith("text/")) return "📃";
     if (mimeType.startsWith("video/")) return "🎥";

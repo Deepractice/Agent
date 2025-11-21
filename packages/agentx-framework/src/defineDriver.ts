@@ -144,7 +144,7 @@ class SimpleAgentDriver implements AgentDriver {
     // Delegate to definition with sessionId injected into config
     const configWithSession = {
       ...this.config,
-      sessionId: this.sessionId  // Inject framework session ID
+      sessionId: this.sessionId, // Inject framework session ID
     };
     yield* this.definition.sendMessage(messages, configWithSession);
   }
@@ -198,13 +198,10 @@ export function defineDriver<TConfig = any>(
     name: definition.name,
 
     create: (config: TConfig & { sessionId?: string }) => {
-      const sessionId = config.sessionId || `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const sessionId =
+        config.sessionId || `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-      const driver = new SimpleAgentDriver(
-        definition,
-        config,
-        sessionId
-      );
+      const driver = new SimpleAgentDriver(definition, config, sessionId);
 
       // Call onInit if provided
       if (definition.onInit) {
@@ -218,6 +215,6 @@ export function defineDriver<TConfig = any>(
       }
 
       return driver;
-    }
+    },
   };
 }

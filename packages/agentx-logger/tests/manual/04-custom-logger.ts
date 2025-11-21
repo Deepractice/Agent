@@ -4,12 +4,7 @@
  * Tests implementing a custom LoggerProvider (similar to Pino/Winston adapters).
  */
 
-import {
-  LoggerFactory,
-  type LoggerProvider,
-  LogLevel,
-  type LogContext,
-} from "../../src";
+import { LoggerFactory, type LoggerProvider, LogLevel, type LogContext } from "../../src";
 
 console.log("\n=== Test 4: Custom Logger Implementation ===\n");
 

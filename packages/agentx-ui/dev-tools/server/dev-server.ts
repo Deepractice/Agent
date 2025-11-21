@@ -45,7 +45,11 @@ class FileLogger implements LoggerProvider {
 
     // Clear log file only once when first logger is created
     if (!FileLogger.initialized) {
-      writeFileSync(logFilePath, `=== Backend Log Started at ${new Date().toISOString()} ===\n`, "utf8");
+      writeFileSync(
+        logFilePath,
+        `=== Backend Log Started at ${new Date().toISOString()} ===\n`,
+        "utf8"
+      );
       FileLogger.initialized = true;
     }
   }
@@ -107,7 +111,8 @@ class FileLogger implements LoggerProvider {
       RESET: "\x1b[0m",
     };
     const color = colors[level as keyof typeof colors] || "";
-    const consoleMethod = level === "ERROR" ? console.error : level === "WARN" ? console.warn : console.log;
+    const consoleMethod =
+      level === "ERROR" ? console.error : level === "WARN" ? console.warn : console.log;
 
     if (context && Object.keys(context).length > 0) {
       consoleMethod(`${color}${logLine}${colors.RESET}`, context);
@@ -116,9 +121,10 @@ class FileLogger implements LoggerProvider {
     }
 
     // File output (without colors)
-    const fileLogLine = context && Object.keys(context).length > 0
-      ? `${logLine} ${JSON.stringify(context)}\n`
-      : `${logLine}\n`;
+    const fileLogLine =
+      context && Object.keys(context).length > 0
+        ? `${logLine} ${JSON.stringify(context)}\n`
+        : `${logLine}\n`;
 
     try {
       appendFileSync(this.logFilePath, fileLogLine, "utf8");
@@ -147,7 +153,11 @@ function createLogCollectorServer(port: number, logFilePath: string) {
   const wss = new WebSocketServer({ server: httpServer });
 
   // Initialize frontend log file
-  writeFileSync(logFilePath, `=== Frontend Log Started at ${new Date().toISOString()} ===\n`, "utf8");
+  writeFileSync(
+    logFilePath,
+    `=== Frontend Log Started at ${new Date().toISOString()} ===\n`,
+    "utf8"
+  );
 
   wss.on("connection", (ws) => {
     console.log("[LogCollector] Frontend logger connected");

@@ -80,7 +80,10 @@ export class StreamReactorAdapter extends BaseReactorAdapter {
     }
 
     if (reactor.onTextContentBlockStart) {
-      context.consumer.consumeByType("text_content_block_start", reactor.onTextContentBlockStart.bind(reactor));
+      context.consumer.consumeByType(
+        "text_content_block_start",
+        reactor.onTextContentBlockStart.bind(reactor)
+      );
     }
 
     if (reactor.onTextDelta) {
@@ -88,7 +91,10 @@ export class StreamReactorAdapter extends BaseReactorAdapter {
     }
 
     if (reactor.onTextContentBlockStop) {
-      context.consumer.consumeByType("text_content_block_stop", reactor.onTextContentBlockStop.bind(reactor));
+      context.consumer.consumeByType(
+        "text_content_block_stop",
+        reactor.onTextContentBlockStop.bind(reactor)
+      );
     }
 
     if (reactor.onToolUseContentBlockStart) {
@@ -132,11 +138,17 @@ export class StateReactorAdapter extends BaseReactorAdapter {
     }
 
     if (reactor.onConversationThinking) {
-      consumer.consumeByType("conversation_thinking_state", reactor.onConversationThinking.bind(reactor));
+      consumer.consumeByType(
+        "conversation_thinking_state",
+        reactor.onConversationThinking.bind(reactor)
+      );
     }
 
     if (reactor.onConversationResponding) {
-      consumer.consumeByType("conversation_responding_state", reactor.onConversationResponding.bind(reactor));
+      consumer.consumeByType(
+        "conversation_responding_state",
+        reactor.onConversationResponding.bind(reactor)
+      );
     }
 
     if (reactor.onConversationEnd) {
@@ -240,7 +252,7 @@ class CompositeReactorAdapter implements AgentReactor {
 
   constructor(private userReactor: any) {
     this.id = generateId();
-    this.name = `CompositeAdapter(${userReactor.constructor?.name || 'Anonymous'})`;
+    this.name = `CompositeAdapter(${userReactor.constructor?.name || "Anonymous"})`;
   }
 
   async initialize(context: AgentReactorContext): Promise<void> {
@@ -275,22 +287,34 @@ class CompositeReactorAdapter implements AgentReactor {
       context.consumer.consumeByType("message_stop", reactor.onMessageStop.bind(reactor));
     }
     if (reactor.onTextContentBlockStart) {
-      context.consumer.consumeByType("text_content_block_start", reactor.onTextContentBlockStart.bind(reactor));
+      context.consumer.consumeByType(
+        "text_content_block_start",
+        reactor.onTextContentBlockStart.bind(reactor)
+      );
     }
     if (reactor.onTextDelta) {
       context.consumer.consumeByType("text_delta", reactor.onTextDelta.bind(reactor));
     }
     if (reactor.onTextContentBlockStop) {
-      context.consumer.consumeByType("text_content_block_stop", reactor.onTextContentBlockStop.bind(reactor));
+      context.consumer.consumeByType(
+        "text_content_block_stop",
+        reactor.onTextContentBlockStop.bind(reactor)
+      );
     }
     if (reactor.onToolUseContentBlockStart) {
-      context.consumer.consumeByType("tool_use_content_block_start", reactor.onToolUseContentBlockStart.bind(reactor));
+      context.consumer.consumeByType(
+        "tool_use_content_block_start",
+        reactor.onToolUseContentBlockStart.bind(reactor)
+      );
     }
     if (reactor.onInputJsonDelta) {
       context.consumer.consumeByType("input_json_delta", reactor.onInputJsonDelta.bind(reactor));
     }
     if (reactor.onToolUseContentBlockStop) {
-      context.consumer.consumeByType("tool_use_content_block_stop", reactor.onToolUseContentBlockStop.bind(reactor));
+      context.consumer.consumeByType(
+        "tool_use_content_block_stop",
+        reactor.onToolUseContentBlockStop.bind(reactor)
+      );
     }
     if (reactor.onToolCall) {
       context.consumer.consumeByType("tool_call", reactor.onToolCall.bind(reactor));
@@ -307,16 +331,28 @@ class CompositeReactorAdapter implements AgentReactor {
       context.consumer.consumeByType("agent_ready_state", reactor.onAgentReady.bind(reactor));
     }
     if (reactor.onConversationStart) {
-      context.consumer.consumeByType("conversation_start_state", reactor.onConversationStart.bind(reactor));
+      context.consumer.consumeByType(
+        "conversation_start_state",
+        reactor.onConversationStart.bind(reactor)
+      );
     }
     if (reactor.onConversationThinking) {
-      context.consumer.consumeByType("conversation_thinking_state", reactor.onConversationThinking.bind(reactor));
+      context.consumer.consumeByType(
+        "conversation_thinking_state",
+        reactor.onConversationThinking.bind(reactor)
+      );
     }
     if (reactor.onConversationResponding) {
-      context.consumer.consumeByType("conversation_responding_state", reactor.onConversationResponding.bind(reactor));
+      context.consumer.consumeByType(
+        "conversation_responding_state",
+        reactor.onConversationResponding.bind(reactor)
+      );
     }
     if (reactor.onConversationEnd) {
-      context.consumer.consumeByType("conversation_end_state", reactor.onConversationEnd.bind(reactor));
+      context.consumer.consumeByType(
+        "conversation_end_state",
+        reactor.onConversationEnd.bind(reactor)
+      );
     }
     if (reactor.onToolPlanned) {
       context.consumer.consumeByType("tool_planned_state", reactor.onToolPlanned.bind(reactor));
@@ -334,7 +370,10 @@ class CompositeReactorAdapter implements AgentReactor {
       context.consumer.consumeByType("stream_start_state", reactor.onStreamStart.bind(reactor));
     }
     if (reactor.onStreamComplete) {
-      context.consumer.consumeByType("stream_complete_state", reactor.onStreamComplete.bind(reactor));
+      context.consumer.consumeByType(
+        "stream_complete_state",
+        reactor.onStreamComplete.bind(reactor)
+      );
     }
     if (reactor.onErrorOccurred) {
       context.consumer.consumeByType("error_occurred_state", reactor.onErrorOccurred.bind(reactor));
@@ -379,8 +418,7 @@ class CompositeReactorAdapter implements AgentReactor {
 export function wrapUserReactor(userReactor: UserReactor): AgentReactor {
   // Check which interface methods are present to determine reactor type
 
-  const hasTurnMethods =
-    "onTurnRequest" in userReactor || "onTurnResponse" in userReactor;
+  const hasTurnMethods = "onTurnRequest" in userReactor || "onTurnResponse" in userReactor;
 
   const hasMessageMethods =
     "onUserMessage" in userReactor ||
@@ -416,8 +454,9 @@ export function wrapUserReactor(userReactor: UserReactor): AgentReactor {
     "onToolResult" in userReactor;
 
   // Count how many layers this reactor implements
-  const layerCount = [hasStreamMethods, hasStateMethods, hasMessageMethods, hasTurnMethods]
-    .filter(Boolean).length;
+  const layerCount = [hasStreamMethods, hasStateMethods, hasMessageMethods, hasTurnMethods].filter(
+    Boolean
+  ).length;
 
   // If multi-layer reactor, use CompositeAdapter
   if (layerCount > 1) {

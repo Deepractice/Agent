@@ -92,7 +92,7 @@ const sendMessageHandler = async (message: string) => {
   console.log(`[STEP] Agent state before send:`, {
     initialized: ctx.initialized,
     messagesCount: ctx.agent!.messages.length,
-    subscribedEvents: Array.from(ctx.events.keys())
+    subscribedEvents: Array.from(ctx.events.keys()),
   });
 
   await ctx.agent!.send(message);
@@ -106,7 +106,7 @@ const sendMessageHandler = async (message: string) => {
     assistant_message: ctx.getEvents("assistant_message").length,
     text_delta: ctx.getEvents("text_delta").length,
     error_message: ctx.getEvents("error_message").length,
-    messagesCount: ctx.agent!.messages.length
+    messagesCount: ctx.agent!.messages.length,
   });
 };
 
@@ -126,13 +126,16 @@ When("the driver responds with {string}", async (response: string) => {
   }
 });
 
-When("the driver streams text deltas {string}, {string}, {string}, {string}, {string}", async (...deltas: string[]) => {
-  // Subscribe to text_delta events
-  ctx.subscribeToEvent("text_delta");
+When(
+  "the driver streams text deltas {string}, {string}, {string}, {string}, {string}",
+  async (...deltas: string[]) => {
+    // Subscribe to text_delta events
+    ctx.subscribeToEvent("text_delta");
 
-  // MockDriver streams character by character, so we just wait
-  await new Promise((resolve) => setTimeout(resolve, 200));
-});
+    // MockDriver streams character by character, so we just wait
+    await new Promise((resolve) => setTimeout(resolve, 200));
+  }
+);
 
 When("I send message {string} and the driver responds", async (message: string) => {
   expect(ctx.agent).toBeDefined();
@@ -190,12 +193,15 @@ When("I abort the request", () => {
   ctx.testData.aborted = true;
 });
 
-When(/^the driver plans to use tool "([^"]*)" with input (.+)$/, async (toolName: string, inputJson: string) => {
-  // Tool use would be tested with a specialized mock driver
-  ctx.testData.toolName = toolName;
-  ctx.testData.toolInput = JSON.parse(inputJson);
-  await new Promise((resolve) => setTimeout(resolve, 50));
-});
+When(
+  /^the driver plans to use tool "([^"]*)" with input (.+)$/,
+  async (toolName: string, inputJson: string) => {
+    // Tool use would be tested with a specialized mock driver
+    ctx.testData.toolName = toolName;
+    ctx.testData.toolInput = JSON.parse(inputJson);
+    await new Promise((resolve) => setTimeout(resolve, 50));
+  }
+);
 
 When("the driver completes tool with result {string}", async (result: string) => {
   ctx.testData.toolResult = result;
@@ -232,7 +238,7 @@ Then("the message role should be {string}", (expectedRole: string) => {
 
   // Find the message with the expected role
   // (could be last message if no response yet, or earlier if assistant responded)
-  const messageWithRole = messages.find(m => m.role === expectedRole);
+  const messageWithRole = messages.find((m) => m.role === expectedRole);
   expect(messageWithRole).toBeDefined();
   expect(messageWithRole!.role).toBe(expectedRole);
 });
@@ -242,7 +248,7 @@ Then("the message content should be {string}", (expectedContent: string) => {
   const messages = ctx.agent!.messages;
 
   // Find user message with the expected content
-  const userMessage = messages.find(m => {
+  const userMessage = messages.find((m) => {
     const content =
       typeof m.content === "string"
         ? m.content
@@ -261,7 +267,7 @@ Then("I should receive {string} event", (eventType: string) => {
   if (events.length === 0) {
     console.log(`[STEP] All available events:`, {
       eventTypes: Array.from(ctx.events.keys()),
-      counts: Array.from(ctx.events.entries()).map(([k, v]) => [k, v.length])
+      counts: Array.from(ctx.events.entries()).map(([k, v]) => [k, v.length]),
     });
   }
 

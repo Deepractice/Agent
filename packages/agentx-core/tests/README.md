@@ -45,6 +45,7 @@ pnpm test
 ```
 
 This will:
+
 1. Build the package (`tsup`)
 2. Copy feature files to `dist/features/`
 3. Run Vitest with Cucumber plugin
@@ -114,16 +115,17 @@ The `TestContext` class maintains state across Given/When/Then steps:
 
 ```typescript
 class TestContext {
-  agent?: AgentService;        // Agent instance
-  driver?: any;                 // Mock driver
-  logger?: AgentLogger;         // Logger
-  events: { [type: string]: AgentEvent[] };  // Event collectors
-  errors: Error[];              // Error tracking
+  agent?: AgentService; // Agent instance
+  driver?: any; // Mock driver
+  logger?: AgentLogger; // Logger
+  events: { [type: string]: AgentEvent[] }; // Event collectors
+  errors: Error[]; // Error tracking
   testData: Record<string, any>; // Arbitrary test data
 }
 ```
 
 **Lifecycle:**
+
 - `Before()` - Reset context before each scenario
 - `After()` - Cleanup agent and subscriptions after each scenario
 
@@ -266,7 +268,7 @@ Events propagate asynchronously, add small delays:
 
 ```typescript
 await ctx.agent!.send("Hello");
-await new Promise(resolve => setTimeout(resolve, 100));
+await new Promise((resolve) => setTimeout(resolve, 100));
 
 const events = ctx.getEvents("assistant_message");
 ```
@@ -401,7 +403,7 @@ Add delay after triggering action:
 
 ```typescript
 await ctx.agent!.send("Hello");
-await new Promise(resolve => setTimeout(resolve, 200));
+await new Promise((resolve) => setTimeout(resolve, 200));
 ```
 
 ### Import errors

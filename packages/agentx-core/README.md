@@ -39,24 +39,29 @@ EventBus (RxJS-based communication backbone)
 ### Core Components
 
 #### Facade Layer (`facade/`)
+
 - **`createAgent()`** - Primary API for creating agents (uses mixin pattern)
 - Simple, user-friendly interface
 - Combines Agent data (from `agentx-types`) with AgentService methods
 
 #### Interfaces (`interfaces/`)
+
 **Service Provider Interfaces (SPI)**:
+
 - **`AgentService`** - User-facing runtime API (extends AgentDriver)
 - **`AgentDriver`** - Platform-specific LLM driver contract
 - **`AgentReactor`** - Low-level event processor contract
 - **`AgentReactorContext`** - Context provided to reactors
 
 **User-Friendly Reactor Interfaces**:
+
 - **`StreamReactor`** - Stream layer event handlers
 - **`StateReactor`** - State layer event handlers
 - **`MessageReactor`** - Message layer event handlers
 - **`ExchangeReactor`** - Exchange layer event handlers
 
 #### Core Implementation (`core/agent/`)
+
 - **`AgentEngine`** - Orchestrates all reactors via ReactorRegistry
 - **`AgentServiceImpl`** - Default implementation of AgentService
 - **`AgentEventBus`** - RxJS-based event communication
@@ -67,6 +72,7 @@ EventBus (RxJS-based communication backbone)
 - **`AgentExchangeTracker`** - Exchange tracking reactor
 
 #### Utilities (`utils/`)
+
 - **`ReactorAdapter`** - Adapts user-friendly reactor interfaces to AgentReactor
 - **`emitError`** - Unified error emission utility
 - **`StreamEventBuilder`** - Helper for building stream events
@@ -91,6 +97,7 @@ pnpm add @deepractice-ai/agentx-core
 **Platform-Specific SDKs:**
 
 For most use cases, use a platform-specific SDK instead:
+
 - **Node.js**: `@deepractice-ai/agentx-framework` (includes ClaudeSDKDriver)
 - **Browser**: `@deepractice-ai/agentx-framework/browser` (includes WebSocketDriver)
 
@@ -180,6 +187,7 @@ interface AgentDriver {
 ```
 
 **Driver Implementations:**
+
 - `ClaudeSDKDriver` - Uses `@anthropic-ai/sdk` (Node.js)
 - `WebSocketDriver` - Connects to AgentX server (Browser)
 - `MockDriver` - For testing
@@ -198,7 +206,7 @@ interface AgentService extends AgentDriver {
   send(message: string): Promise<void>;
   react(handlers: Record<string, any>): () => void;
   clear(): void;
-  exportToSession(): Omit<Session, 'id'>;
+  exportToSession(): Omit<Session, "id">;
 
   // Inherited from AgentDriver:
   // sendMessage(), abort(), destroy()
@@ -245,6 +253,7 @@ interface AgentReactorContext {
 ```
 
 **Built-in Reactors:**
+
 - `AgentDriverBridge` - Connects Driver to EventBus
 - `AgentStateMachine` - Generates State events from Stream events
 - `AgentMessageAssembler` - Assembles Message events from Stream deltas
@@ -278,6 +287,7 @@ const agent = createAgent("my-agent", driver, {
 ```
 
 **ReactorAdapter** automatically:
+
 - Detects which layer interface you implemented
 - Subscribes to appropriate events
 - Manages lifecycle (onInitialize/onDestroy)
@@ -296,7 +306,7 @@ class AgentEngine {
 
   async initialize(): Promise<void>; // Initializes all Reactors
   abort(): void;
-  async destroy(): Promise<void>;   // Destroys all Reactors (reverse order)
+  async destroy(): Promise<void>; // Destroys all Reactors (reverse order)
 }
 ```
 
@@ -340,11 +350,11 @@ interface ErrorMessage {
   role: "error";
   subtype: "system" | "agent" | "llm" | "validation" | "unknown";
   severity: "fatal" | "error" | "warning";
-  message: string;           // Human-readable error
-  code?: string;            // Machine-readable code
-  details?: unknown;        // Additional context
-  recoverable?: boolean;    // Can the agent continue?
-  stack?: string;           // Stack trace if available
+  message: string; // Human-readable error
+  code?: string; // Machine-readable code
+  details?: unknown; // Additional context
+  recoverable?: boolean; // Can the agent continue?
+  stack?: string; // Stack trace if available
   timestamp: number;
 }
 ```
@@ -365,7 +375,7 @@ agent.react({
       // Handle fatal errors
       await agent.destroy();
     }
-  }
+  },
 });
 ```
 
@@ -475,11 +485,7 @@ agent.clear();
 ### createAgent (Facade API)
 
 ```typescript
-function createAgent(
-  id: string,
-  driver: AgentDriver,
-  options?: CreateAgentOptions
-): AgentInstance;
+function createAgent(id: string, driver: AgentDriver, options?: CreateAgentOptions): AgentInstance;
 
 interface CreateAgentOptions {
   reactors?: AgentReactor[];
@@ -506,7 +512,7 @@ interface AgentService extends AgentDriver {
   send(message: string): Promise<void>;
   react(handlers: Record<string, Function>): () => void;
   clear(): void;
-  exportToSession(): Omit<Session, 'id'>;
+  exportToSession(): Omit<Session, "id">;
   destroy(): Promise<void>;
 
   // Inherited from AgentDriver:
@@ -550,10 +556,10 @@ function wrapUserReactor(userReactor: UserReactor): AgentReactor;
 type UserReactor = StreamReactor | StateReactor | MessageReactor | ExchangeReactor;
 
 // Or use specific adapters
-class StreamReactorAdapter extends BaseReactorAdapter { }
-class StateReactorAdapter extends BaseReactorAdapter { }
-class MessageReactorAdapter extends BaseReactorAdapter { }
-class ExchangeReactorAdapter extends BaseReactorAdapter { }
+class StreamReactorAdapter extends BaseReactorAdapter {}
+class StateReactorAdapter extends BaseReactorAdapter {}
+class MessageReactorAdapter extends BaseReactorAdapter {}
+class ExchangeReactorAdapter extends BaseReactorAdapter {}
 ```
 
 ## Design Principles

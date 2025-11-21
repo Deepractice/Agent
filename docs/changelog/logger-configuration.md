@@ -22,22 +22,26 @@ Added unified `configure()` API to AgentX framework for global configuration, st
 All `agentx-core` components now have structured logging:
 
 **Facade Layer**:
+
 - `createAgent()`: INFO logs for agent creation
 - `createDriver()`: INFO/DEBUG logs for driver lifecycle
 
 **Core Components**:
+
 - `AgentServiceImpl`: INFO/WARN/ERROR/DEBUG logs
 - `AgentEngine`: INFO/DEBUG logs
 - `AgentEventBus`: WARN/ERROR/DEBUG logs
 - `AgentReactorRegistry`: INFO/WARN/ERROR/DEBUG logs
 
 **Core Reactors**:
+
 - `AgentDriverBridge`: INFO/ERROR/DEBUG logs
 - `AgentStateMachine`: INFO/DEBUG logs
 - `AgentExchangeTracker`: DEBUG logs
 - `AgentMessageAssembler`: WARN/ERROR/DEBUG logs
 
 **Log Levels**:
+
 - `DEBUG (0)`: Internal state changes, detailed flow
 - `INFO (1)`: Major operations (create, initialize, destroy)
 - `WARN (2)`: Recoverable issues, warnings
@@ -54,12 +58,13 @@ configure({
   logger: {
     defaultLevel: LogLevel.DEBUG,
     defaultImplementation: (name) => new PinoLogger(name),
-    consoleOptions: { colors: true, timestamps: true }
-  }
+    consoleOptions: { colors: true, timestamps: true },
+  },
 });
 ```
 
 **Exported from framework**:
+
 - `configure(config: AgentXConfig)` - Global configuration function
 - `LogLevel` enum - Log level constants
 - `LoggerFactory` - Direct factory access (advanced usage)
@@ -70,15 +75,17 @@ configure({
 ### Updated Files
 
 **New Files**:
+
 - `packages/agentx-logger/` - Complete logger package
 - `packages/agentx-framework/src/configure.ts` - Configuration API
 - `docs/configure-logger.md` - Usage guide
 
 **Modified Files**:
+
 - `packages/agentx-core/package.json` - Added agentx-logger dependency
 - `packages/agentx-framework/package.json` - Added agentx-logger dependency
 - `packages/agentx-framework/src/index.ts` - Export configure API
-- All core components - Replaced console.* with logger calls
+- All core components - Replaced console.\* with logger calls
 - `packages/agentx-ui/server/dev-server.ts` - Added configure example
 
 ## Usage Examples
@@ -91,8 +98,8 @@ import { configure, LogLevel } from "@deepractice-ai/agentx-framework";
 configure({
   logger: {
     defaultLevel: LogLevel.DEBUG,
-    consoleOptions: { colors: true, timestamps: true }
-  }
+    consoleOptions: { colors: true, timestamps: true },
+  },
 });
 ```
 
@@ -113,8 +120,8 @@ class PinoLoggerAdapter implements LoggerProvider {
 configure({
   logger: {
     defaultLevel: LogLevel.INFO,
-    defaultImplementation: (name) => new PinoLoggerAdapter(name)
-  }
+    defaultImplementation: (name) => new PinoLoggerAdapter(name),
+  },
 });
 ```
 
@@ -125,8 +132,8 @@ import { configure, LogLevel } from "@deepractice-ai/agentx-framework";
 
 configure({
   logger: {
-    defaultLevel: LogLevel.SILENT
-  }
+    defaultLevel: LogLevel.SILENT,
+  },
 });
 ```
 
@@ -141,6 +148,7 @@ configure({
 ### Global Configuration Pattern
 
 Similar to Node.js ecosystem patterns:
+
 - **Winston**: `winston.configure()`
 - **Log4js**: `log4js.configure()`
 - **Debug**: `DEBUG=*` environment variable
@@ -172,7 +180,7 @@ const agent = createAgent(id, driver);
 import { configure, LogLevel } from "@deepractice-ai/agentx-framework";
 
 configure({
-  logger: { defaultLevel: LogLevel.INFO }
+  logger: { defaultLevel: LogLevel.INFO },
 });
 
 // All subsequent agent operations use configured logger

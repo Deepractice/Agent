@@ -38,7 +38,12 @@
  * ```
  */
 
-import { AgentServiceImpl, type AgentService, type AgentDriver, type EngineConfig } from "@deepractice-ai/agentx-core";
+import {
+  AgentServiceImpl,
+  type AgentService,
+  type AgentDriver,
+  type EngineConfig,
+} from "@deepractice-ai/agentx-core";
 import type { Agent } from "@deepractice-ai/agentx-types";
 import type { DefinedDriver } from "./defineDriver";
 import type { DefinedReactor } from "./defineReactor";
@@ -181,7 +186,11 @@ export function defineAgent<TConfig extends ConfigSchema = any>(
       let driver: AgentDriver;
 
       // Check if driver is an AgentService instance (duck typing)
-      if (typeof definition.driver === "object" && "send" in definition.driver && "initialize" in definition.driver) {
+      if (
+        typeof definition.driver === "object" &&
+        "send" in definition.driver &&
+        "initialize" in definition.driver
+      ) {
         // Direct AgentService instance - it implements AgentDriver interface
         driver = definition.driver as AgentDriver;
       } else if ("create" in definition.driver) {

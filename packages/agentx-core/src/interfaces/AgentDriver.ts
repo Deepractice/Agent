@@ -142,9 +142,7 @@ export interface AgentDriver {
    * }
    * ```
    */
-  sendMessage(
-    messages: UserMessage | AsyncIterable<UserMessage>
-  ): AsyncIterable<StreamEventType>;
+  sendMessage(messages: UserMessage | AsyncIterable<UserMessage>): AsyncIterable<StreamEventType>;
 
   /**
    * Abort the current streaming operation

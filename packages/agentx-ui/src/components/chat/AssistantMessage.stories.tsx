@@ -27,7 +27,8 @@ export const Default: Story = {
     message: {
       id: "1",
       role: "assistant",
-      content: "React hooks are functions that let you use state and other React features in functional components. The most common hooks are useState, useEffect, and useContext.",
+      content:
+        "React hooks are functions that let you use state and other React features in functional components. The most common hooks are useState, useEffect, and useContext.",
       timestamp: Date.now(),
     },
   },
@@ -135,7 +136,8 @@ export const WithThinking: Story = {
       content: [
         {
           type: "thinking",
-          reasoning: "The user wants to understand how to optimize their React component. I should analyze the code for common performance issues like unnecessary re-renders and suggest using useMemo or useCallback.",
+          reasoning:
+            "The user wants to understand how to optimize their React component. I should analyze the code for common performance issues like unnecessary re-renders and suggest using useMemo or useCallback.",
         },
         {
           type: "text",
@@ -215,7 +217,8 @@ export const ConversationFlow: Story = {
         message={{
           id: "2",
           role: "assistant",
-          content: "TypeScript is a strongly typed programming language that builds on JavaScript. It adds optional static typing to the language, which helps catch errors early and improves code quality.",
+          content:
+            "TypeScript is a strongly typed programming language that builds on JavaScript. It adds optional static typing to the language, which helps catch errors early and improves code quality.",
           timestamp: Date.now() - 60000,
         }}
       />

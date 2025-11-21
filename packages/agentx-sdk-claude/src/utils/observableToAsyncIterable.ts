@@ -17,9 +17,7 @@
 
 import type { Observable } from "rxjs";
 
-export async function* observableToAsyncIterable<T>(
-  observable: Observable<T>
-): AsyncIterable<T> {
+export async function* observableToAsyncIterable<T>(observable: Observable<T>): AsyncIterable<T> {
   const queue: T[] = [];
   let resolve: ((value: IteratorResult<T>) => void) | null = null;
   let reject: ((error: Error) => void) | null = null;

@@ -205,9 +205,7 @@ export const WithImageAttachment: Story = {
               <div key={idx} className="text-sm mb-1 flex items-center gap-2">
                 <span>📎</span>
                 <span>{file.name}</span>
-                <span className="text-muted-foreground">
-                  ({(file.size / 1024).toFixed(1)} KB)
-                </span>
+                <span className="text-muted-foreground">({(file.size / 1024).toFixed(1)} KB)</span>
               </div>
             ))}
           </div>

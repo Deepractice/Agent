@@ -95,7 +95,12 @@ class ErrorDriver extends MockDriver {
   }
 
   protected override async *generateContent(message: UserMessage): AsyncIterable<StreamEventType> {
-    console.log("[ErrorDriver] generateContent called, shouldThrowError:", this.shouldThrowError, "errorMessage:", this.errorMessage);
+    console.log(
+      "[ErrorDriver] generateContent called, shouldThrowError:",
+      this.shouldThrowError,
+      "errorMessage:",
+      this.errorMessage
+    );
 
     if (this.shouldThrowError) {
       console.log("[ErrorDriver] THROWING ERROR:", this.errorMessage);
@@ -244,7 +249,12 @@ When("I send message {string}", async (message: string) => {
     console.log("[WHEN] Setting driver to throw error:", ctx.testData.driverError);
     ctx.driver.throwError(ctx.testData.driverError);
   } else {
-    console.log("[WHEN] No driver error set, driverError:", ctx.testData.driverError, "is ErrorDriver:", ctx.driver instanceof ErrorDriver);
+    console.log(
+      "[WHEN] No driver error set, driverError:",
+      ctx.testData.driverError,
+      "is ErrorDriver:",
+      ctx.driver instanceof ErrorDriver
+    );
   }
 
   try {

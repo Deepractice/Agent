@@ -19,8 +19,7 @@ export const TextResult: Story = {
     name: "get_weather",
     output: {
       type: "text",
-      value:
-        "The weather in San Francisco is currently 72°F (22°C) with clear skies.",
+      value: "The weather in San Francisco is currently 72°F (22°C) with clear skies.",
     },
   },
 };

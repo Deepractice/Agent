@@ -88,9 +88,7 @@ export function ImageContent({
 
         {/* Image info */}
         {name && !hasError && (
-          <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">
-            📷 {name}
-          </div>
+          <div className="mt-2 text-xs text-gray-600 dark:text-gray-400">📷 {name}</div>
         )}
       </div>
 
@@ -118,11 +116,7 @@ export function ImageContent({
             />
 
             {/* Image info */}
-            {name && (
-              <div className="absolute -bottom-8 left-0 text-white text-sm">
-                {name}
-              </div>
-            )}
+            {name && <div className="absolute -bottom-8 left-0 text-white text-sm">{name}</div>}
           </div>
         </div>
       )}

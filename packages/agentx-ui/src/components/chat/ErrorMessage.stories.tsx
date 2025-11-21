@@ -39,30 +39,17 @@ const createError = (
  */
 export const SystemError: Story = {
   args: {
-    error: createError(
-      "system",
-      "error",
-      "WebSocket connection failed",
-      "WS_ERROR",
-      true
-    ),
+    error: createError("system", "error", "WebSocket connection failed", "WS_ERROR", true),
   },
 };
 
 export const SystemErrorWithDetails: Story = {
   args: {
-    error: createError(
-      "system",
-      "error",
-      "WebSocket connection failed",
-      "WS_ERROR",
-      true,
-      {
-        url: "ws://localhost:5200/ws",
-        reason: "Connection refused",
-        stack: "Error: Connection refused\n  at WebSocket.connect (...)",
-      }
-    ),
+    error: createError("system", "error", "WebSocket connection failed", "WS_ERROR", true, {
+      url: "ws://localhost:5200/ws",
+      reason: "Connection refused",
+      stack: "Error: Connection refused\n  at WebSocket.connect (...)",
+    }),
     showDetails: true,
   },
 };
@@ -84,36 +71,22 @@ export const FatalSystemError: Story = {
  */
 export const LLMError: Story = {
   args: {
-    error: createError(
-      "llm",
-      "error",
-      "Rate limit exceeded",
-      "RATE_LIMIT",
-      true,
-      {
-        retryAfter: 60,
-        limit: 50,
-        used: 51,
-      }
-    ),
+    error: createError("llm", "error", "Rate limit exceeded", "RATE_LIMIT", true, {
+      retryAfter: 60,
+      limit: 50,
+      used: 51,
+    }),
     showDetails: true,
   },
 };
 
 export const LLMMaxTurnsError: Story = {
   args: {
-    error: createError(
-      "llm",
-      "error",
-      "Maximum turns (25) exceeded",
-      "MAX_TURNS",
-      false,
-      {
-        durationMs: 15234,
-        numTurns: 25,
-        totalCostUsd: 0.15,
-      }
-    ),
+    error: createError("llm", "error", "Maximum turns (25) exceeded", "MAX_TURNS", false, {
+      durationMs: 15234,
+      numTurns: 25,
+      totalCostUsd: 0.15,
+    }),
     showDetails: true,
   },
 };
@@ -123,13 +96,7 @@ export const LLMMaxTurnsError: Story = {
  */
 export const AgentError: Story = {
   args: {
-    error: createError(
-      "agent",
-      "error",
-      "Invalid message format",
-      "INVALID_MESSAGE",
-      true
-    ),
+    error: createError("agent", "error", "Invalid message format", "INVALID_MESSAGE", true),
   },
 };
 
@@ -138,13 +105,7 @@ export const AgentError: Story = {
  */
 export const ValidationError: Story = {
   args: {
-    error: createError(
-      "validation",
-      "error",
-      "API key is required",
-      "MISSING_API_KEY",
-      false
-    ),
+    error: createError("validation", "error", "API key is required", "MISSING_API_KEY", false),
   },
 };
 
@@ -168,16 +129,9 @@ export const Warning: Story = {
  */
 export const UnknownError: Story = {
   args: {
-    error: createError(
-      "unknown",
-      "error",
-      "An unexpected error occurred",
-      undefined,
-      true,
-      {
-        originalError: "TypeError: Cannot read property 'x' of undefined",
-      }
-    ),
+    error: createError("unknown", "error", "An unexpected error occurred", undefined, true, {
+      originalError: "TypeError: Cannot read property 'x' of undefined",
+    }),
     showDetails: true,
   },
 };

@@ -46,7 +46,7 @@ export function emitError(
 ): void {
   const severity = options?.severity || "error";
   const code = options?.code || `${subtype.toUpperCase()}_ERROR`;
-  const recoverable = options?.recoverable ?? (severity !== "fatal");
+  const recoverable = options?.recoverable ?? severity !== "fatal";
 
   const errorMessage: ErrorMessage = {
     id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,

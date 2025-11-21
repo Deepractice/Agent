@@ -92,7 +92,6 @@ async function serveStaticFile(req: IncomingMessage, res: ServerResponse): Promi
   }
 }
 
-
 async function startServer() {
   // Platform configuration (AGENTX_*)
   const apiKey = process.env.AGENTX_API_KEY;
@@ -102,8 +101,15 @@ async function startServer() {
   // Agent runtime configuration (AGENT_*)
   const workDir = process.env.AGENT_WORK_DIR;
   const systemPrompt = process.env.AGENT_SYSTEM_PROMPT || "You are a helpful AI assistant.";
-  const maxTurns = process.env.AGENT_MAX_TURNS ? parseInt(process.env.AGENT_MAX_TURNS, 10) : undefined;
-  const permissionMode = (process.env.AGENT_PERMISSION_MODE as "default" | "acceptEdits" | "bypassPermissions" | "plan") || "bypassPermissions";
+  const maxTurns = process.env.AGENT_MAX_TURNS
+    ? parseInt(process.env.AGENT_MAX_TURNS, 10)
+    : undefined;
+  const permissionMode =
+    (process.env.AGENT_PERMISSION_MODE as
+      | "default"
+      | "acceptEdits"
+      | "bypassPermissions"
+      | "plan") || "bypassPermissions";
 
   // Validate required environment variables
   if (!apiKey) {
@@ -142,7 +148,9 @@ async function startServer() {
   console.log(`   Working Directory: ${workDir}`);
   console.log(`   Permission Mode: ${permissionMode}`);
   if (systemPrompt !== "You are a helpful AI assistant.") {
-    console.log(`   System Prompt: ${systemPrompt.substring(0, 50)}${systemPrompt.length > 50 ? "..." : ""}`);
+    console.log(
+      `   System Prompt: ${systemPrompt.substring(0, 50)}${systemPrompt.length > 50 ? "..." : ""}`
+    );
   }
   if (maxTurns !== undefined) {
     console.log(`   Max Turns: ${maxTurns}`);

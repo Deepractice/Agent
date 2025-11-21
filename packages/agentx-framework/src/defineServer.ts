@@ -23,7 +23,13 @@ import type { DefinedAgent } from "~/defineAgent";
 import type { ConfigSchema, InferConfig } from "~/defineConfig";
 
 // Re-export types for advanced usage
-export { type AgentServer, type AgentServerConfig, type AgentFactory, type RequestHandler, createAgentFactory } from "./server/AgentServer";
+export {
+  type AgentServer,
+  type AgentServerConfig,
+  type AgentFactory,
+  type RequestHandler,
+  createAgentFactory,
+} from "./server/AgentServer";
 
 /**
  * Server configuration (extends base AgentServerConfig)

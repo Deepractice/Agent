@@ -52,13 +52,9 @@ export function ToolCallContent({
         <div className="flex items-center gap-2">
           <span className="text-blue-600 dark:text-blue-400">🔧</span>
           <span className="font-mono">{name}</span>
-          <span className="text-xs text-blue-600 dark:text-blue-400">
-            (Tool Call)
-          </span>
+          <span className="text-xs text-blue-600 dark:text-blue-400">(Tool Call)</span>
         </div>
-        <span
-          className={`transform transition-transform ${isExpanded ? "rotate-180" : ""}`}
-        >
+        <span className={`transform transition-transform ${isExpanded ? "rotate-180" : ""}`}>
           ▼
         </span>
       </button>
@@ -68,8 +64,7 @@ export function ToolCallContent({
         <div className="px-4 py-3 border-t border-blue-200 dark:border-blue-800 space-y-3">
           {/* Call ID */}
           <div className="text-xs text-blue-600 dark:text-blue-400">
-            <span className="font-medium">ID:</span>{" "}
-            <span className="font-mono">{id}</span>
+            <span className="font-medium">ID:</span> <span className="font-mono">{id}</span>
           </div>
 
           {/* Input parameters */}

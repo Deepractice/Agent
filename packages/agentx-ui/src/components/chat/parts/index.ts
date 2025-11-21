@@ -10,7 +10,4 @@ export { ThinkingContent, type ThinkingContentProps } from "./ThinkingContent";
 export { ImageContent, type ImageContentProps } from "./ImageContent";
 export { FileContent, type FileContentProps } from "./FileContent";
 export { ToolCallContent, type ToolCallContentProps } from "./ToolCallContent";
-export {
-  ToolResultContent,
-  type ToolResultContentProps,
-} from "./ToolResultContent";
+export { ToolResultContent, type ToolResultContentProps } from "./ToolResultContent";

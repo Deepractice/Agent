@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
-import type { AgentService } from "@deepractice-ai/agentx-framework/browser";
-import type { Message } from "@deepractice-ai/agentx-framework/browser";
+import type { AgentService } from "@deepractice-ai/agentx-framework";
+import type { Message } from "@deepractice-ai/agentx-framework";
 import type {
   ErrorMessageEvent,
   TextDeltaEvent,
@@ -12,7 +12,7 @@ import type {
   ConversationEndStateEvent,
   TurnResponseEvent,
   ErrorMessage as ErrorMessageType,
-} from "@deepractice-ai/agentx-framework/browser";
+} from "@deepractice-ai/agentx-framework";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
 import { ErrorMessage } from "./ErrorMessage";
@@ -131,22 +131,24 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
         logger.info("tool_result", { toolId: event.data.toolId, content: event.data.content });
         const { toolId, content, isError } = event.data;
 
-        setMessages((prev) => prev.map((msg) => {
-          // Find the ToolUseMessage with matching toolCall.id
-          if (msg.role === "tool-use" && msg.toolCall.id === toolId) {
-            return {
-              ...msg,
-              toolResult: {
-                ...msg.toolResult,
-                output: {
-                  type: isError ? "error-text" as const : "text" as const,
-                  value: typeof content === "string" ? content : JSON.stringify(content),
+        setMessages((prev) =>
+          prev.map((msg) => {
+            // Find the ToolUseMessage with matching toolCall.id
+            if (msg.role === "tool-use" && msg.toolCall.id === toolId) {
+              return {
+                ...msg,
+                toolResult: {
+                  ...msg.toolResult,
+                  output: {
+                    type: isError ? ("error-text" as const) : ("text" as const),
+                    value: typeof content === "string" ? content : JSON.stringify(content),
+                  },
                 },
-              },
-            };
-          }
-          return msg;
-        }));
+              };
+            }
+            return msg;
+          })
+        );
       },
 
       // Message layer - handle error messages

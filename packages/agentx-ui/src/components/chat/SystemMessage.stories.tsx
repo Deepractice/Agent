@@ -27,7 +27,8 @@ export const SystemPrompt: Story = {
     message: {
       id: "1",
       role: "system",
-      content: "You are a helpful AI assistant specialized in software development. You provide clear, accurate, and actionable advice to help developers solve problems.",
+      content:
+        "You are a helpful AI assistant specialized in software development. You provide clear, accurate, and actionable advice to help developers solve problems.",
       timestamp: Date.now(),
     },
   },
@@ -55,7 +56,8 @@ export const Configuration: Story = {
     message: {
       id: "3",
       role: "system",
-      content: "Configuration loaded: Model: claude-3-5-sonnet-20241022 | Temperature: 0.7 | Max tokens: 4096",
+      content:
+        "Configuration loaded: Model: claude-3-5-sonnet-20241022 | Temperature: 0.7 | Max tokens: 4096",
       timestamp: Date.now(),
     },
   },
@@ -69,7 +71,8 @@ export const Warning: Story = {
     message: {
       id: "4",
       role: "system",
-      content: "Warning: API rate limit approaching. Please reduce request frequency to avoid throttling.",
+      content:
+        "Warning: API rate limit approaching. Please reduce request frequency to avoid throttling.",
       timestamp: Date.now(),
     },
   },
@@ -83,7 +86,8 @@ export const FeatureAnnouncement: Story = {
     message: {
       id: "5",
       role: "system",
-      content: "New feature enabled: Image analysis is now available. You can attach images to your messages for AI analysis.",
+      content:
+        "New feature enabled: Image analysis is now available. You can attach images to your messages for AI analysis.",
       timestamp: Date.now(),
     },
   },
@@ -117,7 +121,8 @@ export const ContextUpdate: Story = {
     message: {
       id: "7",
       role: "system",
-      content: "Context updated: Added 3 files to working memory (Button.tsx, Input.tsx, Modal.tsx)",
+      content:
+        "Context updated: Added 3 files to working memory (Button.tsx, Input.tsx, Modal.tsx)",
       timestamp: Date.now(),
     },
   },

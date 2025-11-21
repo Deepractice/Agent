@@ -126,19 +126,13 @@ export class AgentStateMachine implements AgentReactor {
     });
 
     // Content blocks
-    consumer.consumeByType(
-      "text_content_block_start",
-      (event: TextContentBlockStartEvent) => {
-        this.onTextContentBlockStart(event);
-      }
-    );
+    consumer.consumeByType("text_content_block_start", (event: TextContentBlockStartEvent) => {
+      this.onTextContentBlockStart(event);
+    });
 
-    consumer.consumeByType(
-      "text_content_block_stop",
-      (event: TextContentBlockStopEvent) => {
-        this.onTextContentBlockStop(event);
-      }
-    );
+    consumer.consumeByType("text_content_block_stop", (event: TextContentBlockStopEvent) => {
+      this.onTextContentBlockStop(event);
+    });
 
     consumer.consumeByType(
       "tool_use_content_block_start",
@@ -147,12 +141,9 @@ export class AgentStateMachine implements AgentReactor {
       }
     );
 
-    consumer.consumeByType(
-      "tool_use_content_block_stop",
-      (event: ToolUseContentBlockStopEvent) => {
-        this.onToolUseContentBlockStop(event);
-      }
-    );
+    consumer.consumeByType("tool_use_content_block_stop", (event: ToolUseContentBlockStopEvent) => {
+      this.onToolUseContentBlockStop(event);
+    });
   }
 
   /**
@@ -186,9 +177,7 @@ export class AgentStateMachine implements AgentReactor {
    * Triggers: StreamCompleteStateEvent
    */
   private onMessageStop(event: MessageStopEvent): void {
-    const duration = this.conversationStartTime
-      ? event.timestamp - this.conversationStartTime
-      : 0;
+    const duration = this.conversationStartTime ? event.timestamp - this.conversationStartTime : 0;
 
     // Emit StreamCompleteStateEvent
     const streamCompleteEvent: StreamCompleteStateEvent = {

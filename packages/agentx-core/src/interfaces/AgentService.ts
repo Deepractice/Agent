@@ -113,7 +113,7 @@ export interface AgentService extends AgentDriver {
    * await saveSession(session);
    * ```
    */
-  exportToSession(): Omit<Session, 'id'>;
+  exportToSession(): Omit<Session, "id">;
 
   // Note: sendMessage(), abort(), destroy() are inherited from AgentDriver
 }

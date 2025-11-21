@@ -56,9 +56,7 @@ export function ThinkingContent({
             </span>
           )}
         </div>
-        <span
-          className={`transform transition-transform ${isExpanded ? "rotate-180" : ""}`}
-        >
+        <span className={`transform transition-transform ${isExpanded ? "rotate-180" : ""}`}>
           ▼
         </span>
       </button>

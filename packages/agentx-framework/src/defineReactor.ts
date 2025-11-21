@@ -97,20 +97,41 @@ export interface ReactorDefinition<TConfig = any> {
   onMessageStart?: (event: MessageStartEvent, config: TConfig) => void | Promise<void>;
   onMessageDelta?: (event: MessageDeltaEvent, config: TConfig) => void | Promise<void>;
   onMessageStop?: (event: MessageStopEvent, config: TConfig) => void | Promise<void>;
-  onTextContentBlockStart?: (event: TextContentBlockStartEvent, config: TConfig) => void | Promise<void>;
+  onTextContentBlockStart?: (
+    event: TextContentBlockStartEvent,
+    config: TConfig
+  ) => void | Promise<void>;
   onTextDelta?: (event: TextDeltaEvent, config: TConfig) => void | Promise<void>;
-  onTextContentBlockStop?: (event: TextContentBlockStopEvent, config: TConfig) => void | Promise<void>;
-  onToolUseContentBlockStart?: (event: ToolUseContentBlockStartEvent, config: TConfig) => void | Promise<void>;
+  onTextContentBlockStop?: (
+    event: TextContentBlockStopEvent,
+    config: TConfig
+  ) => void | Promise<void>;
+  onToolUseContentBlockStart?: (
+    event: ToolUseContentBlockStartEvent,
+    config: TConfig
+  ) => void | Promise<void>;
   onInputJsonDelta?: (event: InputJsonDeltaEvent, config: TConfig) => void | Promise<void>;
-  onToolUseContentBlockStop?: (event: ToolUseContentBlockStopEvent, config: TConfig) => void | Promise<void>;
+  onToolUseContentBlockStop?: (
+    event: ToolUseContentBlockStopEvent,
+    config: TConfig
+  ) => void | Promise<void>;
   onToolCall?: (event: ToolCallEvent, config: TConfig) => void | Promise<void>;
   onToolResult?: (event: ToolResultEvent, config: TConfig) => void | Promise<void>;
 
   // ==================== State Layer ====================
   onAgentReady?: (event: AgentReadyStateEvent, config: TConfig) => void | Promise<void>;
-  onConversationStart?: (event: ConversationStartStateEvent, config: TConfig) => void | Promise<void>;
-  onConversationThinking?: (event: ConversationThinkingStateEvent, config: TConfig) => void | Promise<void>;
-  onConversationResponding?: (event: ConversationRespondingStateEvent, config: TConfig) => void | Promise<void>;
+  onConversationStart?: (
+    event: ConversationStartStateEvent,
+    config: TConfig
+  ) => void | Promise<void>;
+  onConversationThinking?: (
+    event: ConversationThinkingStateEvent,
+    config: TConfig
+  ) => void | Promise<void>;
+  onConversationResponding?: (
+    event: ConversationRespondingStateEvent,
+    config: TConfig
+  ) => void | Promise<void>;
   onConversationEnd?: (event: ConversationEndStateEvent, config: TConfig) => void | Promise<void>;
   onToolPlanned?: (event: ToolPlannedStateEvent, config: TConfig) => void | Promise<void>;
   onToolExecuting?: (event: ToolExecutingStateEvent, config: TConfig) => void | Promise<void>;
@@ -160,7 +181,8 @@ function buildUserReactor(definition: ReactorDefinition, config: any): any {
 
   // ==================== Lifecycle ====================
   if (definition.onInit) {
-    userReactor.onInitialize = (context: AgentReactorContext) => definition.onInit!(context, config);
+    userReactor.onInitialize = (context: AgentReactorContext) =>
+      definition.onInit!(context, config);
   }
   if (definition.onDestroy) {
     userReactor.onDestroy = () => definition.onDestroy!();
@@ -192,7 +214,8 @@ function buildUserReactor(definition: ReactorDefinition, config: any): any {
       definition.onToolUseContentBlockStart!(e, config);
   }
   if (definition.onInputJsonDelta) {
-    userReactor.onInputJsonDelta = (e: InputJsonDeltaEvent) => definition.onInputJsonDelta!(e, config);
+    userReactor.onInputJsonDelta = (e: InputJsonDeltaEvent) =>
+      definition.onInputJsonDelta!(e, config);
   }
   if (definition.onToolUseContentBlockStop) {
     userReactor.onToolUseContentBlockStop = (e: ToolUseContentBlockStopEvent) =>
@@ -229,10 +252,12 @@ function buildUserReactor(definition: ReactorDefinition, config: any): any {
     userReactor.onToolPlanned = (e: ToolPlannedStateEvent) => definition.onToolPlanned!(e, config);
   }
   if (definition.onToolExecuting) {
-    userReactor.onToolExecuting = (e: ToolExecutingStateEvent) => definition.onToolExecuting!(e, config);
+    userReactor.onToolExecuting = (e: ToolExecutingStateEvent) =>
+      definition.onToolExecuting!(e, config);
   }
   if (definition.onToolCompleted) {
-    userReactor.onToolCompleted = (e: ToolCompletedStateEvent) => definition.onToolCompleted!(e, config);
+    userReactor.onToolCompleted = (e: ToolCompletedStateEvent) =>
+      definition.onToolCompleted!(e, config);
   }
   if (definition.onToolFailed) {
     userReactor.onToolFailed = (e: ToolFailedStateEvent) => definition.onToolFailed!(e, config);
@@ -241,10 +266,12 @@ function buildUserReactor(definition: ReactorDefinition, config: any): any {
     userReactor.onStreamStart = (e: StreamStartStateEvent) => definition.onStreamStart!(e, config);
   }
   if (definition.onStreamComplete) {
-    userReactor.onStreamComplete = (e: StreamCompleteStateEvent) => definition.onStreamComplete!(e, config);
+    userReactor.onStreamComplete = (e: StreamCompleteStateEvent) =>
+      definition.onStreamComplete!(e, config);
   }
   if (definition.onErrorOccurred) {
-    userReactor.onErrorOccurred = (e: ErrorOccurredStateEvent) => definition.onErrorOccurred!(e, config);
+    userReactor.onErrorOccurred = (e: ErrorOccurredStateEvent) =>
+      definition.onErrorOccurred!(e, config);
   }
 
   // ==================== Message Layer ====================
@@ -252,10 +279,12 @@ function buildUserReactor(definition: ReactorDefinition, config: any): any {
     userReactor.onUserMessage = (e: UserMessageEvent) => definition.onUserMessage!(e, config);
   }
   if (definition.onAssistantMessage) {
-    userReactor.onAssistantMessage = (e: AssistantMessageEvent) => definition.onAssistantMessage!(e, config);
+    userReactor.onAssistantMessage = (e: AssistantMessageEvent) =>
+      definition.onAssistantMessage!(e, config);
   }
   if (definition.onToolUseMessage) {
-    userReactor.onToolUseMessage = (e: ToolUseMessageEvent) => definition.onToolUseMessage!(e, config);
+    userReactor.onToolUseMessage = (e: ToolUseMessageEvent) =>
+      definition.onToolUseMessage!(e, config);
   }
   if (definition.onErrorMessage) {
     userReactor.onErrorMessage = (e: ErrorMessageEvent) => definition.onErrorMessage!(e, config);
@@ -307,6 +336,6 @@ export function defineReactor<TConfig = any>(
       // Use core's wrapUserReactor to convert to AgentReactor
       // This automatically handles event subscription and lifecycle
       return coreWrapUserReactor(userReactor);
-    }
+    },
   };
 }

@@ -13,7 +13,7 @@ const mockDriver = createDriver({
   sessionId: "mock-session",
   async *generate(message, builder) {
     yield* builder.text("Mock response");
-  }
+  },
 });
 
 // Create an agent
@@ -57,4 +57,4 @@ console.log("✅ Test 8 passed: agent has id and name from Agent data");
 
 console.log("\n🎉 All type tests passed! Agent-as-Driver pattern is properly typed.");
 
-export { };
+export {};

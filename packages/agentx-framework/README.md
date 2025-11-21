@@ -58,7 +58,7 @@ const claudeAgent = ClaudeAgent.create({
 // Agent 2: Wrap Claude Agent + add WebSocket forwarding
 const wsAgent = defineAgent({
   name: "WebSocketServer",
-  driver: claudeAgent,  // ← Agent as Driver!
+  driver: claudeAgent, // ← Agent as Driver!
   reactors: [WebSocketReactor.create({ ws: websocket })],
 });
 
@@ -103,13 +103,13 @@ const agentA = ClaudeAgent.create({ apiKey: "xxx" });
 
 // Agent B: A + Translation
 const agentB = defineAgent({
-  driver: agentA,  // Agent as Driver!
+  driver: agentA, // Agent as Driver!
   reactors: [TranslationReactor],
 });
 
 // Agent C: B + WebSocket
 const agentC = defineAgent({
-  driver: agentB,  // Chain continues!
+  driver: agentB, // Chain continues!
   reactors: [WebSocketReactor],
 });
 
@@ -149,6 +149,7 @@ const driver = EchoDriver.create({ sessionId: "test" });
 ```
 
 **Key points**:
+
 - Only one method: `sendMessage(message, config)`
 - Developer fully controls event generation
 - Returns `AsyncIterable<StreamEventType>`
@@ -176,6 +177,7 @@ const reactor = LoggerReactor.create({ logLevel: "debug" });
 ```
 
 **Supported event types**:
+
 - **Stream layer**: `onTextDelta`, `onMessageStart`, `onMessageStop`, etc.
 - **State layer**: `onConversationStart`, `onToolPlanned`, `onErrorOccurred`, etc.
 - **Message layer**: `onUserMessage`, `onAssistantMessage`, `onToolUseMessage`
@@ -220,7 +222,7 @@ import { ClaudeAgent } from "@deepractice-ai/agentx-framework/agents";
 
 const agent = ClaudeAgent.create({
   apiKey: process.env.ANTHROPIC_API_KEY,
-  model: "claude-3-5-sonnet-20241022",  // optional
+  model: "claude-3-5-sonnet-20241022", // optional
 });
 ```
 
@@ -280,7 +282,7 @@ const ConsoleReactor = defineReactor({
 // 2. Compose with Claude
 const MyAgent = defineAgent({
   name: "MyAgent",
-  driver: ClaudeAgent,  // Use pre-built agent!
+  driver: ClaudeAgent, // Use pre-built agent!
   reactors: [ConsoleReactor],
   config: defineConfig({
     apiKey: { type: "string", required: true },

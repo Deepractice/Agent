@@ -12,10 +12,7 @@ export default defineConfig({
   test: {
     globals: true,
     environment: "node",
-    include: [
-      "tests/manual/**/*.test.ts",
-      "features/**/*.feature",
-    ],
+    include: ["tests/manual/**/*.test.ts", "features/**/*.feature"],
     exclude: ["**/node_modules/**"],
     setupFiles: ["./tests/setup.ts"],
     testTimeout: 30000, // 30 seconds for unit tests

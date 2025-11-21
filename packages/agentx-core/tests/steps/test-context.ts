@@ -70,15 +70,20 @@ export class TestContext {
         console.log(`[CONTEXT] ✅ Event received: ${eventType}`, {
           eventType: event.type,
           dataKeys: Object.keys(event.data || {}),
-          eventData: event.data
+          eventData: event.data,
         });
         this.events[eventType].push(event);
-        console.log(`[CONTEXT] Event stored. Total ${eventType} events:`, this.events[eventType].length);
+        console.log(
+          `[CONTEXT] Event stored. Total ${eventType} events:`,
+          this.events[eventType].length
+        );
       },
     });
 
     this.unsubscribes.push(unsubscribe);
-    console.log(`[CONTEXT] Subscribed successfully. Total subscriptions: ${this.unsubscribes.length}`);
+    console.log(
+      `[CONTEXT] Subscribed successfully. Total subscriptions: ${this.unsubscribes.length}`
+    );
   }
 
   /**

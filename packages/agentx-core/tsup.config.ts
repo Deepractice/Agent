@@ -8,8 +8,5 @@ export default defineConfig({
   sourcemap: true,
   splitting: false,
   treeshake: true,
-  external: [
-    "@deepractice-ai/agentx-types",
-    "@deepractice-ai/agentx-api",
-  ],
+  external: ["@deepractice-ai/agentx-types", "@deepractice-ai/agentx-api"],
 });

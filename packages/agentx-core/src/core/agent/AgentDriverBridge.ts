@@ -76,9 +76,10 @@ export class AgentDriverBridge implements AgentReactor {
     this.logger.info("Handling user message", {
       messageId: event.data.id,
       eventUuid: event.uuid,
-      contentPreview: typeof event.data.content === "string"
-        ? event.data.content.substring(0, 50)
-        : "[complex content]",
+      contentPreview:
+        typeof event.data.content === "string"
+          ? event.data.content.substring(0, 50)
+          : "[complex content]",
     });
 
     if (!this.context) {

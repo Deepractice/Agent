@@ -15,6 +15,7 @@ When users send multiple messages continuously (without waiting for previous res
 ### User Impact
 
 Users trying to send messages rapidly will experience:
+
 - First message streams correctly ✅
 - Second message streaming text may not render ❌
 - UI feels "stuck" or unresponsive
@@ -27,11 +28,13 @@ Users trying to send messages rapidly will experience:
 1. Enable continuous message sending (remove `disabled={isLoading}` from ChatInput)
 
 2. Send first message:
+
    ```
    User: "Hello"
    ```
 
 3. **Immediately** send second message (before first response completes):
+
    ```
    User: "How are you?"
    ```
@@ -87,6 +90,7 @@ onExchangeResponse(_event: ExchangeResponseEvent) {
 4. Message 2's streaming text is lost
 
 **Timing race condition**:
+
 ```
 Time 0: Message 1 text_delta → streaming = "Hello"
 Time 1: Message 1 assistant_message → streaming = "" (clear)
@@ -168,12 +172,14 @@ onExchangeResponse(_event: ExchangeResponseEvent) {
 ```
 
 **Pros**:
+
 - Fixes timing race condition
 - Streaming text persists until next message truly starts
 - Smooth visual transition between messages
 - No premature clearing
 
 **Cons**:
+
 - Streaming text stays visible slightly longer (until next message)
 - Requires adding `onMessageStart` handler
 
@@ -209,10 +215,12 @@ onAssistantMessage(event: AssistantMessageEvent) {
 ```
 
 **Pros**:
+
 - Most precise, no race conditions possible
 - Clear ownership of streaming text
 
 **Cons**:
+
 - More complex state management
 - Requires messageId tracking across events
 - May not be necessary if Option 1 works
@@ -236,10 +244,12 @@ onAssistantMessage(event: AssistantMessageEvent) {
 ```
 
 **Pros**:
+
 - Simplest solution
 - No timing issues
 
 **Cons**:
+
 - ❌ Text from previous message bleeds into next message
 - ❌ Cumulative text grows indefinitely
 - ❌ Not acceptable
@@ -360,6 +370,7 @@ pnpm dev
 **Severity**: Medium
 
 **Affected users**:
+
 - Users who send messages rapidly
 - Users who don't wait for responses
 - Power users expecting ChatGPT-like responsiveness

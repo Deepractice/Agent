@@ -52,7 +52,7 @@ export class WebSocketLogger implements LoggerProvider {
 
   private connect(): void {
     // Only connect in development environment
-    const isDev = import.meta.env?.DEV || process.env?.NODE_ENV === 'development';
+    const isDev = import.meta.env?.DEV || process.env?.NODE_ENV === "development";
     if (!isDev) {
       return; // Skip WebSocket connection in production
     }
@@ -141,10 +141,10 @@ export class WebSocketLogger implements LoggerProvider {
       level === "ERROR"
         ? console.error
         : level === "WARN"
-        ? console.warn
-        : level === "DEBUG"
-        ? console.debug
-        : console.log;
+          ? console.warn
+          : level === "DEBUG"
+            ? console.debug
+            : console.log;
 
     const logLine = `${timestamp} ${level.padEnd(5)} [${this.name}] ${message}`;
     if (context && Object.keys(context).length > 0) {

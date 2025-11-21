@@ -129,16 +129,8 @@ export const MultipleCalls: Story = {
   },
   render: () => (
     <div className="space-y-3">
-      <ToolCallContent
-        id="call_1"
-        name="get_weather"
-        input={{ location: "San Francisco" }}
-      />
-      <ToolCallContent
-        id="call_2"
-        name="search_database"
-        input={{ query: "users", limit: 10 }}
-      />
+      <ToolCallContent id="call_1" name="get_weather" input={{ location: "San Francisco" }} />
+      <ToolCallContent id="call_2" name="search_database" input={{ query: "users", limit: 10 }} />
       <ToolCallContent
         id="call_3"
         name="send_email"

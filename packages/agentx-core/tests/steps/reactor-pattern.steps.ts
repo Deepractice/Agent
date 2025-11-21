@@ -201,25 +201,28 @@ Given("I create custom reactors {string}, {string}, {string}", (...reactorNames:
   });
 });
 
-Given("I create and initialize an agent with reactors {string}, {string}, {string}", async (...reactorNames: string[]) => {
-  ctx.driver = new MockDriver("test-session", "test-agent");
-  ctx.logger = new MockLogger();
+Given(
+  "I create and initialize an agent with reactors {string}, {string}, {string}",
+  async (...reactorNames: string[]) => {
+    ctx.driver = new MockDriver("test-session", "test-agent");
+    ctx.logger = new MockLogger();
 
-  // Create reactors
-  reactorNames.forEach((name) => {
-    const reactor = new TestReactor(name);
-    ctx.customReactors.push(reactor);
-    ctx.testData.reactors = ctx.testData.reactors || {};
-    ctx.testData.reactors[name] = reactor;
-  });
+    // Create reactors
+    reactorNames.forEach((name) => {
+      const reactor = new TestReactor(name);
+      ctx.customReactors.push(reactor);
+      ctx.testData.reactors = ctx.testData.reactors || {};
+      ctx.testData.reactors[name] = reactor;
+    });
 
-  ctx.agent = createAgent(ctx.driver, ctx.logger, {
-    reactors: ctx.customReactors,
-  });
+    ctx.agent = createAgent(ctx.driver, ctx.logger, {
+      reactors: ctx.customReactors,
+    });
 
-  await ctx.agent.initialize();
-  ctx.initialized = true;
-});
+    await ctx.agent.initialize();
+    ctx.initialized = true;
+  }
+);
 
 Given("I create a reactor that subscribes to:", (dataTable: DataTable) => {
   const rows = dataTable.hashes();

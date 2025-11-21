@@ -99,9 +99,7 @@ export function ToolResultContent({
         return (
           <div className="text-sm text-orange-600 dark:text-orange-400">
             🚫 Execution denied
-            {output.reason && (
-              <div className="mt-1 text-xs">Reason: {output.reason}</div>
-            )}
+            {output.reason && <div className="mt-1 text-xs">Reason: {output.reason}</div>}
           </div>
         );
 
@@ -111,10 +109,7 @@ export function ToolResultContent({
             {output.value.map((part, index) => {
               if (part.type === "text") {
                 return (
-                  <div
-                    key={index}
-                    className="text-sm text-gray-900 dark:text-gray-100"
-                  >
+                  <div key={index} className="text-sm text-gray-900 dark:text-gray-100">
                     <MarkdownText>{part.text}</MarkdownText>
                   </div>
                 );
@@ -143,11 +138,7 @@ export function ToolResultContent({
         );
 
       default:
-        return (
-          <div className="text-sm text-gray-500 dark:text-gray-400">
-            Unknown output type
-          </div>
-        );
+        return <div className="text-sm text-gray-500 dark:text-gray-400">Unknown output type</div>;
     }
   };
 
@@ -161,21 +152,15 @@ export function ToolResultContent({
         className={`w-full px-4 py-2 flex items-center justify-between text-sm font-medium text-${statusColor}-900 dark:text-${statusColor}-100 hover:bg-${statusColor}-100 dark:hover:bg-${statusColor}-900/30 transition-colors rounded-t-lg`}
       >
         <div className="flex items-center gap-2">
-          <span
-            className={`text-${statusColor}-600 dark:text-${statusColor}-400`}
-          >
+          <span className={`text-${statusColor}-600 dark:text-${statusColor}-400`}>
             {isError ? "❌" : "✅"}
           </span>
           <span className="font-mono">{name}</span>
-          <span
-            className={`text-xs text-${statusColor}-600 dark:text-${statusColor}-400`}
-          >
+          <span className={`text-xs text-${statusColor}-600 dark:text-${statusColor}-400`}>
             ({isError ? "Error" : "Result"})
           </span>
         </div>
-        <span
-          className={`transform transition-transform ${isExpanded ? "rotate-180" : ""}`}
-        >
+        <span className={`transform transition-transform ${isExpanded ? "rotate-180" : ""}`}>
           ▼
         </span>
       </button>
@@ -186,11 +171,8 @@ export function ToolResultContent({
           className={`px-4 py-3 border-t border-${statusColor}-200 dark:border-${statusColor}-800 space-y-3`}
         >
           {/* Call ID */}
-          <div
-            className={`text-xs text-${statusColor}-600 dark:text-${statusColor}-400`}
-          >
-            <span className="font-medium">Call ID:</span>{" "}
-            <span className="font-mono">{id}</span>
+          <div className={`text-xs text-${statusColor}-600 dark:text-${statusColor}-400`}>
+            <span className="font-medium">Call ID:</span> <span className="font-mono">{id}</span>
           </div>
 
           {/* Output */}

@@ -138,11 +138,12 @@
 **Definition**: The main interface for interacting with AI models.
 
 **API**:
+
 ```typescript
 const agent = createAgent({
   driver: ClaudeSDKDriver,
   config: { apiKey: "...", model: "..." },
-  reactors: [MessageAssembler, ExchangeTracker, WebSocketReactor]
+  reactors: [MessageAssembler, ExchangeTracker, WebSocketReactor],
 });
 
 await agent.initialize();
@@ -152,14 +153,20 @@ await agent.send("Hello");
 
 // React to events
 const unsubscribe = agent.react({
-  onTextDelta(event) { console.log(event.data.text); },
-  onToolCall(event) { console.log(event.data.name); },
-  onExchangeResponse(event) { console.log("Done!"); }
+  onTextDelta(event) {
+    console.log(event.data.text);
+  },
+  onToolCall(event) {
+    console.log(event.data.name);
+  },
+  onExchangeResponse(event) {
+    console.log("Done!");
+  },
 });
 
 // Cleanup
-agent.clear();     // Clear conversation history
-agent.destroy();   // Cleanup resources
+agent.clear(); // Clear conversation history
+agent.destroy(); // Cleanup resources
 ```
 
 ### 2. Driver
@@ -167,26 +174,28 @@ agent.destroy();   // Cleanup resources
 **Definition**: Platform-specific implementation that communicates with AI models.
 
 **Responsibilities**:
+
 - Send messages to AI model
 - Receive responses (streaming or complete)
 - Transform model responses → Stream Layer events
 
 **Implementations**:
+
 - `ClaudeSDKDriver` (Node.js) - Uses @anthropic-ai/claude-agent-sdk
 - `WebSocketDriver` (Browser) - Connects to WebSocketServer
 
 **Interface**:
+
 ```typescript
 interface AgentDriver {
-  sendMessage(
-    message: UserMessage | AsyncIterable<UserMessage>
-  ): AsyncIterable<StreamEventType>;
+  sendMessage(message: UserMessage | AsyncIterable<UserMessage>): AsyncIterable<StreamEventType>;
 
   onDestroy?: () => void | Promise<void>;
 }
 ```
 
 **Example**:
+
 ```typescript
 export const ClaudeSDKDriver = defineDriver({
   name: "ClaudeSDK",
@@ -198,7 +207,7 @@ export const ClaudeSDKDriver = defineDriver({
     for await (const sdkMsg of result) {
       yield* transformSDKMessages(sdkMsg, builder);
     }
-  }
+  },
 });
 ```
 
@@ -207,11 +216,13 @@ export const ClaudeSDKDriver = defineDriver({
 **Definition**: Event-driven components that react to events on the EventBus.
 
 **Responsibilities**:
+
 - Listen to events (consumeByType)
 - Execute business logic
 - Emit new events (produce)
 
 **Types**:
+
 1. **Core Reactors** (in agentx-core):
    - `DriverReactor` - Bridges Driver → EventBus
    - `AgentMessageAssembler` - Assembles Stream deltas → Messages
@@ -221,6 +232,7 @@ export const ClaudeSDKDriver = defineDriver({
    - `WebSocketReactor` - Forwards events to WebSocket clients
 
 **Interface**:
+
 ```typescript
 interface Reactor {
   readonly id: string;
@@ -232,13 +244,14 @@ interface Reactor {
 
 interface ReactorContext {
   agentId: string;
-  producer: EventProducer;   // Emit events
-  consumer: EventConsumer;   // Subscribe to events
+  producer: EventProducer; // Emit events
+  consumer: EventConsumer; // Subscribe to events
   logger?: AgentLogger;
 }
 ```
 
 **Example**:
+
 ```typescript
 export const LoggerReactor = defineReactor({
   name: "Logger",
@@ -249,7 +262,7 @@ export const LoggerReactor = defineReactor({
 
   onToolCall(event, config) {
     console.log("[Tool]", event.data.name, event.data.input);
-  }
+  },
 });
 ```
 
@@ -258,15 +271,18 @@ export const LoggerReactor = defineReactor({
 **Definition**: Central pub/sub system for all events.
 
 **Components**:
+
 - **Producer**: Emit events
 - **Consumer**: Subscribe to events
 
 **Features**:
+
 - Type-safe subscriptions
 - Support for multiple subscribers
 - Automatic cleanup (unsubscribe)
 
 **API**:
+
 ```typescript
 // Producer (emit events)
 producer.produce({
@@ -274,7 +290,7 @@ producer.produce({
   uuid: "evt_xxx",
   agentId: "agent_xxx",
   timestamp: Date.now(),
-  data: { text: "Hello" }
+  data: { text: "Hello" },
 });
 
 // Consumer (subscribe to events)
@@ -303,6 +319,7 @@ agentx-framework/server ──→ agentx-core ──→ agentx-event
 ```
 
 **Principles**:
+
 - Bottom-up: Types → Events → Core → Framework → UI
 - No circular dependencies
 - Pure types packages (agentx-types, agentx-event) have no dependencies
@@ -314,12 +331,24 @@ agentx-framework/server ──→ agentx-core ──→ agentx-event
 **Purpose**: Message and content type definitions
 
 **Exports**:
+
 ```typescript
 // Messages
-export type Message = UserMessage | AssistantMessage | SystemMessage | ToolUseMessage | ErrorMessage;
+export type Message =
+  | UserMessage
+  | AssistantMessage
+  | SystemMessage
+  | ToolUseMessage
+  | ErrorMessage;
 
 // Content parts
-export type ContentPart = TextPart | ThinkingPart | ImagePart | FilePart | ToolCallPart | ToolResultPart;
+export type ContentPart =
+  | TextPart
+  | ThinkingPart
+  | ImagePart
+  | FilePart
+  | ToolCallPart
+  | ToolResultPart;
 
 // Tool types
 export interface ToolCallPart {
@@ -344,6 +373,7 @@ export interface ToolResultPart {
 **Purpose**: Event type definitions (API contracts)
 
 **Exports**:
+
 ```typescript
 // Stream Layer
 export type StreamEventType =
@@ -368,9 +398,7 @@ export type MessageEventType =
   | ErrorMessageEvent;
 
 // Exchange Layer
-export type ExchangeEventType =
-  | ExchangeRequestEvent
-  | ExchangeResponseEvent;
+export type ExchangeEventType = ExchangeRequestEvent | ExchangeResponseEvent;
 
 // Union of all events
 export type AgentEvent = StreamEventType | StateEventType | MessageEventType | ExchangeEventType;
@@ -383,6 +411,7 @@ export type AgentEvent = StreamEventType | StateEventType | MessageEventType | E
 **Purpose**: Core agent logic that works on any platform
 
 **Exports**:
+
 ```typescript
 // Main API
 export { createAgent, AgentService };
@@ -404,12 +433,7 @@ export { StreamEventBuilder, LogLevel, LogFormatter };
 
 ```typescript
 export class AgentService {
-  constructor(
-    config: any,
-    driver: AgentDriver,
-    reactors: Reactor[],
-    logger?: AgentLogger
-  );
+  constructor(config: any, driver: AgentDriver, reactors: Reactor[], logger?: AgentLogger);
 
   async initialize(): Promise<void>;
   async send(message: string | UserMessage): Promise<void>;
@@ -438,13 +462,13 @@ export class AgentService {
 export { defineDriver, defineReactor, defineAgent, defineConfig };
 
 // ==================== Node.js ====================
-export { ClaudeSDKDriver };           // Claude SDK integration
-export { createWebSocketServer };     // WebSocket server
-export { WebSocketReactor };          // Event forwarding
+export { ClaudeSDKDriver }; // Claude SDK integration
+export { createWebSocketServer }; // WebSocket server
+export { WebSocketReactor }; // Event forwarding
 
 // ==================== Browser ====================
-export { WebSocketDriver };           // WebSocket client
-export { WebSocketBrowserAgent };     // Pre-configured agent
+export { WebSocketDriver }; // WebSocket client
+export { WebSocketBrowserAgent }; // Pre-configured agent
 ```
 
 **Philosophy**: Minimal boilerplate, maximum flexibility.
@@ -454,14 +478,15 @@ export { WebSocketBrowserAgent };     // Pre-configured agent
 **Purpose**: Reusable React components for chat interfaces
 
 **Exports**:
+
 ```typescript
-export { Chat };                      // Complete chat interface
-export { ChatMessageList };           // Message list with auto-scroll
-export { ChatInput };                 // User input with image upload
-export { UserMessage };               // User message display
-export { AssistantMessage };          // Assistant message with markdown
-export { ToolUseMessage };            // Tool call/result display
-export { ErrorMessage };              // Error display
+export { Chat }; // Complete chat interface
+export { ChatMessageList }; // Message list with auto-scroll
+export { ChatInput }; // User input with image upload
+export { UserMessage }; // User message display
+export { AssistantMessage }; // Assistant message with markdown
+export { ToolUseMessage }; // Tool call/result display
+export { ErrorMessage }; // Error display
 ```
 
 **Philosophy**: Storybook-driven, composable, accessible.
@@ -582,22 +607,26 @@ export { ErrorMessage };              // Error display
 **Format**: `{scope}_{object}_{action}`
 
 **Stream Layer**:
+
 - `message_start` - Message streaming starts
 - `text_delta` - Text chunk received
 - `tool_call` - Complete tool call assembled
 - `message_stop` - Message streaming stops
 
 **State Layer**:
+
 - `conversation_start` - Conversation begins
 - `tool_executing` - Tool is executing
 - `stream_complete` - Stream finished
 
 **Message Layer**:
+
 - `user_message` - User message created
 - `assistant_message` - Assistant message created
 - `tool_use_message` - Tool usage message created
 
 **Exchange Layer**:
+
 - `exchange_request` - User request received
 - `exchange_response` - Complete response ready
 
@@ -714,13 +743,13 @@ export { ErrorMessage };              // Error display
 
 ### Key Differences
 
-| Aspect | Node.js | Browser |
-|--------|---------|---------|
-| **Driver** | ClaudeSDKDriver | WebSocketDriver |
-| **AI Communication** | Direct API calls | Via WebSocket |
-| **Message Assembly** | Server-side | Client-side |
-| **Reactors** | Full set | Subset (no WebSocketReactor) |
-| **Tool Execution** | Server (Claude SDK) | Server (forwarded) |
+| Aspect               | Node.js             | Browser                      |
+| -------------------- | ------------------- | ---------------------------- |
+| **Driver**           | ClaudeSDKDriver     | WebSocketDriver              |
+| **AI Communication** | Direct API calls    | Via WebSocket                |
+| **Message Assembly** | Server-side         | Client-side                  |
+| **Reactors**         | Full set            | Subset (no WebSocketReactor) |
+| **Tool Execution**   | Server (Claude SDK) | Server (forwarded)           |
 
 ---
 
@@ -733,6 +762,7 @@ export { ErrorMessage };              // Error display
 **Solution**: Factory functions with minimal configuration.
 
 **Example**:
+
 ```typescript
 // Instead of implementing full Driver interface...
 export const MyDriver = defineDriver({
@@ -741,7 +771,7 @@ export const MyDriver = defineDriver({
   async *sendMessage(message, config) {
     // Just implement the core logic
     yield { type: "text_delta", data: { text: "Hello" } };
-  }
+  },
 });
 
 // Instead of implementing full Reactor interface...
@@ -751,7 +781,7 @@ export const MyReactor = defineReactor({
   // Just implement event handlers you care about
   onTextDelta(event, config) {
     console.log(event.data.text);
-  }
+  },
 });
 ```
 
@@ -762,11 +792,13 @@ export const MyReactor = defineReactor({
 **Solution**: Reactors subscribe to events, execute logic, emit new events.
 
 **Flow**:
+
 ```
 Event → Reactor.onEvent() → Business Logic → Emit New Event
 ```
 
 **Benefits**:
+
 - Loose coupling
 - Easy to test (just emit events)
 - Easy to extend (add new reactors)
@@ -778,6 +810,7 @@ Event → Reactor.onEvent() → Business Logic → Emit New Event
 **Solution**: 4 distinct layers, each with clear responsibilities.
 
 **Rules**:
+
 - Lower layers don't know about higher layers
 - Higher layers consume lower layers
 - Each layer emits events for its level
@@ -789,6 +822,7 @@ Event → Reactor.onEvent() → Business Logic → Emit New Event
 **Solution**: Core logic in agentx-core, platform code in agentx-framework.
 
 **Structure**:
+
 ```
 agentx-core (works everywhere)
     ↓ uses
@@ -803,6 +837,7 @@ agentx-framework/browser (Browser specifics)
 **Solution**: All event types defined once in agentx-event.
 
 **Enforcement**:
+
 ```typescript
 // agentx-event/src/stream/index.ts
 export const ALL_STREAM_EVENTS = [
@@ -812,11 +847,8 @@ export const ALL_STREAM_EVENTS = [
   // ...
 ] as const;
 
-export type StreamEventType =
-  | MessageStartEvent
-  | TextDeltaEvent
-  | ToolCallEvent
-  // ...
+export type StreamEventType = MessageStartEvent | TextDeltaEvent | ToolCallEvent;
+// ...
 ```
 
 TypeScript ensures consistency at compile time.
@@ -830,15 +862,17 @@ TypeScript ensures consistency at compile time.
 **Example**: Add image support to messages
 
 1. **Define types** (agentx-types):
+
    ```typescript
    export interface ImagePart {
      type: "image";
-     data: string;  // base64 or URL
+     data: string; // base64 or URL
      mediaType: string;
    }
    ```
 
 2. **Add events** (agentx-event):
+
    ```typescript
    export interface ImageContentBlockStartEvent extends StreamEvent {
      type: "image_content_block_start";
@@ -847,6 +881,7 @@ TypeScript ensures consistency at compile time.
    ```
 
 3. **Update core** (agentx-core):
+
    ```typescript
    // StreamEventBuilder.ts
    imageContentBlockStart(mediaType: string): ImageContentBlockStartEvent {
@@ -855,6 +890,7 @@ TypeScript ensures consistency at compile time.
    ```
 
 4. **Update driver** (agentx-framework):
+
    ```typescript
    // ClaudeSDKDriver.ts
    if (block.type === "image") {
@@ -863,6 +899,7 @@ TypeScript ensures consistency at compile time.
    ```
 
 5. **Update UI** (agentx-ui):
+
    ```tsx
    // ImageContent.tsx
    export function ImageContent({ data, mediaType }: ImagePartProps) {
@@ -879,6 +916,7 @@ TypeScript ensures consistency at compile time.
 ### Debugging
 
 **Server-side**:
+
 ```typescript
 // Add logs in reactor
 onTextDelta(event) {
@@ -887,16 +925,18 @@ onTextDelta(event) {
 ```
 
 **Browser-side**:
+
 ```typescript
 // In Chat.tsx
 const unsubscribe = agent.react({
   onTextDelta(event) {
     console.log("[Chat] Text delta:", event.data.text);
-  }
+  },
 });
 ```
 
 **Event tracing**:
+
 ```typescript
 // Create a debug reactor
 const DebugReactor = defineReactor({
@@ -907,7 +947,7 @@ const DebugReactor = defineReactor({
     context.consumer.consume((event) => {
       console.log(`[Event] ${event.type}`, event);
     });
-  }
+  },
 });
 ```
 
@@ -931,6 +971,7 @@ AgentX Framework is built on:
 5. **Developer Experience**: Minimal boilerplate, intuitive API
 
 **Key Files**:
+
 - [agentx-types](../packages/agentx-types/) - Data structures
 - [agentx-event](../packages/agentx-event/) - Event contracts
 - [agentx-core](../packages/agentx-core/) - Platform-agnostic core
@@ -938,6 +979,7 @@ AgentX Framework is built on:
 - [agentx-ui](../packages/agentx-ui/) - React components
 
 **Related Issues**:
+
 - [#002 Message Direction Architecture](./002-message-direction-architecture.md)
 - [#003 Claude SDK Error Handling](./003-claude-sdk-error-handling.md)
 - [#004 Tool Calling Architecture](./004-tool-calling-architecture.md)

@@ -38,4 +38,3 @@ export type MessageEventType =
   | import("./AssistantMessageEvent").AssistantMessageEvent
   | import("./ToolUseMessageEvent").ToolUseMessageEvent
   | import("./ErrorMessageEvent").ErrorMessageEvent;
-

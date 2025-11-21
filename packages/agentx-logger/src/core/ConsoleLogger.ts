@@ -41,8 +41,8 @@ export class ConsoleLogger implements LoggerProvider {
   // ANSI color codes
   private static readonly COLORS = {
     DEBUG: "\x1b[36m", // Cyan
-    INFO: "\x1b[32m",  // Green
-    WARN: "\x1b[33m",  // Yellow
+    INFO: "\x1b[32m", // Green
+    WARN: "\x1b[33m", // Yellow
     ERROR: "\x1b[31m", // Red
     RESET: "\x1b[0m",
   };

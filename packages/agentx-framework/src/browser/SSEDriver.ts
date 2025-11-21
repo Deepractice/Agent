@@ -70,11 +70,13 @@ async function* receiveSSEStream(sseUrl: string): AsyncIterable<StreamEventType>
         // Check if this is the last event
         if (streamEvent.type === "message_stop") {
           eventSource.close();
-          resolve((async function* () {
-            for (const e of events) {
-              yield e;
-            }
-          })());
+          resolve(
+            (async function* () {
+              for (const e of events) {
+                yield e;
+              }
+            })()
+          );
         }
       } catch (error) {
         console.error("[SSEDriver] Failed to parse SSE event:", error);
@@ -107,9 +109,12 @@ export const SSEDriver = defineDriver<SSEDriverConfig>({
     const sessionId = config.sessionId || `session_${Date.now()}`;
 
     // Normalize input
-    const messages = Symbol.asyncIterator in Object(message)
-      ? (message as AsyncIterable<UserMessage>)
-      : (async function* () { yield message as UserMessage; })();
+    const messages =
+      Symbol.asyncIterator in Object(message)
+        ? (message as AsyncIterable<UserMessage>)
+        : (async function* () {
+            yield message as UserMessage;
+          })();
 
     // Process each message
     for await (const msg of messages) {

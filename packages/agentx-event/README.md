@@ -38,9 +38,9 @@ All events extend the base `AgentEvent`:
 
 ```typescript
 interface AgentEvent {
-  uuid: string;        // Unique event ID
-  agentId: string;     // Which agent instance
-  timestamp: number;   // When it happened
+  uuid: string; // Unique event ID
+  agentId: string; // Which agent instance
+  timestamp: number; // When it happened
 }
 ```
 
@@ -69,7 +69,7 @@ producer.produce({
   uuid: generateId(),
   agentId: "agent-1",
   timestamp: Date.now(),
-  data: userMessage
+  data: userMessage,
 });
 ```
 
@@ -82,6 +82,7 @@ producer.produce({
 **Purpose**: Low-level streaming events for real-time UI updates.
 
 **Use Cases**:
+
 - Typewriter effect for streaming text
 - Progress indicators during tool execution
 - Real-time content block rendering
@@ -99,12 +100,12 @@ MessageStartEvent
 
 **Key Events**:
 
-| Event | Description | Data |
-|-------|-------------|------|
-| `MessageStartEvent` | Message begins | `{ message: { id, model } }` |
-| `TextDeltaEvent` | Text chunk arrives | `{ text: string }` |
-| `InputJsonDeltaEvent` | Tool input chunk | `{ json: string }` |
-| `MessageStopEvent` | Message complete | `{ stopReason }` |
+| Event                 | Description        | Data                         |
+| --------------------- | ------------------ | ---------------------------- |
+| `MessageStartEvent`   | Message begins     | `{ message: { id, model } }` |
+| `TextDeltaEvent`      | Text chunk arrives | `{ text: string }`           |
+| `InputJsonDeltaEvent` | Tool input chunk   | `{ json: string }`           |
+| `MessageStopEvent`    | Message complete   | `{ stopReason }`             |
 
 **Example Usage**:
 
@@ -124,6 +125,7 @@ consumer.consumeByType("text_delta", (event) => {
 **Purpose**: Track agent lifecycle and state machine transitions.
 
 **Use Cases**:
+
 - Agent initialization/shutdown
 - Conversation flow management
 - Tool execution lifecycle
@@ -142,27 +144,32 @@ ToolCompletedStateEvent / ToolFailedStateEvent
 **State Categories**:
 
 #### Agent Lifecycle
+
 - `AgentInitializingStateEvent` - Agent starting up
 - `AgentReadyStateEvent` - Agent ready to receive requests
 - `AgentDestroyedStateEvent` - Agent shutting down
 
 #### Conversation Lifecycle
+
 - `ConversationStartStateEvent` - User initiates conversation
 - `ConversationThinkingStateEvent` - Agent is thinking
 - `ConversationRespondingStateEvent` - Agent is responding
 - `ConversationEndStateEvent` - Conversation complete
 
 #### Tool Lifecycle
+
 - `ToolPlannedStateEvent` - Agent decides to use tool
 - `ToolExecutingStateEvent` - Tool is running
 - `ToolCompletedStateEvent` - Tool finished successfully
 - `ToolFailedStateEvent` - Tool execution failed
 
 #### Stream Lifecycle
+
 - `StreamStartStateEvent` - Streaming begins
 - `StreamCompleteStateEvent` - Streaming ends
 
 #### Error Handling
+
 - `ErrorOccurredStateEvent` - Error occurred during execution
 
 **StateEvent Base**:
@@ -171,11 +178,11 @@ All state events extend `StateEvent`:
 
 ```typescript
 interface StateEvent extends AgentEvent {
-  previousState?: string;      // Where we came from
+  previousState?: string; // Where we came from
   transition?: {
-    reason?: string;            // Why we transitioned
-    durationMs?: number;        // Time in previous state
-    trigger?: string;           // What caused transition
+    reason?: string; // Why we transitioned
+    durationMs?: number; // Time in previous state
+    trigger?: string; // What caused transition
   };
 }
 ```
@@ -202,6 +209,7 @@ consumer.consumeByType("tool_completed", (event) => {
 **Purpose**: Represent complete messages from the user's perspective.
 
 **Use Cases**:
+
 - Message history/chat log
 - Conversation UI rendering
 - Message persistence
@@ -224,12 +232,12 @@ UserMessageEvent {
 
 **Message Events**:
 
-| Event | Description | Data Type |
-|-------|-------------|-----------|
-| `UserMessageEvent` | User sent a message | `UserMessage` |
+| Event                   | Description                  | Data Type          |
+| ----------------------- | ---------------------------- | ------------------ |
+| `UserMessageEvent`      | User sent a message          | `UserMessage`      |
 | `AssistantMessageEvent` | Assistant completed response | `AssistantMessage` |
-| `ToolUseMessageEvent` | Tool usage (call + result) | `ToolUseMessage` |
-| `ErrorMessageEvent` | Error occurred | `ErrorMessage` |
+| `ToolUseMessageEvent`   | Tool usage (call + result)   | `ToolUseMessage`   |
+| `ErrorMessageEvent`     | Error occurred               | `ErrorMessage`     |
 
 **ToolUseMessage - Unified Tool View**:
 
@@ -241,7 +249,7 @@ interface ToolUseMessage {
   role: "tool-use";
 
   // What tool was called
-  toolCall: ToolCallPart;     // { id, name, input }
+  toolCall: ToolCallPart; // { id, name, input }
 
   // What it returned
   toolResult: ToolResultPart; // { id, name, output }
@@ -252,6 +260,7 @@ interface ToolUseMessage {
 ```
 
 **Why Unified?**
+
 - User doesn't care about "call" vs "result" separation
 - They see: "Agent used calculator and got 42"
 - Lifecycle tracking happens in **State Layer** instead
@@ -264,7 +273,7 @@ consumer.consumeByType("user_message", (event) => {
   chatLog.append({
     role: "user",
     content: event.data.content,
-    timestamp: event.timestamp
+    timestamp: event.timestamp,
   });
 });
 
@@ -273,7 +282,7 @@ consumer.consumeByType("tool_use_message", (event) => {
     role: "tool-use",
     call: event.data.toolCall.name,
     result: event.data.toolResult.output,
-    timestamp: event.timestamp
+    timestamp: event.timestamp,
   });
 });
 ```
@@ -285,6 +294,7 @@ consumer.consumeByType("tool_use_message", (event) => {
 **Purpose**: Group messages into request-response units for analytics.
 
 **Use Cases**:
+
 - Cost tracking per exchange
 - Performance monitoring
 - Usage analytics
@@ -292,9 +302,9 @@ consumer.consumeByType("tool_use_message", (event) => {
 
 **Exchange Events**:
 
-| Event | Description | Data |
-|-------|-------------|------|
-| `ExchangeRequestEvent` | User initiated request | `{ userMessage, requestedAt }` |
+| Event                   | Description              | Data                                                        |
+| ----------------------- | ------------------------ | ----------------------------------------------------------- |
+| `ExchangeRequestEvent`  | User initiated request   | `{ userMessage, requestedAt }`                              |
 | `ExchangeResponseEvent` | Agent completed response | `{ assistantMessage, completedAt, duration, cost, tokens }` |
 
 **Example Flow**:
@@ -319,10 +329,10 @@ consumer.consumeByType("exchange_request", (event) => {
   exchanges.push({
     id: event.uuid,
     userMessage: event.data.userMessage,
-    startTime: event.data.requestedAt
+    startTime: event.data.requestedAt,
   });
 });
- 
+
 consumer.consumeByType("exchange_response", (event) => {
   const exchange = findById(event.data.exchangeId);
   exchange.assistantMessage = event.data.assistantMessage;
@@ -341,12 +351,14 @@ consumer.consumeByType("exchange_response", (event) => {
 ## 🎯 Which Layer Should I Use?
 
 ### Use Stream Layer When:
+
 - ✅ Building real-time UI with streaming text
 - ✅ Need fine-grained progress updates
 - ✅ Implementing typewriter effects
 - ❌ **Don't use for**: Message history, state management
 
 ### Use State Layer When:
+
 - ✅ Implementing state machines
 - ✅ Tracking agent lifecycle
 - ✅ Managing tool execution flow
@@ -354,12 +366,14 @@ consumer.consumeByType("exchange_response", (event) => {
 - ❌ **Don't use for**: Message rendering
 
 ### Use Message Layer When:
+
 - ✅ Building chat UI / message history
 - ✅ Persisting conversation data
 - ✅ Rendering complete messages
 - ❌ **Don't use for**: Real-time streaming, state tracking
 
 ### Use Exchange Layer When:
+
 - ✅ Tracking costs and performance
 - ✅ Building analytics dashboards
 - ✅ Usage monitoring and billing
@@ -493,14 +507,11 @@ const unsubUser = consumer.consumeByType("user_message", (event) => {
 });
 
 // Method 3: Consume multiple types
-const unsubMessages = consumer.consumeByTypes(
-  ["user_message", "assistant_message"],
-  (event) => {
-    if (event.type === "user_message") {
-      // TypeScript knows event is UserMessageEvent
-    }
+const unsubMessages = consumer.consumeByTypes(["user_message", "assistant_message"], (event) => {
+  if (event.type === "user_message") {
+    // TypeScript knows event is UserMessageEvent
   }
-);
+});
 
 // Unsubscribe
 unsubUser();
@@ -516,6 +527,7 @@ pnpm add @deepractice-ai/agentx-event
 ```
 
 **Peer Dependencies**:
+
 - `@deepractice-ai/agentx-types` - Message and content types
 - `@deepractice-ai/agentx-core` - EventBus implementation
 
@@ -576,7 +588,7 @@ consumer.consumeByType("tool_use_message", (event) => {
   displayToolResult({
     tool: event.data.toolCall.name,
     input: event.data.toolCall.input,
-    output: event.data.toolResult.output
+    output: event.data.toolResult.output,
   });
 });
 ```
@@ -589,7 +601,7 @@ const analytics = {
   totalExchanges: 0,
   totalCost: 0,
   totalTokens: 0,
-  avgDuration: 0
+  avgDuration: 0,
 };
 
 consumer.consumeByType("exchange_response", (event) => {
@@ -597,8 +609,8 @@ consumer.consumeByType("exchange_response", (event) => {
   analytics.totalCost += event.data.cost || 0;
   analytics.totalTokens += event.data.tokens?.total || 0;
   analytics.avgDuration =
-    (analytics.avgDuration * (analytics.totalExchanges - 1) + event.data.duration)
-    / analytics.totalExchanges;
+    (analytics.avgDuration * (analytics.totalExchanges - 1) + event.data.duration) /
+    analytics.totalExchanges;
 
   updateDashboard(analytics);
 });
@@ -611,13 +623,13 @@ consumer.consumeByType("exchange_response", (event) => {
 const stateHistory = [];
 
 consumer.consume((event) => {
-  if ('previousState' in event) {
+  if ("previousState" in event) {
     stateHistory.push({
       from: event.previousState,
       to: event.type,
       timestamp: event.timestamp,
       duration: event.transition?.durationMs,
-      reason: event.transition?.reason
+      reason: event.transition?.reason,
     });
 
     console.log(`State: ${event.previousState} → ${event.type}`);
@@ -641,7 +653,7 @@ import type { AgentEventType, StreamEventType, StateEventType } from "@deepracti
 consumer.consumeByType("user_message", (event) => {
   // TypeScript knows event is UserMessageEvent
   event.data.content; // ✅ OK
-  event.data.foobar;  // ❌ Type error
+  event.data.foobar; // ❌ Type error
 });
 
 // Union type narrowing
@@ -661,18 +673,23 @@ function handleEvent(event: AgentEventType) {
 ## 📝 Design Principles
 
 ### 1. Separation of Concerns
+
 Each layer has a single, well-defined purpose. Mixing concerns (e.g., using Stream events for state management) is an anti-pattern.
 
 ### 2. Type Safety First
+
 All events are strongly typed. Runtime errors are caught at compile time.
 
 ### 3. Zero Duplication
+
 Event types are defined once and reused everywhere. No string literals, no magic constants.
 
 ### 4. Backwards Compatibility
+
 New events can be added without breaking existing consumers. Event schemas are versioned.
 
 ### 5. Performance
+
 Events are lightweight. No heavy serialization. Minimal memory overhead.
 
 ---
@@ -680,6 +697,7 @@ Events are lightweight. No heavy serialization. Minimal memory overhead.
 ## 🚫 Common Pitfalls
 
 ### ❌ DON'T: Use Stream events for state management
+
 ```typescript
 // Bad
 consumer.consumeByType("text_delta", (event) => {
@@ -697,6 +715,7 @@ consumer.consumeByType("error_occurred", (event) => {
 ```
 
 ### ❌ DON'T: Mix Message and State layers for same purpose
+
 ```typescript
 // Bad
 consumer.consumeByType("conversation_start", (event) => {
@@ -712,6 +731,7 @@ consumer.consumeByType("user_message", (event) => {
 ```
 
 ### ❌ DON'T: Store state in event handlers
+
 ```typescript
 // Bad
 let currentState = "idle";
@@ -724,7 +744,7 @@ consumer.consumeByType("conversation_start", () => {
 // Good
 const stateMachine = new StateMachine();
 consumer.consume((event) => {
-  if ('previousState' in event) {
+  if ("previousState" in event) {
     stateMachine.transition(event); // ✅ Use StateEvent metadata
   }
 });

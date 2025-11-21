@@ -100,16 +100,19 @@ Given("I subscribe to {string} event", (eventType: string) => {
 
 // ===== When steps =====
 
-When("the driver emits text deltas {string}, {string}, {string}, {string}", async (...deltas: string[]) => {
-  // Configure MockDriver to return the expected text
-  const expectedText = deltas.join("");
-  console.log("[WHEN] Setting custom response for deltas:", expectedText);
-  if (ctx.driver && ctx.driver instanceof MockDriver) {
-    ctx.driver.setCustomResponse("test", expectedText);
+When(
+  "the driver emits text deltas {string}, {string}, {string}, {string}",
+  async (...deltas: string[]) => {
+    // Configure MockDriver to return the expected text
+    const expectedText = deltas.join("");
+    console.log("[WHEN] Setting custom response for deltas:", expectedText);
+    if (ctx.driver && ctx.driver instanceof MockDriver) {
+      ctx.driver.setCustomResponse("test", expectedText);
+    }
+    await ctx.agent!.send("test");
+    await new Promise((resolve) => setTimeout(resolve, 300));
   }
-  await ctx.agent!.send("test");
-  await new Promise((resolve) => setTimeout(resolve, 300));
-});
+);
 
 When("I send message {string}", async (message: string) => {
   expect(ctx.agent).toBeDefined();
@@ -127,18 +130,24 @@ When("the driver completes a response with content {string}", async (content: st
   await new Promise((resolve) => setTimeout(resolve, 300));
 });
 
-When("the driver responds with {int} input tokens and {int} output tokens", async (inputTokens: number, outputTokens: number) => {
-  // Store for verification
-  ctx.testData.expectedInputTokens = inputTokens;
-  ctx.testData.expectedOutputTokens = outputTokens;
-  await new Promise((resolve) => setTimeout(resolve, 100));
-});
+When(
+  "the driver responds with {int} input tokens and {int} output tokens",
+  async (inputTokens: number, outputTokens: number) => {
+    // Store for verification
+    ctx.testData.expectedInputTokens = inputTokens;
+    ctx.testData.expectedOutputTokens = outputTokens;
+    await new Promise((resolve) => setTimeout(resolve, 100));
+  }
+);
 
-When("the driver plans to use tool {string} with input {}", async (toolName: string, input: string) => {
-  // Tool use would be tested with a specialized mock driver
-  ctx.testData.toolName = toolName;
-  ctx.testData.toolInput = JSON.parse(input);
-});
+When(
+  "the driver plans to use tool {string} with input {}",
+  async (toolName: string, input: string) => {
+    // Tool use would be tested with a specialized mock driver
+    ctx.testData.toolName = toolName;
+    ctx.testData.toolInput = JSON.parse(input);
+  }
+);
 
 When("the driver emits text delta {string}", async (text: string) => {
   // Happens automatically in MockDriver
@@ -192,16 +201,19 @@ Then("I should receive stream events:", (dataTable: DataTable) => {
   }
 });
 
-Then("the text delta events should contain {string}, {string}, {string}, {string}", (...expectedTexts: string[]) => {
-  const events = ctx.getEvents("text_delta");
-  expect(events.length).toBeGreaterThan(0);
+Then(
+  "the text delta events should contain {string}, {string}, {string}, {string}",
+  (...expectedTexts: string[]) => {
+    const events = ctx.getEvents("text_delta");
+    expect(events.length).toBeGreaterThan(0);
 
-  // Verify deltas contain expected text fragments
-  const allText = events.map((e) => e.data.text).join("");
-  expectedTexts.forEach((text) => {
-    expect(allText).toContain(text);
-  });
-});
+    // Verify deltas contain expected text fragments
+    const allText = events.map((e) => e.data.text).join("");
+    expectedTexts.forEach((text) => {
+      expect(allText).toContain(text);
+    });
+  }
+);
 
 Then("I should receive state events in order:", (dataTable: DataTable) => {
   const expectedEvents = dataTable.hashes().map((row) => row.event_type);

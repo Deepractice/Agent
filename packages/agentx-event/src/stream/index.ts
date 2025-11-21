@@ -58,4 +58,3 @@ export type StreamEventType =
   | import("./ToolUseContentBlockStopEvent").ToolUseContentBlockStopEvent
   | import("./ToolCallEvent").ToolCallEvent
   | import("./ToolResultEvent").ToolResultEvent;
-

@@ -5,10 +5,7 @@
  * All methods are optional - users only implement what they need.
  */
 
-import type {
-  TurnRequestEvent,
-  TurnResponseEvent,
-} from "@deepractice-ai/agentx-event";
+import type { TurnRequestEvent, TurnResponseEvent } from "@deepractice-ai/agentx-event";
 import type { AgentReactorContext } from "./AgentReactor";
 
 /**
