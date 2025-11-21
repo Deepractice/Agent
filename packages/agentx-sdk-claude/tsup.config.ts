@@ -3,8 +3,6 @@ import { defineConfig } from "tsup";
 export default defineConfig({
   entry: {
     index: "src/index.ts",
-    defineServer: "src/defineServer.ts",
-    defineBrowser: "src/defineBrowser.ts",
   },
   format: ["cjs", "esm"],
   dts: true,

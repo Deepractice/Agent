@@ -1,6 +1,6 @@
 import type { Preview } from "@storybook/react";
 import "../src/styles/globals.css";
-import { LoggerFactory, LogLevel } from "../src/utils/WebSocketLogger";
+import { LoggerFactory, LogLevel } from "../dev-tools/WebSocketLogger";
 
 // Configure frontend logger to send logs to backend
 LoggerFactory.configure({

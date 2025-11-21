@@ -17,9 +17,8 @@
  * ```
  */
 
-import { defineAgent } from "../defineAgent";
+import { defineAgent, defineConfig } from "@deepractice-ai/agentx-framework";
 import { ClaudeSDKDriver } from "../drivers/ClaudeSDKDriver";
-import { defineConfig } from "../defineConfig";
 
 /**
  * ClaudeAgent - Pre-configured Claude SDK Agent

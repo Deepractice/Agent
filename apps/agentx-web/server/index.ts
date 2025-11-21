@@ -1,18 +1,16 @@
 /**
  * AgentX Web Server
  *
- * Simple HTTP + WebSocket server:
- * - WebSocket server for AI agent communication (using agentx-framework)
- * - Static file serving (production only)
+ * Uses createSSEServer from agentx-framework with static file serving fallback
  */
 
-import { ClaudeAgent } from "@deepractice-ai/agentx-framework";
+import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
 import { dirname, join, extname } from "path";
 import { fileURLToPath } from "url";
 import { readFile, stat } from "fs/promises";
 import type { IncomingMessage, ServerResponse } from "http";
 import { mcpServers } from "./mcp.js";
-import { createWebSocketServer } from "./WebSocketServer.js";
+import { createAgentServer } from "@deepractice-ai/agentx-framework/server";
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -94,6 +92,7 @@ async function serveStaticFile(req: IncomingMessage, res: ServerResponse): Promi
   }
 }
 
+
 async function startServer() {
   // Platform configuration (AGENTX_*)
   const apiKey = process.env.AGENTX_API_KEY;
@@ -150,48 +149,49 @@ async function startServer() {
   }
   console.log();
 
-  // Create WebSocket Server using agentx-framework
-  const wsServer = createWebSocketServer({
-    // Agent definition
-    agentDefinition: ClaudeAgent,
+  // Agent config
+  const agentConfig = {
+    apiKey,
+    baseUrl,
+    model,
+    cwd: workDir,
+    systemPrompt,
+    maxTurns,
+    permissionMode,
+    mcpServers: Object.keys(mcpServers).length > 0 ? mcpServers : undefined,
+  };
 
-    // Agent config factory
-    createAgentConfig: () => ({
-      apiKey,
-      baseUrl,
-      model,
-      cwd: workDir,
-      systemPrompt,
-      maxTurns,
-      permissionMode,
-      mcpServers: Object.keys(mcpServers).length > 0 ? mcpServers : undefined,
-    }),
-
-    // Server configuration
+  // Create agent server with static file fallback
+  const server = createAgentServer({
     port: PORT,
     host: HOST,
-    path: "/ws",
-
-    // Static file serving (production only)
-    onRequest: isDev ? undefined : serveStaticFile,
+    createAgent: (sessionId) => {
+      return ClaudeAgent.create({
+        ...agentConfig,
+        sessionId,
+      });
+    },
+    fallbackHandler: !isDev ? serveStaticFile : undefined,
   });
 
-  console.log(`✅ WebSocket Server: ws://${HOST}:${PORT}/ws`);
+  await server.start();
+
+  console.log(`✅ SSE Endpoint: http://${HOST}:${PORT}/api/sse/:sessionId`);
   console.log();
   console.log("💡 Ready!");
   if (isDev) {
     console.log("   Frontend: http://localhost:5173 (Vite dev server)");
-    console.log("   Backend:  ws://localhost:5200/ws (WebSocket only)");
+    console.log("   Backend:  http://localhost:5200 (API only)");
   } else {
     console.log(`   Frontend: http://localhost:${PORT}`);
-    console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
+    console.log(`   API:      http://localhost:${PORT}/api`);
   }
   console.log();
 
   // Graceful shutdown
   const shutdown = async () => {
     console.log("\n\n🛑 Shutting down...");
-    await wsServer.close();
+    await server.stop();
     console.log("✅ Server stopped");
     process.exit(0);
   };

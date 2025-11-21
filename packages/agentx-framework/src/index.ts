@@ -11,18 +11,36 @@
 // Re-export from @deepractice-ai/agentx-core
 
 /**
- * Create a new Agent instance
+ * Low-level agent creation (directly from driver)
+ *
+ * Most users should use the high-level createAgent() from ./createAgent instead.
+ *
+ * @example
+ * ```typescript
+ * import { createAgent as createAgentFromDriver } from "@deepractice-ai/agentx-core";
+ * import { ClaudeDriver } from "@deepractice-ai/agentx-node";
+ *
+ * const agent = createAgentFromDriver(new ClaudeDriver(config));
+ * await agent.initialize();
+ * ```
+ */
+export { createAgent as createAgentFromDriver } from "@deepractice-ai/agentx-core";
+
+/**
+ * High-level agent creation (from DefinedAgent)
  *
  * @example
  * ```typescript
  * import { createAgent } from "@deepractice-ai/agentx-framework";
- * import { ClaudeDriver } from "@deepractice-ai/agentx-node";
+ * import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
  *
- * const agent = createAgent(new ClaudeDriver(config));
- * await agent.initialize();
+ * const agent = createAgent(ClaudeAgent, {
+ *   apiKey: "xxx",
+ *   model: "claude-sonnet-4-5-20250929",
+ * });
  * ```
  */
-export { createAgent } from "@deepractice-ai/agentx-core";
+export { createAgent } from "./createAgent";
 
 /**
  * AgentService - User-facing API
@@ -311,30 +329,18 @@ export {
 export { AgentConfigError, AgentAbortError } from "./errors";
 
 // ==================== Drivers ====================
-// Platform-specific and framework drivers
-
-/**
- * ClaudeSDKDriver - Node.js driver using @anthropic-ai/claude-agent-sdk
- * Full-featured Claude SDK integration with streaming, tools, and MCP
- */
-export { ClaudeSDKDriver, type ClaudeSDKDriverConfig } from "./drivers";
+// Note: Specific SDK integrations are in separate packages:
+// - @deepractice-ai/agentx-sdk-claude
+// - @deepractice-ai/agentx-sdk-gemini
 
 // ==================== Reactor Implementations ====================
 // Built-in reactor implementations
 // Note: All WebSocket-related code moved to application layer (agentx-web)
 
 // ==================== Pre-configured Agents ====================
-// Ready-to-use agent compositions
-
-/**
- * ClaudeAgent - Pre-configured Agent using Claude SDK
- * @example
- * ```typescript
- * import { ClaudeAgent } from "@deepractice-ai/agentx-framework";
- * const agent = ClaudeAgent.create({ apiKey: "xxx" });
- * ```
- */
-export { ClaudeAgent } from "./agents";
+// Note: Specific SDK integrations are in separate packages:
+// - @deepractice-ai/agentx-sdk-claude
+// - @deepractice-ai/agentx-sdk-gemini
 
 // ==================== MCP (Model Context Protocol) ====================
 // Re-export from @deepractice-ai/agentx-types (for users working with MCP servers)

@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { WebSocketBrowserAgent } from "@deepractice-ai/agentx-framework/browser";
-import type { AgentService } from "@deepractice-ai/agentx-framework/browser";
+import { SSEAgent } from "./agent";
+import type { AgentService } from "@deepractice-ai/agentx-core";
 import { Chat } from "@deepractice-ai/agentx-ui";
 
 export default function App() {
@@ -8,22 +8,21 @@ export default function App() {
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Create agent with WebSocket connection
+    // Create agent with SSE connection
     // In development, connect to localhost:5200
-    // In production, use same host with proper protocol (ws/wss based on page protocol)
+    // In production, use same host
     const isDev = import.meta.env.DEV;
-    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = isDev ? "ws://localhost:5200/ws" : `${wsProtocol}//${window.location.host}/ws`;
+    const serverUrl = isDev ? "http://localhost:5200" : window.location.origin;
 
-    // Create WebSocket browser agent
+    // Create SSE browser agent
     const sessionId = `session-${Date.now()}`;
 
-    const agentInstance = WebSocketBrowserAgent.create({
-      url: wsUrl,
+    const agentInstance = SSEAgent.create({
+      serverUrl,
       sessionId,
     } as any);
 
-    // Initialize agent and connect
+    // Initialize agent
     agentInstance
       .initialize()
       .then(() => {

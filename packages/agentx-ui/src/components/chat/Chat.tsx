@@ -16,7 +16,7 @@ import type {
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
 import { ErrorMessage } from "./ErrorMessage";
-import { LoggerFactory } from "../../internal/WebSocketLogger";
+import { LoggerFactory } from "../../../dev-tools/WebSocketLogger";
 
 const logger = LoggerFactory.getLogger("Chat");
 

@@ -81,9 +81,21 @@ importers:
 
   apps/agentx-web:
     dependencies:
+      '@deepractice-ai/agentx-core':
+        specifier: workspace:*
+        version: link:../../packages/agentx-core
       '@deepractice-ai/agentx-framework':
         specifier: workspace:*
         version: link:../../packages/agentx-framework
+      '@deepractice-ai/agentx-sdk-browser':
+        specifier: workspace:*
+        version: link:../../packages/agentx-sdk-browser
+      '@deepractice-ai/agentx-sdk-claude':
+        specifier: workspace:*
+        version: link:../../packages/agentx-sdk-claude
+      '@deepractice-ai/agentx-sdk-server':
+        specifier: workspace:*
+        version: link:../../packages/agentx-sdk-server
       '@deepractice-ai/agentx-ui':
         specifier: workspace:*
         version: link:../../packages/agentx-ui
@@ -195,9 +207,6 @@ importers:
 
   packages/agentx-framework:
     dependencies:
-      '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.1.30
-        version: 0.1.30(zod@4.1.12)
       '@deepractice-ai/agentx-core':
         specifier: workspace:*
         version: link:../agentx-core
@@ -210,19 +219,16 @@ importers:
       '@deepractice-ai/agentx-types':
         specifier: workspace:*
         version: link:../agentx-types
+      better-sse:
+        specifier: ^0.15.1
+        version: 0.15.1
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
-      ws:
-        specifier: ^8.18.0
-        version: 8.18.3
     devDependencies:
       '@types/node':
         specifier: ^22.10.2
         version: 22.19.1
-      '@types/ws':
-        specifier: ^8.5.13
-        version: 8.18.1
       tsup:
         specifier: ^8.3.5
         version: 8.5.0(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
@@ -243,6 +249,99 @@ importers:
         version: 4.20.6
       typescript:
         specifier: ^5.9.3
+        version: 5.9.3
+
+  packages/agentx-sdk-browser:
+    dependencies:
+      '@deepractice-ai/agentx-core':
+        specifier: workspace:*
+        version: link:../agentx-core
+      '@deepractice-ai/agentx-event':
+        specifier: workspace:*
+        version: link:../agentx-event
+      '@deepractice-ai/agentx-framework':
+        specifier: workspace:*
+        version: link:../agentx-framework
+      '@deepractice-ai/agentx-logger':
+        specifier: workspace:*
+        version: link:../agentx-logger
+      '@deepractice-ai/agentx-types':
+        specifier: workspace:*
+        version: link:../agentx-types
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.1
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/agentx-sdk-claude:
+    dependencies:
+      '@anthropic-ai/claude-agent-sdk':
+        specifier: ^0.1.30
+        version: 0.1.30(zod@4.1.12)
+      '@deepractice-ai/agentx-core':
+        specifier: workspace:*
+        version: link:../agentx-core
+      '@deepractice-ai/agentx-event':
+        specifier: workspace:*
+        version: link:../agentx-event
+      '@deepractice-ai/agentx-framework':
+        specifier: workspace:*
+        version: link:../agentx-framework
+      '@deepractice-ai/agentx-logger':
+        specifier: workspace:*
+        version: link:../agentx-logger
+      '@deepractice-ai/agentx-types':
+        specifier: workspace:*
+        version: link:../agentx-types
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.1
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
+
+  packages/agentx-sdk-server:
+    dependencies:
+      '@deepractice-ai/agentx-core':
+        specifier: workspace:*
+        version: link:../agentx-core
+      '@deepractice-ai/agentx-event':
+        specifier: workspace:*
+        version: link:../agentx-event
+      '@deepractice-ai/agentx-framework':
+        specifier: workspace:*
+        version: link:../agentx-framework
+      '@deepractice-ai/agentx-logger':
+        specifier: workspace:*
+        version: link:../agentx-logger
+      '@deepractice-ai/agentx-types':
+        specifier: workspace:*
+        version: link:../agentx-types
+      better-sse:
+        specifier: ^0.13.0
+        version: 0.13.0
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.1
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
         version: 5.9.3
 
   packages/agentx-types:
@@ -1991,6 +2090,14 @@ packages:
   better-path-resolve@1.0.0:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
+
+  better-sse@0.13.0:
+    resolution: {integrity: sha512-lKkxrKUrkzsn8xh4ROmbb+CLAlPmxRtgQXKEvblArSVbhOnV9mUY1Qa6qnp6VJSD5xXHsPCQdMJOae9gKpRWEg==}
+    engines: {node: '>=12', pnpm: '>=9'}
+
+  better-sse@0.15.1:
+    resolution: {integrity: sha512-E8YmmIs7P2T5nHM8VG5Pmtp8CgDsIhT+6CYhg+8Gmke5kJb11ohN1jtEXn/2taSr7WkcU3yNTgoqNYvZ/GQ4sw==}
+    engines: {node: '>=20', pnpm: '>=9'}
 
   brace-expansion@1.1.12:
     resolution: {integrity: sha512-9T9UjW3r0UW5c1Q7GTwllptXwhvYmEzFhzMfZ9H7FQWt+uZePjZPjBP/W1ZEyZ1twGWom5/56TF4lPcqjnDHcg==}
@@ -6210,6 +6317,10 @@ snapshots:
     dependencies:
       is-windows: 1.0.2
 
+  better-sse@0.13.0: {}
+
+  better-sse@0.15.1: {}
+
   brace-expansion@1.1.12:
     dependencies:
       balanced-match: 1.0.2
@@ -8405,6 +8516,35 @@ snapshots:
       tree-kill: 1.2.2
     optionalDependencies:
       '@microsoft/api-extractor': 7.55.0(@types/node@24.9.2)
+      postcss: 8.5.6
+      typescript: 5.9.3
+    transitivePeerDependencies:
+      - jiti
+      - supports-color
+      - tsx
+      - yaml
+
+  tsup@8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3):
+    dependencies:
+      bundle-require: 5.1.0(esbuild@0.27.0)
+      cac: 6.7.14
+      chokidar: 4.0.3
+      consola: 3.4.2
+      debug: 4.4.3
+      esbuild: 0.27.0
+      fix-dts-default-cjs-exports: 1.0.1
+      joycon: 3.1.1
+      picocolors: 1.1.1
+      postcss-load-config: 6.0.1(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)
+      resolve-from: 5.0.0
+      rollup: 4.52.5
+      source-map: 0.7.6
+      sucrase: 3.35.0
+      tinyexec: 0.3.2
+      tinyglobby: 0.2.15
+      tree-kill: 1.2.2
+    optionalDependencies:
+      '@microsoft/api-extractor': 7.55.0(@types/node@22.19.1)
       postcss: 8.5.6
       typescript: 5.9.3
     transitivePeerDependencies:

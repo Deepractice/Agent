@@ -42,7 +42,7 @@ import { StreamEventBuilder } from "@deepractice-ai/agentx-core";
 import type { UserMessage } from "@deepractice-ai/agentx-types";
 import type { StreamEventType } from "@deepractice-ai/agentx-event";
 import { LoggerFactory } from "@deepractice-ai/agentx-logger";
-import { defineDriver } from "~/defineDriver";
+import { defineDriver } from "@deepractice-ai/agentx-framework";
 import { observableToAsyncIterable } from "~/utils/observableToAsyncIterable";
 import { Subject } from "rxjs";
 

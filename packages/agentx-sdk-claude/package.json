@@ -1,7 +1,7 @@
 {
-  "name": "@deepractice-ai/agentx-framework",
+  "name": "@deepractice-ai/agentx-sdk-claude",
   "version": "0.1.0",
-  "description": "Unified framework for the AgentX ecosystem - re-exports all public APIs",
+  "description": "Claude SDK integration for AgentX framework",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -11,15 +11,6 @@
       "types": "./dist/index.d.ts",
       "import": "./dist/index.js",
       "require": "./dist/index.cjs"
-    },
-    "./server": {
-      "types": "./dist/defineServer.d.ts",
-      "import": "./dist/defineServer.js",
-      "require": "./dist/defineServer.cjs"
-    },
-    "./browser": {
-      "types": "./dist/defineBrowser.d.ts",
-      "import": "./dist/defineBrowser.js"
     }
   },
   "files": [
@@ -32,11 +23,12 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.30",
     "@deepractice-ai/agentx-core": "workspace:*",
     "@deepractice-ai/agentx-event": "workspace:*",
+    "@deepractice-ai/agentx-framework": "workspace:*",
     "@deepractice-ai/agentx-logger": "workspace:*",
     "@deepractice-ai/agentx-types": "workspace:*",
-    "better-sse": "^0.15.1",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {

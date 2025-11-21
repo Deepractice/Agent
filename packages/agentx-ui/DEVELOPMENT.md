@@ -259,7 +259,7 @@ ANTHROPIC_API_KEY=sk-ant-xxx
 
 ### Server Configuration
 
-Edit `server/dev-server.ts` to customize:
+Edit `dev-tools/server/dev-server.ts` to customize:
 
 ```typescript
 const agent = createAgent(
