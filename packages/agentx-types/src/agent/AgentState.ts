@@ -21,6 +21,7 @@ export type AgentState =
   | "initializing" // Agent is being initialized
   | "ready" // Agent is ready but not yet active
   | "idle" // Agent is idle, waiting for user input
+  | "pending" // Message sent, waiting for server response
   | "conversation_active" // Conversation has started
   | "thinking" // Agent is processing/thinking
   | "responding" // Agent is generating response

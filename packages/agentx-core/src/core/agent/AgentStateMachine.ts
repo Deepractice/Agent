@@ -103,6 +103,17 @@ export class AgentStateMachine implements AgentReactor {
     };
   }
 
+  /**
+   * Manually set agent state
+   *
+   * Used for states that are triggered externally (e.g., 'pending' when sending a message)
+   *
+   * @param state - The new state to set
+   */
+  setState(state: AgentState): void {
+    this.transitionState(state);
+  }
+
   constructor() {
     this.logger = createLogger("core/agent/AgentStateMachine");
   }

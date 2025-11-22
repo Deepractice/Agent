@@ -38,6 +38,8 @@ function getStatusText(state: AgentState): string {
   switch (state) {
     case "initializing":
       return "Initializing";
+    case "pending":
+      return "Sending";
     case "thinking":
       return "Thinking";
     case "responding":

@@ -313,6 +313,9 @@ async function startDevServer() {
   // Start log collector server (port 5201)
   globalLogCollector = await createLogCollectorServer(5201, frontendLogPath);
 
+  // Ensure SSE server port is available
+  await ensurePortAvailable(5200);
+
   // Create SSE Server with automatic session management
   globalAgentServer = createAgentServer(ClaudeAgent, {
     port: 5200,

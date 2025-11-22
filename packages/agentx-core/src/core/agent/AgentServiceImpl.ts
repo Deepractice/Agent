@@ -208,6 +208,9 @@ export class AgentServiceImpl implements AgentService {
       throw new Error("Message cannot be empty");
     }
 
+    // Set pending state immediately (before network request)
+    this.engine.setState("pending");
+
     // Create UserMessage
     const userMessage: UserMessage = {
       id: this.generateId(),

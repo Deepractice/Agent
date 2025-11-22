@@ -159,6 +159,13 @@ export class AgentEngine {
   }
 
   /**
+   * Manually set agent state
+   */
+  setState(state: any): void {
+    this.stateMachine.setState(state);
+  }
+
+  /**
    * Register and initialize a reactor at runtime
    *
    * This is used for dynamic reactor registration (e.g., ChatReactor, SSEReactor with session).

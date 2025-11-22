@@ -71,6 +71,15 @@ export const Responding: Story = {
 };
 
 /**
+ * Pending state - message sent, waiting for response
+ */
+export const Pending: Story = {
+  args: {
+    agent: createMockAgent("pending"),
+  },
+};
+
+/**
  * Tool executing state
  */
 export const ToolExecuting: Story = {
@@ -113,6 +122,12 @@ export const Interactive: Story = {
             className="px-3 py-1 bg-gray-200 rounded hover:bg-gray-300"
           >
             Set Idle
+          </button>
+          <button
+            onClick={() => agent.setState("pending")}
+            className="px-3 py-1 bg-purple-200 rounded hover:bg-purple-300"
+          >
+            Set Pending
           </button>
           <button
             onClick={() => agent.setState("thinking")}
