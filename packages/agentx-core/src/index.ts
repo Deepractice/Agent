@@ -23,3 +23,6 @@ export type { SessionQueryOptions } from "./SessionStore";
 // Agent registry
 export { AgentRegistry } from "./AgentRegistry";
 export type { AgentRegistryConfig } from "./AgentRegistry";
+
+// EventBus implementation (moved from agentx-engine)
+export { RxJSEventBus } from "./RxJSEventBus";

@@ -10,6 +10,11 @@ export type { EngineConfig } from "./AgentEngine";
 export { AgentEngine } from "./AgentEngine";
 
 // ==================== Interfaces (SPI Contracts) ====================
+// EventBus interfaces (moved from agentx-event)
+export type { EventBus } from "./bus/EventBus";
+export type { EventProducer } from "./bus/EventProducer";
+export type { EventConsumer, Unsubscribe } from "./bus/EventConsumer";
+
 // Driver interface
 export type { AgentDriver } from "./AgentDriver";
 

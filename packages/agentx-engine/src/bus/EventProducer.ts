@@ -5,7 +5,7 @@
  * Any component (Agent, Provider, UI) can be a producer.
  */
 
-import type { AgentEvent } from "../base/AgentEvent";
+import type { AgentEvent } from "@deepractice-ai/agentx-event";
 
 export interface EventProducer {
   /**

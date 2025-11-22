@@ -6,7 +6,7 @@
 
 import type { ErrorMessage } from "@deepractice-ai/agentx-types";
 import type { ErrorMessageEvent } from "@deepractice-ai/agentx-event";
-import type { EventProducer } from "@deepractice-ai/agentx-event";
+import type { EventProducer } from "./bus/EventProducer";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 
 const logger = createLogger("core/utils/emitError");

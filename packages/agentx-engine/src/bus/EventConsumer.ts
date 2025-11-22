@@ -5,7 +5,7 @@
  * Any component (Agent, Provider, UI) can be a consumer.
  */
 
-import type { AgentEventType } from "../base";
+import type { AgentEventType } from "@deepractice-ai/agentx-event";
 
 /**
  * Unsubscribe function returned by consume methods

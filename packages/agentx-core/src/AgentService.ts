@@ -44,12 +44,12 @@ import type { AgentInfo, Message, UserMessage, Session, AgentState } from "@deep
 import type {
   UserMessageEvent,
   AssistantMessageEvent,
-  EventConsumer,
-  Unsubscribe,
   StreamEventType,
 } from "@deepractice-ai/agentx-event";
+import type { EventConsumer, Unsubscribe } from "@deepractice-ai/agentx-engine";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
 import type { AgentInstance, TurnStats, EventHandlers, AgentInstanceInfo } from "./AgentInstance";
+import { RxJSEventBus } from "./RxJSEventBus";
 
 /**
  * AgentService
@@ -104,7 +104,13 @@ export class AgentService implements AgentInstance {
 
     // Initialize runtime fields
     this.driver = driver;
-    this.engine = new AgentEngine(driver, config);
+
+    // Create EventBus and inject into Engine
+    const eventBus = new RxJSEventBus();
+    this.engine = new AgentEngine(driver, {
+      ...config,
+      eventBus,
+    });
     this.instanceCreatedAt = new Date();
     this.lastActivityAt = new Date();
 

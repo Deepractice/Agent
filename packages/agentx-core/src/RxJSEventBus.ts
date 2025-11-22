@@ -1,5 +1,5 @@
 /**
- * AgentEventBus Implementation
+ * RxJSEventBus Implementation
  *
  * RxJS-based implementation of the EventBus interface.
  * Implements producer-consumer pattern for event-driven communication.
@@ -12,23 +12,23 @@ import type {
   EventProducer,
   EventConsumer,
   Unsubscribe,
-  AgentEventType,
-} from "@deepractice-ai/agentx-event";
+} from "@deepractice-ai/agentx-engine";
+import type { AgentEventType } from "@deepractice-ai/agentx-event";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 
-const logger = createLogger("core/agent/AgentEventBus");
+const logger = createLogger("core/agent/RxJSEventBus");
 
 /**
  * RxJS-based EventBus implementation
  */
-export class AgentEventBus implements EventBus {
+export class RxJSEventBus implements EventBus {
   private events$ = new Subject<AgentEventType>();
   private closed = false;
 
   createProducer(): EventProducer {
     if (this.closed) {
       logger.error("Cannot create producer: bus is closed");
-      throw new Error("[AgentEventBus] Cannot create producer: bus is closed");
+      throw new Error("[RxJSEventBus] Cannot create producer: bus is closed");
     }
     logger.debug("Producer created");
     return new RxJSEventProducer(this.events$, () => this.closed);
@@ -37,7 +37,7 @@ export class AgentEventBus implements EventBus {
   createConsumer(): EventConsumer {
     if (this.closed) {
       logger.error("Cannot create consumer: bus is closed");
-      throw new Error("[AgentEventBus] Cannot create consumer: bus is closed");
+      throw new Error("[RxJSEventBus] Cannot create consumer: bus is closed");
     }
     logger.debug("Consumer created");
     return new RxJSEventConsumer(this.events$.asObservable(), () => this.closed);

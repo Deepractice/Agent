@@ -8,8 +8,8 @@
 // ===== Base Layer =====
 export type { AgentEvent, AgentEventType } from "./base";
 
-// ===== Bus Layer =====
-export type { EventBus, EventProducer, EventConsumer, Unsubscribe } from "./bus";
+// ===== Bus Layer (moved to agentx-engine) =====
+// EventBus interfaces are now in @deepractice-ai/agentx-engine
 
 // ===== Types =====
 export type { StopReason } from "./types/StopReason";

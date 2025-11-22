@@ -42,7 +42,7 @@
  * ```
  */
 
-import { AgentEventBus } from "./AgentEventBus";
+import type { EventBus } from "./bus/EventBus";
 import { AgentStateMachine } from "./AgentStateMachine";
 import { AgentMessageAssembler } from "./AgentMessageAssembler";
 import { AgentTurnTracker } from "./AgentTurnTracker";
@@ -60,6 +60,11 @@ export interface EngineConfig {
    * User-provided AgentReactors to register
    */
   reactors?: AgentReactor[];
+
+  /**
+   * EventBus implementation (injected from agentx-core)
+   */
+  eventBus?: EventBus;
 }
 
 /**
@@ -71,7 +76,7 @@ export class AgentEngine {
   readonly agentId: string;
 
   // Core components
-  readonly eventBus: AgentEventBus;
+  readonly eventBus: EventBus;
   private readonly registry: AgentReactorRegistry;
   private readonly driver: AgentDriver;
   private readonly logger: LoggerProvider;
@@ -89,9 +94,12 @@ export class AgentEngine {
       driverType: driver.constructor.name,
     });
 
-    // Create EventBus
-    this.eventBus = new AgentEventBus();
-    this.logger.debug("EventBus created");
+    // Use injected EventBus or throw error (EventBus must be provided by agentx-core)
+    if (!config?.eventBus) {
+      throw new Error("[AgentEngine] EventBus must be provided via config.eventBus");
+    }
+    this.eventBus = config.eventBus;
+    this.logger.debug("EventBus injected");
 
     // Create AgentReactorRegistry
     this.registry = new AgentReactorRegistry(this.eventBus, {

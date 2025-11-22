@@ -46,7 +46,8 @@
     "@deepractice-ai/agentx-engine": "workspace:*",
     "@deepractice-ai/agentx-event": "workspace:*",
     "@deepractice-ai/agentx-logger": "workspace:*",
-    "@deepractice-ai/agentx-types": "workspace:*"
+    "@deepractice-ai/agentx-types": "workspace:*",
+    "rxjs": "^7.8.1"
   },
   "devDependencies": {
     "@types/node": "^24.9.2",

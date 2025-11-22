@@ -82,17 +82,19 @@ export {
 // ==================== Events (Observable Data) ====================
 // Re-export from @deepractice-ai/agentx-event
 
+// Base event types (from agentx-event)
 export type {
-  // Base event types
   AgentEvent,
   AgentEventType,
+} from "@deepractice-ai/agentx-event";
 
-  // Event bus interfaces (for advanced users)
+// Event bus interfaces (from agentx-engine)
+export type {
   EventBus,
   EventProducer,
   EventConsumer,
   Unsubscribe,
-} from "@deepractice-ai/agentx-event";
+} from "@deepractice-ai/agentx-engine";
 
 // Stream layer events (real-time streaming)
 export type {

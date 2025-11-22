@@ -28,7 +28,7 @@ import type { AgentInfo, Message, UserMessage, AgentState } from "@deepractice-a
 import type { AgentDriver } from "@deepractice-ai/agentx-engine";
 import type { AgentContext } from "@deepractice-ai/agentx-engine";
 import type { AgentReactor } from "@deepractice-ai/agentx-engine";
-import type { Unsubscribe } from "@deepractice-ai/agentx-event";
+import type { Unsubscribe } from "@deepractice-ai/agentx-engine";
 
 /**
  * Turn statistics
