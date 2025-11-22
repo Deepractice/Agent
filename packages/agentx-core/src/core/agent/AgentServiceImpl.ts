@@ -42,7 +42,7 @@ import type { AgentDriver } from "~/interfaces/AgentDriver";
 import type { AgentContext } from "~/interfaces/AgentContext";
 import { AgentEngine, type EngineConfig } from "./AgentEngine";
 // Reactor type removed - users just pass event handler objects
-import type { Agent, Message, UserMessage, Session } from "@deepractice-ai/agentx-types";
+import type { Agent, Message, UserMessage, Session, AgentState } from "@deepractice-ai/agentx-types";
 import type {
   UserMessageEvent,
   AssistantMessageEvent,
@@ -144,6 +144,23 @@ export class AgentServiceImpl implements AgentService {
    */
   get messages(): ReadonlyArray<Message> {
     return this._messages;
+  }
+
+  /**
+   * Get current agent state
+   */
+  get state(): AgentState {
+    return this.engine.state;
+  }
+
+  /**
+   * Subscribe to state changes
+   *
+   * @param callback - Called when state changes with (newState, previousState)
+   * @returns Unsubscribe function
+   */
+  onStateChange(callback: (state: AgentState, previousState: AgentState) => void): () => void {
+    return this.engine.onStateChange(callback);
   }
 
   /**

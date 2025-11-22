@@ -1,6 +1,9 @@
 // Public API Layer
 // This file exports all public components and utilities
 
+// Agent Components (status indicator, reactors)
+export * from "~/components/agent";
+
 // Chat Components
 export * from "~/components/chat";
 

@@ -76,6 +76,7 @@ export class AgentEngine {
   private readonly registry: AgentReactorRegistry;
   private readonly driver: AgentDriver;
   private readonly logger: LoggerProvider;
+  private readonly stateMachine: AgentStateMachine;
 
   private isInitialized = false;
 
@@ -105,7 +106,8 @@ export class AgentEngine {
     // Register core Reactors (order matters!)
     this.logger.debug("Registering core reactors");
     this.registry.register(new AgentDriverBridge(driver));
-    this.registry.register(new AgentStateMachine());
+    this.stateMachine = new AgentStateMachine();
+    this.registry.register(this.stateMachine);
     this.registry.register(new AgentMessageAssembler());
     this.registry.register(new AgentTurnTracker());
 
@@ -140,6 +142,20 @@ export class AgentEngine {
 
     this.isInitialized = true;
     this.logger.info("AgentEngine initialized successfully");
+  }
+
+  /**
+   * Get current agent state
+   */
+  get state() {
+    return this.stateMachine.state;
+  }
+
+  /**
+   * Subscribe to state changes
+   */
+  onStateChange(callback: (state: any, previousState: any) => void): () => void {
+    return this.stateMachine.onStateChange(callback);
   }
 
   /**

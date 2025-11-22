@@ -54,23 +54,18 @@ import type {
 } from "@deepractice-ai/agentx-event";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
 
-/**
- * Agent state types
- */
-type AgentState =
-  | "initializing"
-  | "ready"
-  | "conversation_active"
-  | "thinking"
-  | "responding"
-  | "tool_executing"
-  | "idle";
+import type { AgentState } from "@deepractice-ai/agentx-types";
 
 /**
  * StateMachineReactor
  *
  * Automatically generates State Layer events from Stream Layer events.
  */
+/**
+ * State change callback type
+ */
+export type StateChangeCallback = (state: AgentState, previousState: AgentState) => void;
+
 export class AgentStateMachine implements AgentReactor {
   readonly id = "state-machine";
   readonly name = "StateMachineReactor";
@@ -81,8 +76,32 @@ export class AgentStateMachine implements AgentReactor {
   // State tracking
   private currentState: AgentState = "initializing";
 
+  // State change listeners
+  private stateChangeCallbacks: Set<StateChangeCallback> = new Set();
+
   // Conversation tracking
   private conversationStartTime: number | null = null;
+
+  /**
+   * Get current agent state
+   * Allows external code to query the current state without subscribing to events
+   */
+  get state(): AgentState {
+    return this.currentState;
+  }
+
+  /**
+   * Subscribe to state changes
+   *
+   * @param callback - Called when state changes with (newState, previousState)
+   * @returns Unsubscribe function
+   */
+  onStateChange(callback: StateChangeCallback): () => void {
+    this.stateChangeCallbacks.add(callback);
+    return () => {
+      this.stateChangeCallbacks.delete(callback);
+    };
+  }
 
   constructor() {
     this.logger = createLogger("core/agent/AgentStateMachine");
@@ -98,6 +117,9 @@ export class AgentStateMachine implements AgentReactor {
 
     // Subscribe to Stream Layer events
     this.subscribeToStreamEvents();
+
+    // Transition to idle state (ready for user messages)
+    this.transitionState("idle");
 
     this.logger.debug("StateMachine subscribed to stream events");
   }
@@ -151,6 +173,7 @@ export class AgentStateMachine implements AgentReactor {
    * Triggers: ConversationStartStateEvent
    */
   private onMessageStart(event: MessageStartEvent): void {
+    console.log("[AgentStateMachine] onMessageStart received!", event.type);
     this.conversationStartTime = event.timestamp;
 
     // Emit ConversationStartStateEvent
@@ -296,8 +319,20 @@ export class AgentStateMachine implements AgentReactor {
    */
   private transitionState(newState: AgentState): void {
     const previousState = this.currentState;
+    if (previousState === newState) {
+      return; // No change, skip
+    }
+
     this.currentState = newState;
 
+    // Notify all listeners
+    for (const callback of this.stateChangeCallbacks) {
+      try {
+        callback(newState, previousState);
+      } catch (error) {
+        this.logger.error("State change callback error", { error });
+      }
+    }
     this.logger.debug("State transition", {
       from: previousState,
       to: newState,

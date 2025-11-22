@@ -12,7 +12,7 @@
  * in nested Agent compositions. This allows building hierarchical agent systems.
  */
 
-import type { Agent, Message, Session } from "@deepractice-ai/agentx-types";
+import type { Agent, Message, Session, AgentState } from "@deepractice-ai/agentx-types";
 import type { AgentDriver } from "./AgentDriver";
 
 /**
@@ -37,6 +37,46 @@ export interface AgentService extends AgentDriver {
    * Get message history (read-only)
    */
   readonly messages: ReadonlyArray<Message>;
+
+  /**
+   * Get current agent state (read-only)
+   *
+   * Allows querying the current operational state without subscribing to events.
+   *
+   * @example
+   * ```typescript
+   * if (agent.state === "idle") {
+   *   await agent.send("Hello!");
+   * }
+   * ```
+   */
+  readonly state: AgentState;
+
+  /**
+   * Subscribe to state changes
+   *
+   * Register a callback that will be called whenever the agent state changes.
+   * Returns an unsubscribe function.
+   *
+   * @param callback - Function called with (newState, previousState)
+   * @returns Unsubscribe function
+   *
+   * @example
+   * ```typescript
+   * const unsubscribe = agent.onStateChange((state, prevState) => {
+   *   console.log(`State changed: ${prevState} -> ${state}`);
+   *   if (state === "responding") {
+   *     showLoadingIndicator();
+   *   } else if (state === "idle") {
+   *     hideLoadingIndicator();
+   *   }
+   * });
+   *
+   * // Later: stop listening
+   * unsubscribe();
+   * ```
+   */
+  onStateChange(callback: (state: AgentState, previousState: AgentState) => void): () => void;
 
   /**
    * Initialize agent and start event pipeline

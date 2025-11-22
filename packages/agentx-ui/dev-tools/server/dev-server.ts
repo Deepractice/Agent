@@ -20,6 +20,10 @@ import { appendFileSync, writeFileSync } from "fs";
 import http from "http";
 import { WebSocketServer } from "ws";
 
+// Global references for cleanup on hot reload
+let globalLogCollector: http.Server | null = null;
+let globalAgentServer: Awaited<ReturnType<typeof createAgentServer>> | null = null;
+
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -146,9 +150,60 @@ configure({
 });
 
 /**
+ * Kill process using a specific port
+ */
+async function killProcessOnPort(port: number): Promise<void> {
+  const { execSync } = await import("child_process");
+  try {
+    // Find PID using the port (Linux/macOS)
+    const result = execSync(`lsof -ti:${port}`, { encoding: "utf8" }).trim();
+    if (result) {
+      const pids = result.split("\n");
+      for (const pid of pids) {
+        console.log(`[HotReload] Killing process ${pid} on port ${port}`);
+        try {
+          execSync(`kill -9 ${pid}`);
+        } catch {
+          // Process might already be dead
+        }
+      }
+      // Wait a bit for the port to be released
+      await new Promise((r) => setTimeout(r, 300));
+    }
+  } catch {
+    // No process found on port, which is fine
+  }
+}
+
+/**
+ * Ensure port is available, killing any process using it
+ */
+async function ensurePortAvailable(port: number): Promise<void> {
+  try {
+    await new Promise<void>((resolve, reject) => {
+      const testServer = http.createServer();
+      testServer.once("error", (err: NodeJS.ErrnoException) => {
+        reject(err);
+      });
+      testServer.once("listening", () => {
+        testServer.close(() => resolve());
+      });
+      testServer.listen(port, "0.0.0.0");
+    });
+  } catch {
+    // Port in use, kill the process
+    console.log(`[HotReload] Port ${port} in use, killing process...`);
+    await killProcessOnPort(port);
+  }
+}
+
+/**
  * Create WebSocket server for collecting frontend logs
  */
-function createLogCollectorServer(port: number, logFilePath: string) {
+async function createLogCollectorServer(port: number, logFilePath: string): Promise<http.Server> {
+  // Ensure port is available (kill any process using it)
+  await ensurePortAvailable(port);
+
   const httpServer = http.createServer();
   const wss = new WebSocketServer({ server: httpServer });
 
@@ -195,7 +250,43 @@ function createLogCollectorServer(port: number, logFilePath: string) {
   return httpServer;
 }
 
+/**
+ * Close server and wait for it to fully close
+ */
+function closeServer(server: http.Server): Promise<void> {
+  return new Promise((resolve) => {
+    server.close(() => {
+      resolve();
+    });
+    // Force close after 2 seconds if not closed gracefully
+    setTimeout(resolve, 2000);
+  });
+}
+
+/**
+ * Cleanup previous server instances (for hot reload support)
+ */
+async function cleanup() {
+  if (globalLogCollector) {
+    console.log("[HotReload] Closing previous log collector...");
+    await closeServer(globalLogCollector);
+    globalLogCollector = null;
+    // Give OS time to release the port
+    await new Promise((r) => setTimeout(r, 500));
+  }
+  if (globalAgentServer) {
+    console.log("[HotReload] Stopping previous agent server...");
+    await globalAgentServer.stop();
+    globalAgentServer = null;
+    // Give OS time to release the port
+    await new Promise((r) => setTimeout(r, 500));
+  }
+}
+
 async function startDevServer() {
+  // Cleanup any previous instances first (hot reload support)
+  await cleanup();
+
   // Support both AGENT_API_KEY and ANTHROPIC_API_KEY
   const apiKey = process.env.AGENT_API_KEY || process.env.ANTHROPIC_API_KEY;
   const baseUrl = process.env.AGENT_BASE_URL;
@@ -220,10 +311,10 @@ async function startDevServer() {
   console.log();
 
   // Start log collector server (port 5201)
-  const logCollector = createLogCollectorServer(5201, frontendLogPath);
+  globalLogCollector = await createLogCollectorServer(5201, frontendLogPath);
 
   // Create SSE Server with automatic session management
-  const server = createAgentServer(ClaudeAgent, {
+  globalAgentServer = createAgentServer(ClaudeAgent, {
     port: 5200,
     host: "0.0.0.0",
     config: {
@@ -234,7 +325,7 @@ async function startDevServer() {
     },
   });
 
-  await server.start();
+  await globalAgentServer.start();
 
   console.log("✅ SSE Server Started");
   console.log(`   URL: http://0.0.0.0:5200\n`);
@@ -245,14 +336,16 @@ async function startDevServer() {
   console.log("   • Real-time event streaming");
   console.log("   • Full Claude SDK features\n");
 
-  // Graceful shutdown
-  process.on("SIGINT", async () => {
+  // Graceful shutdown handlers
+  const shutdown = async () => {
     console.log("\n\n🛑 Shutting down...");
-    await server.stop();
-    logCollector.close();
+    await cleanup();
     console.log("✅ Server stopped");
     process.exit(0);
-  });
+  };
+
+  process.on("SIGINT", shutdown);
+  process.on("SIGTERM", shutdown);
 }
 
 startDevServer().catch((error) => {

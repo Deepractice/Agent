@@ -95,9 +95,18 @@ async function* receiveSSEStream(
       }
 
       // Check if this is the last event
+      // Note: Don't close on message_stop because State Layer events (like conversation_end)
+      // may arrive after it. Instead, close on a timeout or explicit end signal.
+      // For now, we rely on server closing the connection or a timeout.
       if (streamEvent.type === "message_stop") {
-        eventSource.close();
+        // Mark as done but don't close EventSource yet
+        // Let state events (conversation_end, etc.) come through
         isDone = true;
+        // Close after a short delay to allow trailing events
+        setTimeout(() => {
+          console.log("[SSEDriver] Closing EventSource after message_stop delay");
+          eventSource.close();
+        }, 500); // 500ms grace period for state events
       }
     } catch (err) {
       console.error("[SSEDriver] Failed to parse SSE event:", err);

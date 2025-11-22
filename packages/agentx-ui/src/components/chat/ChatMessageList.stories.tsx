@@ -29,16 +29,6 @@ export const Empty: Story = {
 };
 
 /**
- * Loading state - shows thinking indicator
- */
-export const Loading: Story = {
-  args: {
-    messages: [],
-    isLoading: true,
-  },
-};
-
-/**
  * Single user message
  */
 export const SingleMessage: Story = {
@@ -300,7 +290,6 @@ export const WaitingForResponse: Story = {
         timestamp: Date.now() - 5000,
       },
     ],
-    isLoading: true,
   },
 };
 

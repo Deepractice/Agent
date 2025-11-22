@@ -10,6 +10,7 @@
  */
 
 export type { Agent } from "./Agent";
+export type { AgentState } from "./AgentState";
 
 // Message types
 export * from "./message";

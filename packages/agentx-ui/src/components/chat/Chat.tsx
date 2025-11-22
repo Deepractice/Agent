@@ -1,14 +1,38 @@
+/**
+ * Chat - Complete chat interface with real Agent integration
+ *
+ * Features:
+ * - Real-time streaming from Claude API
+ * - Message history
+ * - Auto-scroll
+ * - Agent status indicator
+ * - Image attachment support
+ * - Full event handling using new Framework API
+ *
+ * @example
+ * ```tsx
+ * import { SSEAgent } from '@deepractice-ai/agentx-framework/browser';
+ *
+ * const agent = SSEAgent.create({
+ *   serverUrl: 'http://localhost:5200',
+ *   sessionId: 'my-session',
+ * });
+ *
+ * await agent.initialize();
+ * <Chat agent={agent} />
+ * ```
+ */
+
 import { useState, useEffect } from "react";
 import type { AgentService } from "@deepractice-ai/agentx-framework";
 import type { Message } from "@deepractice-ai/agentx-framework";
-import type {
-  ErrorMessage as ErrorMessageType,
-} from "@deepractice-ai/agentx-framework";
+import type { ErrorMessage as ErrorMessageType } from "@deepractice-ai/agentx-framework";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
 import { ErrorMessage } from "./messages/ErrorMessage";
+import { AgentStatusIndicator } from "../agent/AgentStatusIndicator";
+import { UIReactor } from "../agent/UIReactor";
 import { LoggerFactory } from "../../../dev-tools/WebSocketLogger";
-import { ChatReactor } from "./ChatReactor";
 
 const logger = LoggerFactory.getLogger("Chat");
 
@@ -34,34 +58,9 @@ export interface ChatProps {
   className?: string;
 }
 
-/**
- * Chat - Complete chat interface with real Agent integration
- *
- * Features:
- * - Real-time streaming from Claude API
- * - Message history
- * - Auto-scroll
- * - Loading states
- * - Image attachment support
- * - Full event handling using new Framework API
- *
- * @example
- * ```tsx
- * import { WebSocketBrowserAgent } from '@deepractice-ai/agentx-framework/browser';
- *
- * const agent = WebSocketBrowserAgent.create({
- *   url: 'ws://localhost:5200/ws',
- *   sessionId: 'my-session',
- * });
- *
- * await agent.initialize();
- * <Chat agent={agent} />
- * ```
- */
 export function Chat({ agent, initialMessages = [], onMessageSend, className = "" }: ChatProps) {
   const [messages, setMessages] = useState<Message[]>(initialMessages);
   const [streaming, setStreaming] = useState("");
-  const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<ErrorMessageType[]>([]);
 
   useEffect(() => {
@@ -69,13 +68,12 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
 
     let unsubscribe: (() => void) | null = null;
 
-    // Register ChatReactor
+    // Register UIReactor for data accumulation (messages, streaming, errors)
     agent
       .registerReactor(
-        ChatReactor.create({
+        UIReactor.create({
           setStreaming,
           setMessages,
-          setIsLoading,
           setErrors,
           logger,
         })
@@ -84,7 +82,7 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
         unsubscribe = unsub;
       })
       .catch((error) => {
-        logger.error("Failed to register ChatReactor", { error });
+        logger.error("Failed to register UIReactor", { error });
       });
 
     // Cleanup on unmount
@@ -93,7 +91,7 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
         try {
           unsubscribe();
         } catch (error) {
-          logger.error("Failed to unsubscribe ChatReactor", { error });
+          logger.error("Failed to unsubscribe UIReactor", { error });
         }
       }
     };
@@ -101,9 +99,9 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
 
   const handleSend = async (text: string) => {
     logger.info("handleSend called", { text });
-    // console.trace("[Chat.handleSend] Stack trace");
 
-    setIsLoading(true);
+    // Clear errors on new message
+    setErrors([]);
     onMessageSend?.(text);
 
     // Add user message to local state immediately (for instant UI feedback)
@@ -127,7 +125,12 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
   return (
     <div className={`h-full flex flex-col bg-background ${className}`}>
       {/* Messages area */}
-      <ChatMessageList messages={messages} streamingText={streaming} isLoading={isLoading} />
+      <ChatMessageList messages={messages} streamingText={streaming} />
+
+      {/* Agent status indicator (shows when agent is working) */}
+      <div className="px-2 sm:px-4 md:px-4">
+        <AgentStatusIndicator agent={agent} />
+      </div>
 
       {/* Error messages (above input) */}
       {errors.length > 0 && (

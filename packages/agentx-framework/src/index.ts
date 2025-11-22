@@ -38,6 +38,9 @@ export type { AgentService } from "@deepractice-ai/agentx-core";
 // Re-export from @deepractice-ai/agentx-types
 
 export type {
+  // Agent state
+  AgentState,
+
   // Message types (user needs to work with these)
   Message,
   UserMessage,

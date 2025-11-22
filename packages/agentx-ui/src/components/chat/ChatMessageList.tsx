@@ -1,3 +1,23 @@
+/**
+ * ChatMessageList - Display a scrollable list of chat messages
+ *
+ * Features:
+ * - Auto-scroll to bottom on new messages
+ * - Empty state (welcome screen)
+ * - Streaming message display
+ * - Responsive max-width container
+ *
+ * Note: Loading/status indicator is now handled by AgentStatusIndicator component.
+ *
+ * @example
+ * ```tsx
+ * <ChatMessageList
+ *   messages={messages}
+ *   streamingText={currentStream}
+ * />
+ * ```
+ */
+
 import { useRef, useEffect } from "react";
 import type { Message } from "@deepractice-ai/agentx-types";
 import { UserMessage } from "./messages/UserMessage";
@@ -17,39 +37,14 @@ export interface ChatMessageListProps {
   streamingText?: string;
 
   /**
-   * Whether agent is loading/thinking
-   */
-  isLoading?: boolean;
-
-  /**
    * Custom className
    */
   className?: string;
 }
 
-/**
- * ChatMessageList - Display a scrollable list of chat messages
- *
- * Features:
- * - Auto-scroll to bottom on new messages
- * - Empty state (welcome screen)
- * - Loading indicator
- * - Streaming message display
- * - Responsive max-width container
- *
- * @example
- * ```tsx
- * <ChatMessageList
- *   messages={messages}
- *   streamingText={currentStream}
- *   isLoading={isThinking}
- * />
- * ```
- */
 export function ChatMessageList({
   messages,
   streamingText,
-  isLoading = false,
   className = "",
 }: ChatMessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
@@ -62,7 +57,7 @@ export function ChatMessageList({
   }, [messages.length, streamingText]);
 
   // Empty state - Welcome screen
-  if (messages.length === 0 && !isLoading && !streamingText) {
+  if (messages.length === 0 && !streamingText) {
     return (
       <div className={`flex-1 flex items-center justify-center ${className}`}>
         <div className="text-center px-4">
@@ -107,32 +102,6 @@ export function ChatMessageList({
             }}
             isStreaming
           />
-        )}
-
-        {/* Loading indicator (only if no streaming text) */}
-        {isLoading && !streamingText && (
-          <div className="chat-message assistant">
-            <div className="w-full">
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
-                  🤖
-                </div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Agent</div>
-              </div>
-              <div className="w-full text-sm text-gray-500 dark:text-gray-400 pl-3 sm:pl-0">
-                <div className="flex items-center space-x-1">
-                  <div className="animate-pulse">●</div>
-                  <div className="animate-pulse" style={{ animationDelay: "0.2s" }}>
-                    ●
-                  </div>
-                  <div className="animate-pulse" style={{ animationDelay: "0.4s" }}>
-                    ●
-                  </div>
-                  <span className="ml-2">Thinking...</span>
-                </div>
-              </div>
-            </div>
-          </div>
         )}
 
         {/* Scroll anchor */}
