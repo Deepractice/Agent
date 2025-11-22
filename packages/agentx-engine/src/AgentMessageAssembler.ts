@@ -19,7 +19,7 @@
  * 4. Assemble and emit complete Message events
  */
 
-import type { AgentReactor, AgentReactorContext } from "~/interfaces/AgentReactor";
+import type { AgentReactor, AgentReactorContext } from "./AgentReactor";
 import type {
   // Stream Events (input)
   TextDeltaEvent,
@@ -39,7 +39,7 @@ import type {
   ToolCallPart,
   ToolResultPart,
 } from "@deepractice-ai/agentx-types";
-import { emitError } from "~/utils/emitError";
+import { emitError } from "./emitError";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
 
 /**

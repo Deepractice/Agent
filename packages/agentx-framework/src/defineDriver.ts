@@ -8,7 +8,7 @@
  * @example
  * ```typescript
  * import { defineDriver } from "@deepractice-ai/agentx-framework";
- * import { StreamEventBuilder } from "@deepractice-ai/agentx-core";
+ * import { StreamEventBuilder } from "@deepractice-ai/agentx-engine";
  *
  * const MyDriver = defineDriver({
  *   name: "MyDriver",
@@ -47,18 +47,37 @@
  * ```
  */
 
-import type { AgentDriver } from "@deepractice-ai/agentx-core";
+import type { AgentDriver } from "@deepractice-ai/agentx-engine";
 import type { UserMessage } from "@deepractice-ai/agentx-types";
 import type { StreamEventType } from "@deepractice-ai/agentx-event";
 
 /**
  * Driver definition configuration
  */
-export interface DriverDefinition<TConfig = any> {
+export interface DriverDefinition<TConfig = any, TInstance = void> {
   /**
    * Driver name (for identification)
    */
   name: string;
+
+  /**
+   * Optional: Create instance state
+   *
+   * Factory function to create driver instance state.
+   * This allows stateful drivers (e.g., persistent connections, caches).
+   *
+   * @param config - Driver configuration
+   * @returns Instance state object
+   *
+   * @example
+   * ```typescript
+   * createInstance: (config) => ({
+   *   connection: null,
+   *   cache: new Map(),
+   * })
+   * ```
+   */
+  createInstance?: (config: TConfig) => TInstance | Promise<TInstance>;
 
   /**
    * Core method: Transform UserMessage(s) into StreamEventType
@@ -70,11 +89,12 @@ export interface DriverDefinition<TConfig = any> {
    *
    * @param message - User message(s)
    * @param config - Driver configuration
+   * @param instance - Driver instance state (if createInstance is provided)
    * @returns AsyncIterable of StreamEventType
    *
    * @example
    * ```typescript
-   * async *processMessage(message, config) {
+   * async *processMessage(message, config, instance) {
    *   const builder = new StreamEventBuilder("agent-id");
    *   const firstMsg = await extractFirst(message);
    *
@@ -86,26 +106,34 @@ export interface DriverDefinition<TConfig = any> {
    */
   processMessage: (
     message: UserMessage | AsyncIterable<UserMessage>,
-    config: TConfig
+    config: TConfig,
+    instance: TInstance
   ) => AsyncIterable<StreamEventType>;
 
   /**
    * Optional: Initialize driver
-   * Called when driver is created
+   * Called when driver is created (after createInstance)
+   *
+   * @param config - Driver configuration
+   * @param instance - Driver instance state
    */
-  onInit?: (config: TConfig) => void | Promise<void>;
+  onInit?: (config: TConfig, instance: TInstance) => void | Promise<void>;
 
   /**
    * Optional: Destroy driver
    * Called when driver is destroyed
+   *
+   * @param instance - Driver instance state
    */
-  onDestroy?: () => void | Promise<void>;
+  onDestroy?: (instance: TInstance) => void | Promise<void>;
 
   /**
    * Optional: Abort current operation
    * Called when abort() is invoked
+   *
+   * @param instance - Driver instance state
    */
-  onAbort?: () => void;
+  onAbort?: (instance: TInstance) => void;
 }
 
 /**
@@ -126,12 +154,17 @@ export interface DefinedDriver<TConfig = any> {
 /**
  * Internal driver implementation
  */
-class SimpleAgentDriver implements AgentDriver {
+class SimpleAgentDriver<TConfig = any, TInstance = void> implements AgentDriver {
+  private instance: TInstance;
+
   constructor(
-    private definition: DriverDefinition,
-    private config: any,
-    public readonly sessionId: string
-  ) {}
+    private definition: DriverDefinition<TConfig, TInstance>,
+    private config: TConfig,
+    public readonly sessionId: string,
+    instance: TInstance
+  ) {
+    this.instance = instance;
+  }
 
   get driverSessionId(): string | null {
     // Let the driver implementation manage its own session ID if needed
@@ -145,8 +178,8 @@ class SimpleAgentDriver implements AgentDriver {
     const configWithSession = {
       ...this.config,
       sessionId: this.sessionId, // Inject framework session ID
-    };
-    yield* this.definition.processMessage(messages, configWithSession);
+    } as TConfig;
+    yield* this.definition.processMessage(messages, configWithSession, this.instance);
   }
 
   /**
@@ -154,7 +187,7 @@ class SimpleAgentDriver implements AgentDriver {
    */
   abort(): void {
     if (this.definition.onAbort) {
-      this.definition.onAbort();
+      this.definition.onAbort(this.instance);
     }
   }
 
@@ -163,7 +196,7 @@ class SimpleAgentDriver implements AgentDriver {
    */
   async destroy(): Promise<void> {
     if (this.definition.onDestroy) {
-      await this.definition.onDestroy();
+      await this.definition.onDestroy(this.instance);
     }
   }
 }
@@ -191,8 +224,8 @@ class SimpleAgentDriver implements AgentDriver {
  * const driver = EchoDriver.create({ sessionId: "test" });
  * ```
  */
-export function defineDriver<TConfig = any>(
-  definition: DriverDefinition<TConfig>
+export function defineDriver<TConfig = any, TInstance = void>(
+  definition: DriverDefinition<TConfig, TInstance>
 ): DefinedDriver<TConfig> {
   return {
     name: definition.name,
@@ -201,11 +234,27 @@ export function defineDriver<TConfig = any>(
       const sessionId =
         config.sessionId || `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-      const driver = new SimpleAgentDriver(definition, config, sessionId);
+      // Create instance state if factory is provided
+      let instance: TInstance;
+      if (definition.createInstance) {
+        const instanceResult = definition.createInstance(config);
+        if (instanceResult instanceof Promise) {
+          // For async createInstance, we need special handling
+          // We'll create a proxy driver that waits for instance initialization
+          return createAsyncDriver(definition, config, sessionId, instanceResult);
+        } else {
+          instance = instanceResult;
+        }
+      } else {
+        // No instance state - use undefined (typed as void)
+        instance = undefined as TInstance;
+      }
+
+      const driver = new SimpleAgentDriver(definition, config, sessionId, instance);
 
       // Call onInit if provided
       if (definition.onInit) {
-        const initResult = definition.onInit(config);
+        const initResult = definition.onInit(config, instance);
         if (initResult instanceof Promise) {
           // If async, we can't await here, but we store the promise
           initResult.catch((err) => {
@@ -215,6 +264,73 @@ export function defineDriver<TConfig = any>(
       }
 
       return driver;
+    },
+  };
+}
+
+/**
+ * Create driver with async instance initialization
+ */
+function createAsyncDriver<TConfig, TInstance>(
+  definition: DriverDefinition<TConfig, TInstance>,
+  config: TConfig,
+  sessionId: string,
+  instancePromise: Promise<TInstance>
+): AgentDriver {
+  let resolvedInstance: TInstance | null = null;
+  let initError: Error | null = null;
+
+  // Start instance initialization
+  instancePromise
+    .then((inst) => {
+      resolvedInstance = inst;
+      // Call onInit after instance is ready
+      if (definition.onInit) {
+        const initResult = definition.onInit(config, inst);
+        if (initResult instanceof Promise) {
+          initResult.catch((err) => {
+            console.error(`[${definition.name}] Init error:`, err);
+          });
+        }
+      }
+    })
+    .catch((err) => {
+      initError = err;
+      console.error(`[${definition.name}] Instance creation error:`, err);
+    });
+
+  return {
+    sessionId,
+    driverSessionId: null,
+
+    async *processMessage(messages: UserMessage | AsyncIterable<UserMessage>) {
+      // Wait for instance to be ready
+      if (!resolvedInstance) {
+        if (initError) {
+          throw initError;
+        }
+        // Wait for instance
+        resolvedInstance = await instancePromise;
+      }
+
+      const configWithSession = {
+        ...config,
+        sessionId,
+      } as TConfig;
+
+      yield* definition.processMessage(messages, configWithSession, resolvedInstance!);
+    },
+
+    abort() {
+      if (definition.onAbort && resolvedInstance) {
+        definition.onAbort(resolvedInstance);
+      }
+    },
+
+    async destroy() {
+      if (definition.onDestroy && resolvedInstance) {
+        await definition.onDestroy(resolvedInstance);
+      }
     },
   };
 }

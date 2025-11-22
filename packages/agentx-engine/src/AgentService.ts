@@ -37,9 +37,8 @@
  * ```
  */
 
-import type { AgentService } from "~/interfaces/AgentService";
-import type { AgentDriver } from "~/interfaces/AgentDriver";
-import type { AgentContext } from "~/interfaces/AgentContext";
+import type { AgentDriver } from "./AgentDriver";
+import type { AgentContext } from "./AgentContext";
 import { AgentEngine, type EngineConfig } from "./AgentEngine";
 // Reactor type removed - users just pass event handler objects
 import type { Agent, Message, UserMessage, Session, AgentState } from "@deepractice-ai/agentx-types";
@@ -50,17 +49,16 @@ import type {
   Unsubscribe,
   StreamEventType,
 } from "@deepractice-ai/agentx-event";
-import { emitError } from "~/utils/emitError";
+import { emitError } from "./emitError";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
 
 /**
- * AgentServiceImpl
+ * AgentService
  *
- * Default implementation of AgentService interface.
- * Since AgentService extends AgentDriver, this automatically implements the Driver interface,
- * allowing Agents to be composed/nested (Agent-as-Driver pattern).
+ * Core agent runtime class with user-facing API.
+ * Implements AgentDriver interface to enable Agent-as-Driver pattern for nested compositions.
  */
-export class AgentServiceImpl implements AgentService {
+export class AgentService implements AgentDriver {
   readonly id: string;
   readonly sessionId: string;
 

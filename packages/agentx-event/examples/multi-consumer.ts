@@ -5,7 +5,7 @@
  * This is useful for logging, monitoring, UI updates, etc.
  */
 
-import { AgentEventBus } from "@deepractice-ai/agentx-core";
+import { AgentEventBus } from "@deepractice-ai/agentx-engine";
 import type { UserMessageEvent } from "../src/l3-message/UserMessageEvent";
 import type { AssistantMessageEvent } from "../src/l3-message/AssistantMessageEvent";
 

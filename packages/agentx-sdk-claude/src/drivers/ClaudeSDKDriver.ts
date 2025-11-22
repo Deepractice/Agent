@@ -38,7 +38,7 @@ import {
   type SdkPluginConfig,
   type Query,
 } from "@anthropic-ai/claude-agent-sdk";
-import { StreamEventBuilder } from "@deepractice-ai/agentx-core";
+import { StreamEventBuilder } from "@deepractice-ai/agentx-engine";
 import type { UserMessage } from "@deepractice-ai/agentx-types";
 import type { StreamEventType } from "@deepractice-ai/agentx-event";
 import { LoggerFactory } from "@deepractice-ai/agentx-logger";

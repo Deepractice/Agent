@@ -1,23 +1,15 @@
 /**
- * SessionStore
+ * SessionStore - In-memory session storage
  *
- * In-memory session storage with automatic message collection.
- *
- * Dual role:
- * 1. **SessionService**: Provides CRUD API for session management
- * 2. **MessageReactor**: Automatically collects messages from agent events
- *
- * Design principles:
- * - Memory-first: Fast, suitable for runtime framework
- * - Auto-collection: Listens to message events and updates sessions
- * - Simple API: Direct implementation of SessionService interface
+ * Stores conversation sessions with CRUD operations.
+ * Can optionally auto-collect messages from agent events when used as a reactor.
  *
  * @example Basic usage
  * ```typescript
- * const sessionStore = new SessionStore();
+ * const store = new SessionStore();
  *
  * // Create a session
- * const session = await sessionStore.create({
+ * const session = await store.create({
  *   agentId: "claude-agent",
  *   peerId: "user-123",
  *   title: "My conversation",
@@ -26,15 +18,12 @@
  *   updatedAt: new Date(),
  * });
  *
- * // Use as reactor for auto-collection
- * const agent = defineAgent({
- *   reactors: [sessionStore]
- * });
+ * // Get a session
+ * const session = await store.get("session-id");
  * ```
  */
 
-import type { SessionService, SessionQueryOptions } from "~/interfaces/SessionService";
-import type { MessageReactor } from "~/interfaces/MessageReactor";
+import type { MessageReactor } from "@deepractice-ai/agentx-engine";
 import type { Session } from "@deepractice-ai/agentx-types";
 import type {
   UserMessageEvent,
@@ -43,6 +32,22 @@ import type {
   ErrorMessageEvent,
 } from "@deepractice-ai/agentx-event";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
+
+/**
+ * Session query filter options
+ */
+export interface SessionQueryOptions {
+  peerId?: string;
+  agentId?: string;
+  createdAfter?: Date;
+  createdBefore?: Date;
+  updatedAfter?: Date;
+  updatedBefore?: Date;
+  limit?: number;
+  offset?: number;
+  sortBy?: "createdAt" | "updatedAt";
+  sortOrder?: "asc" | "desc";
+}
 
 /**
  * Generate unique session ID
@@ -54,9 +59,9 @@ function generateSessionId(): string {
 /**
  * SessionStore
  *
- * In-memory session storage implementing both SessionService and MessageReactor.
+ * In-memory session storage implementing MessageReactor for automatic message collection.
  */
-export class SessionStore implements SessionService, MessageReactor {
+export class SessionStore implements MessageReactor {
   readonly name = "SessionStore";
 
   private sessions = new Map<string, Session>();
@@ -114,7 +119,7 @@ export class SessionStore implements SessionService, MessageReactor {
     }
   }
 
-  // ==================== SessionService Implementation ====================
+  // ==================== Session Management Methods ====================
 
   /**
    * Create a new session

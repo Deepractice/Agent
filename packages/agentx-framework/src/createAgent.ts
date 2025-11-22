@@ -25,7 +25,7 @@
  * ```
  */
 
-import type { AgentService } from "@deepractice-ai/agentx-core";
+import type { AgentService } from "@deepractice-ai/agentx-engine";
 import type { DefinedAgent } from "~/defineAgent";
 import type { ConfigSchema, InferConfig } from "~/defineConfig";
 

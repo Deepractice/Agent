@@ -10,8 +10,14 @@
  *                         ↓
  *              conversation_active ↔ thinking ↔ responding
  *                         ↓
- *                  tool_executing
+ *                  planning_tool → awaiting_tool_result
+ *                         ↓
+ *              conversation_active (process tool result)
  * ```
+ *
+ * Tool execution flow:
+ * - planning_tool: Agent is generating tool call parameters (JSON generation)
+ * - awaiting_tool_result: Agent is waiting for tool execution result
  */
 
 /**
@@ -25,4 +31,5 @@ export type AgentState =
   | "conversation_active" // Conversation has started
   | "thinking" // Agent is processing/thinking
   | "responding" // Agent is generating response
-  | "tool_executing"; // Agent is executing a tool
+  | "planning_tool" // Agent is planning tool use (generating tool call JSON)
+  | "awaiting_tool_result"; // Agent is waiting for tool execution result

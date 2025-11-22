@@ -32,8 +32,8 @@
  * ```
  */
 
-import type { AgentReactor, AgentReactorContext } from "@deepractice-ai/agentx-core";
-import { createReactorAdapter } from "@deepractice-ai/agentx-core";
+import type { AgentReactor, AgentReactorContext } from "@deepractice-ai/agentx-engine";
+import { createReactorAdapter } from "@deepractice-ai/agentx-engine";
 import type {
   // Stream events
   MessageStartEvent,

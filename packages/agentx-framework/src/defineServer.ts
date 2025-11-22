@@ -86,8 +86,4 @@ export function createAgentServer<TConfig extends ConfigSchema = any>(
 // Re-export low-level APIs for advanced usage
 export { SSEServer } from "./server/SSEServer";
 export { SSEReactor, type SSEReactorConfig } from "./server/SSEReactor";
-export {
-  SimpleSSESession,
-  createSimpleSSESession,
-  type SSESessionConfig,
-} from "./server/SimpleSSESession";
+export { SSERequest, createSSERequest, type SSERequestConfig } from "./server/SSERequest";

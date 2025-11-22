@@ -5,7 +5,7 @@
  * in a producer-consumer pattern for bidirectional communication.
  */
 
-import { AgentEventBus } from "@deepractice-ai/agentx-core";
+import { AgentEventBus } from "@deepractice-ai/agentx-engine";
 import type { UserMessageEvent } from "../src/l3-message/UserMessageEvent";
 import type { AssistantMessageEvent } from "../src/l3-message/AssistantMessageEvent";
 import type { ConversationStartStateEvent } from "../src/l2-state/ConversationStartStateEvent";

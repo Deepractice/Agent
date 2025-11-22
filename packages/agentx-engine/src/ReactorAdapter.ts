@@ -8,11 +8,11 @@
  * manually implementing the full AgentReactor lifecycle.
  */
 
-import type { AgentReactor, AgentReactorContext } from "~/interfaces/AgentReactor";
-import type { StreamReactor } from "~/interfaces/StreamReactor";
-import type { StateReactor } from "~/interfaces/StateReactor";
-import type { MessageReactor } from "~/interfaces/MessageReactor";
-import type { TurnReactor } from "~/interfaces/TurnReactor";
+import type { AgentReactor, AgentReactorContext } from "./AgentReactor";
+import type { StreamReactor } from "./StreamReactor";
+import type { StateReactor } from "./StateReactor";
+import type { MessageReactor } from "./MessageReactor";
+import type { TurnReactor } from "./TurnReactor";
 
 /**
  * Generate unique ID for reactors

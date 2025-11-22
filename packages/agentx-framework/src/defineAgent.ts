@@ -39,11 +39,10 @@
  */
 
 import {
-  AgentServiceImpl,
-  type AgentService,
+  AgentService,
   type AgentDriver,
   type EngineConfig,
-} from "@deepractice-ai/agentx-core";
+} from "@deepractice-ai/agentx-engine";
 import type { Agent } from "@deepractice-ai/agentx-types";
 import type { DefinedDriver } from "./defineDriver";
 import type { DefinedReactor } from "./defineReactor";
@@ -214,7 +213,7 @@ export function defineAgent<TConfig extends ConfigSchema = any>(
       const engineConfig: EngineConfig | undefined = reactors ? { reactors } : undefined;
 
       // 6. Create and return AgentService instance
-      return new AgentServiceImpl(agentData, driver, engineConfig);
+      return new AgentService(agentData, driver, engineConfig);
     },
 
     getDefinition: () => definition,

@@ -32,7 +32,7 @@ export { createAgent } from "./createAgent";
  * Methods: initialize(), send(), react(), clear(), destroy()
  * Properties: id, sessionId, messages
  */
-export type { AgentService } from "@deepractice-ai/agentx-core";
+export type { AgentService } from "@deepractice-ai/agentx-engine";
 
 // ==================== Messages (User Data) ====================
 // Re-export from @deepractice-ai/agentx-types
@@ -143,7 +143,7 @@ export type {
 // ==================== Reactors (Event Handlers) ====================
 
 // Core reactor types (from @deepractice-ai/agentx-core)
-export type { AgentReactor, AgentReactorContext } from "@deepractice-ai/agentx-core";
+export type { AgentReactor, AgentReactorContext } from "@deepractice-ai/agentx-engine";
 
 // 4-layer user-facing reactor interfaces (framework-provided)
 export type {
@@ -151,7 +151,7 @@ export type {
   StateReactor,
   MessageReactor,
   TurnReactor,
-} from "@deepractice-ai/agentx-core";
+} from "@deepractice-ai/agentx-engine";
 
 // Reactor adapters (for advanced framework usage)
 export {
@@ -161,7 +161,7 @@ export {
   TurnReactorAdapter,
   createReactorAdapter,
   type ReactorAdapter,
-} from "@deepractice-ai/agentx-core";
+} from "@deepractice-ai/agentx-engine";
 
 // ==================== Platform Abstraction ====================
 // Re-export from @deepractice-ai/agentx-core
@@ -173,7 +173,7 @@ export {
  * - ClaudeDriver from @deepractice-ai/agentx-node
  * - BrowserDriver from @deepractice-ai/agentx-browser
  */
-export type { AgentDriver } from "@deepractice-ai/agentx-core";
+export type { AgentDriver } from "@deepractice-ai/agentx-engine";
 
 // ==================== Framework Define API ====================
 // Simplified APIs for building custom drivers, reactors, and agents

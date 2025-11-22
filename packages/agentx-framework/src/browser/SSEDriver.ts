@@ -36,6 +36,46 @@ export interface SSEDriverConfig {
 }
 
 /**
+ * SSEDriver instance state
+ */
+interface SSEDriverInstance {
+  /**
+   * Persistent EventSource connection
+   */
+  eventSource: EventSource | null;
+
+  /**
+   * Event queue for bridging EventSource callbacks to async generator
+   */
+  eventQueue: StreamEventType[];
+
+  /**
+   * Resolvers waiting for next event
+   */
+  pendingResolvers: Array<(value: IteratorResult<StreamEventType>) => void>;
+
+  /**
+   * Whether the connection is done
+   */
+  isDone: boolean;
+
+  /**
+   * Connection error if any
+   */
+  error: Error | null;
+
+  /**
+   * Server URL
+   */
+  serverUrl: string;
+
+  /**
+   * Session ID
+   */
+  sessionId: string;
+}
+
+/**
  * Helper: Build prompt from UserMessage
  */
 function buildPrompt(message: UserMessage): string {
@@ -54,23 +94,11 @@ function buildPrompt(message: UserMessage): string {
 }
 
 /**
- * Helper: Receive and parse SSE stream
- *
- * IMPORTANT: This must yield events in real-time, not batch them!
- * We use a queue-based approach to bridge EventSource callbacks with async generator.
+ * Initialize EventSource connection
  */
-async function* receiveSSEStream(
-  sseUrl: string,
-  serverUrl: string
-): AsyncIterable<StreamEventType> {
-  // Normalize SSE URL: if relative, prepend serverUrl
-  const fullSseUrl = sseUrl.startsWith("http") ? sseUrl : `${serverUrl}${sseUrl}`;
-  console.log("[SSEDriver] Opening EventSource connection to:", fullSseUrl);
-
-  const eventQueue: StreamEventType[] = [];
-  let resolveNext: ((value: IteratorResult<StreamEventType>) => void) | null = null;
-  let isDone = false;
-  let error: Error | null = null;
+function initializeEventSource(instance: SSEDriverInstance): void {
+  const fullSseUrl = `${instance.serverUrl}/api/sse/${instance.sessionId}`;
+  console.log("[SSEDriver] Opening persistent EventSource connection to:", fullSseUrl);
 
   const eventSource = new EventSource(fullSseUrl);
 
@@ -84,31 +112,22 @@ async function* receiveSSEStream(
       console.log("[SSEDriver] Received event:", streamEvent.type);
 
       // Add to queue
-      eventQueue.push(streamEvent);
+      instance.eventQueue.push(streamEvent);
 
-      // If someone is waiting, wake them up (but don't remove from queue yet)
-      if (resolveNext) {
-        const resolve = resolveNext;
-        resolveNext = null;
-        // Signal that a new event is available (generator loop will yield it)
+      // Wake up any waiting resolver
+      if (instance.pendingResolvers.length > 0) {
+        const resolve = instance.pendingResolvers.shift()!;
         resolve({ value: undefined as any, done: false });
       }
-
-      // IMPORTANT: Don't close connection on message_stop!
-      // In tool use scenarios, multiple message_stop events can occur:
-      // 1. First message_stop: After initial assistant response
-      // 2. Tool use events: tool_use_content_block_start/stop, input_json_delta
-      // 3. Second message_stop: After tool result response
-      //
-      // Keep connection open to receive all events. Server will close when appropriate.
-      // If we close here, we'll miss tool use events and subsequent messages.
     } catch (err) {
       console.error("[SSEDriver] Failed to parse SSE event:", err);
-      error = err instanceof Error ? err : new Error(String(err));
+      instance.error = err instanceof Error ? err : new Error(String(err));
       eventSource.close();
-      if (resolveNext) {
-        resolveNext({ value: undefined, done: true });
-        resolveNext = null;
+
+      // Wake up all waiting resolvers with error
+      while (instance.pendingResolvers.length > 0) {
+        const resolve = instance.pendingResolvers.shift()!;
+        resolve({ value: undefined, done: true });
       }
     }
   };
@@ -116,26 +135,44 @@ async function* receiveSSEStream(
   eventSource.onerror = (err) => {
     console.error("[SSEDriver] SSE connection error:", err);
     eventSource.close();
-    error = new Error("SSE connection failed");
-    isDone = true;
-    if (resolveNext) {
-      resolveNext({ value: undefined, done: true });
-      resolveNext = null;
+    instance.error = new Error("SSE connection failed");
+    instance.isDone = true;
+
+    // Wake up all waiting resolvers
+    while (instance.pendingResolvers.length > 0) {
+      const resolve = instance.pendingResolvers.shift()!;
+      resolve({ value: undefined, done: true });
     }
   };
 
-  // Generator loop: yield events as they arrive
-  while (!isDone || eventQueue.length > 0) {
-    if (error) {
-      throw error;
+  instance.eventSource = eventSource;
+}
+
+/**
+ * Wait for events from the queue until message_stop
+ */
+async function* waitForEventsUntilMessageStop(
+  instance: SSEDriverInstance
+): AsyncIterable<StreamEventType> {
+  while (true) {
+    if (instance.error) {
+      throw instance.error;
     }
 
-    if (eventQueue.length > 0) {
-      yield eventQueue.shift()!;
-    } else if (!isDone) {
+    // Check if we have events in queue
+    if (instance.eventQueue.length > 0) {
+      const event = instance.eventQueue.shift()!;
+      yield event;
+
+      // Stop when we receive message_stop
+      if (event.type === "message_stop") {
+        console.log("[SSEDriver] Received message_stop, message complete");
+        break;
+      }
+    } else {
       // Wait for next event
       await new Promise<IteratorResult<StreamEventType>>((resolve) => {
-        resolveNext = resolve;
+        instance.pendingResolvers.push(resolve);
       });
     }
   }
@@ -145,19 +182,49 @@ async function* receiveSSEStream(
  * SSEDriver - Built with defineDriver
  *
  * Architecture:
- * 1. User sends message → POST /api/message
- * 2. Server processes with ClaudeAgent
- * 3. Server streams back StreamEvents via SSE
- * 4. Driver yields StreamEvents to AgentEngine
+ * 1. Persistent EventSource connection established on first message
+ * 2. User sends message → POST /api/message (triggers server processing)
+ * 3. Server streams back StreamEvents via existing SSE connection
+ * 4. Driver yields StreamEvents to AgentEngine from event queue
  * 5. AgentEngine assembles Message/State/Turn events automatically
+ *
+ * Key improvements:
+ * - Single persistent EventSource connection (no reconnects per message)
+ * - Event queue bridges EventSource callbacks to async generator
+ * - Stateful instance manages connection lifecycle
  */
-export const SSEDriver = defineDriver<SSEDriverConfig>({
+export const SSEDriver = defineDriver<SSEDriverConfig, SSEDriverInstance>({
   name: "SSE",
 
-  async *processMessage(message, config) {
+  // Create instance state
+  createInstance: (config) => {
     const serverUrl = config.serverUrl || "http://localhost:5200";
     const sessionId = config.sessionId || `session_${Date.now()}`;
 
+    return {
+      eventSource: null,
+      eventQueue: [],
+      pendingResolvers: [],
+      isDone: false,
+      error: null,
+      serverUrl,
+      sessionId,
+    };
+  },
+
+  // Initialize persistent EventSource connection
+  onInit: (_config, instance) => {
+    console.log("[SSEDriver] Initialized with config:", {
+      serverUrl: instance.serverUrl,
+      sessionId: instance.sessionId,
+    });
+
+    // Establish persistent EventSource connection
+    initializeEventSource(instance);
+  },
+
+  // Process messages (now just POSTs, receives events from shared connection)
+  async *processMessage(message, _config, instance) {
     // Normalize input
     const messages =
       Symbol.asyncIterator in Object(message)
@@ -172,14 +239,14 @@ export const SSEDriver = defineDriver<SSEDriverConfig>({
 
       console.log("[SSEDriver] Sending message to server:", prompt.substring(0, 80));
 
-      // Send message via POST
-      const response = await fetch(`${serverUrl}/api/message`, {
+      // Send message via POST (server will stream events back via existing SSE connection)
+      const response = await fetch(`${instance.serverUrl}/api/message`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({
-          sessionId,
+          sessionId: instance.sessionId,
           message: prompt,
         }),
       });
@@ -188,24 +255,19 @@ export const SSEDriver = defineDriver<SSEDriverConfig>({
         throw new Error(`Server error: ${response.status} ${response.statusText}`);
       }
 
-      // Get SSE URL from response
-      const { sseUrl } = await response.json();
+      console.log("[SSEDriver] Message sent, waiting for events from queue");
 
-      console.log("[SSEDriver] SSE URL:", sseUrl);
-
-      // Connect to SSE stream (pass serverUrl to build full URL)
-      yield* receiveSSEStream(sseUrl, serverUrl);
+      // Yield events from the shared event queue until message_stop
+      yield* waitForEventsUntilMessageStop(instance);
     }
   },
 
-  onInit: (config) => {
-    console.log("[SSEDriver] Initialized with config:", {
-      serverUrl: config.serverUrl || "default",
-      sessionId: config.sessionId || "auto-generated",
-    });
-  },
-
-  onDestroy: () => {
-    console.log("[SSEDriver] Destroyed");
+  // Clean up EventSource connection
+  onDestroy: (instance) => {
+    console.log("[SSEDriver] Destroying, closing EventSource");
+    if (instance.eventSource) {
+      instance.eventSource.close();
+      instance.eventSource = null;
+    }
   },
 });

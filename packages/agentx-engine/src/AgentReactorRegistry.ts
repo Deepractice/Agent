@@ -5,8 +5,8 @@
  */
 
 import type { EventBus } from "@deepractice-ai/agentx-event";
-import type { AgentReactor, AgentReactorContext } from "~/interfaces/AgentReactor";
-import { emitError } from "~/utils/emitError";
+import type { AgentReactor, AgentReactorContext } from "./AgentReactor";
+import { emitError } from "./emitError";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
 
 /**

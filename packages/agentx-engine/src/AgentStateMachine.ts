@@ -23,16 +23,20 @@
  * AgentInitializing
  *     ↓ (MessageStartEvent)
  * ConversationStart
- *     ↓ (ThinkingContentBlockStart)
- * ConversationThinking
  *     ↓ (TextContentBlockStart)
  * ConversationResponding
+ *     ↓ (ToolUseContentBlockStart)
+ * PlanningTool (generating tool call JSON)
+ *     ↓ (ToolCallEvent)
+ * AwaitingToolResult (waiting for tool execution)
+ *     ↓ (MessageStartEvent)
+ * ConversationActive (processing tool result)
  *     ↓ (MessageStopEvent)
  * ConversationEnd
  * ```
  */
 
-import type { AgentReactor, AgentReactorContext } from "~/interfaces/AgentReactor";
+import type { AgentReactor, AgentReactorContext } from "./AgentReactor";
 import type {
   // Stream Events (input)
   MessageStartEvent,
@@ -41,6 +45,7 @@ import type {
   TextContentBlockStopEvent,
   ToolUseContentBlockStartEvent,
   ToolUseContentBlockStopEvent,
+  ToolCallEvent,
   // State Events (output)
   AgentInitializingStateEvent,
   AgentReadyStateEvent,
@@ -177,6 +182,10 @@ export class AgentStateMachine implements AgentReactor {
     consumer.consumeByType("tool_use_content_block_stop", (event: ToolUseContentBlockStopEvent) => {
       this.onToolUseContentBlockStop(event);
     });
+
+    consumer.consumeByType("tool_call", (event: ToolCallEvent) => {
+      this.onToolCall(event);
+    });
   }
 
   /**
@@ -184,7 +193,6 @@ export class AgentStateMachine implements AgentReactor {
    * Triggers: ConversationStartStateEvent
    */
   private onMessageStart(event: MessageStartEvent): void {
-    console.log("[AgentStateMachine] onMessageStart received!", event.type);
     this.conversationStartTime = event.timestamp;
 
     // Emit ConversationStartStateEvent
@@ -284,6 +292,7 @@ export class AgentStateMachine implements AgentReactor {
   /**
    * Handle ToolUseContentBlockStartEvent
    * Triggers: ToolPlannedStateEvent, ToolExecutingStateEvent
+   * State: conversation_active → planning_tool
    */
   private onToolUseContentBlockStart(event: ToolUseContentBlockStartEvent): void {
     // Emit ToolPlannedStateEvent
@@ -308,21 +317,39 @@ export class AgentStateMachine implements AgentReactor {
       timestamp: Date.now(),
       previousState: this.currentState,
       transition: {
-        reason: "tool_execution_started",
+        reason: "tool_planning_started",
         trigger: "tool_use_content_block_start",
       },
       data: {},
     };
     this.emitStateEvent(toolExecutingEvent);
 
-    this.transitionState("tool_executing");
+    // Transition to planning_tool (agent is generating tool call JSON)
+    this.transitionState("planning_tool");
   }
 
   /**
    * Handle ToolUseContentBlockStopEvent
+   * No state transition - we stay in planning_tool until tool_call event
    */
-  private onToolUseContentBlockStop(_event: ToolUseContentBlockStopEvent): void {
-    this.transitionState("conversation_active");
+  private onToolUseContentBlockStop(event: ToolUseContentBlockStopEvent): void {
+    // Tool call JSON generation completed
+    // Stay in planning_tool state - will transition to awaiting_tool_result on tool_call event
+  }
+
+  /**
+   * Handle ToolCallEvent
+   * Triggers: State transition to awaiting_tool_result
+   * State: planning_tool → awaiting_tool_result
+   */
+  private onToolCall(event: ToolCallEvent): void {
+    this.logger.debug("Tool call ready for execution", {
+      toolId: event.data.id,
+      toolName: event.data.name,
+    });
+
+    // Transition to awaiting_tool_result (agent is waiting for tool execution)
+    this.transitionState("awaiting_tool_result");
   }
 
   /**

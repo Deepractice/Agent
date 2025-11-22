@@ -1,15 +1,21 @@
 /**
- * SimpleSSESession - Native SSE implementation without dependencies
+ * SSERequest - Native SSE implementation without dependencies
  *
- * Simple, transparent SSE session using pure Node.js HTTP APIs.
+ * Wraps a single HTTP ServerResponse for SSE streaming.
+ * One SSE Connection may have multiple SSE Requests (on reconnect).
+ *
+ * Hierarchy:
+ * - Agent Session (1 user session)
+ *   - SSE Connection (1 persistent connection, may reconnect)
+ *     - SSE Request (1 HTTP Response, created on each connect)
  */
 
 import type { ServerResponse } from "http";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 
-const logger = createLogger("SimpleSSESession");
+const logger = createLogger("SSERequest");
 
-export interface SSESessionConfig {
+export interface SSERequestConfig {
   /**
    * Response object
    */
@@ -22,14 +28,14 @@ export interface SSESessionConfig {
 }
 
 /**
- * Simple SSE Session
+ * SSE Request - wraps a single HTTP Response for SSE streaming
  */
-export class SimpleSSESession {
+export class SSERequest {
   private res: ServerResponse;
   private _isConnected: boolean = false;
   private eventId: number = 0;
 
-  constructor(config: SSESessionConfig) {
+  constructor(config: SSERequestConfig) {
     this.res = config.res;
 
     // Set SSE headers
@@ -136,8 +142,8 @@ export class SimpleSSESession {
 }
 
 /**
- * Create a simple SSE session
+ * Create an SSE request
  */
-export function createSimpleSSESession(config: SSESessionConfig): SimpleSSESession {
-  return new SimpleSSESession(config);
+export function createSSERequest(config: SSERequestConfig): SSERequest {
+  return new SSERequest(config);
 }

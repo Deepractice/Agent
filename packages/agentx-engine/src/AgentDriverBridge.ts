@@ -12,8 +12,8 @@
  * Users only interact with AgentDriver interface.
  */
 
-import type { AgentReactor, AgentReactorContext } from "~/interfaces/AgentReactor";
-import type { AgentDriver } from "~/interfaces/AgentDriver";
+import type { AgentReactor, AgentReactorContext } from "./AgentReactor";
+import type { AgentDriver } from "./AgentDriver";
 import type { UserMessageEvent, ErrorMessageEvent } from "@deepractice-ai/agentx-event";
 import type { ErrorMessage } from "@deepractice-ai/agentx-types";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";

@@ -48,8 +48,8 @@ import { AgentMessageAssembler } from "./AgentMessageAssembler";
 import { AgentTurnTracker } from "./AgentTurnTracker";
 import { AgentDriverBridge } from "./AgentDriverBridge";
 import { AgentReactorRegistry } from "./AgentReactorRegistry";
-import type { AgentDriver } from "~/interfaces/AgentDriver";
-import type { AgentReactor } from "~/interfaces/AgentReactor";
+import type { AgentDriver } from "./AgentDriver";
+import type { AgentReactor } from "./AgentReactor";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
 
 /**

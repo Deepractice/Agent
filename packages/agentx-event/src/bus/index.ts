@@ -11,7 +11,7 @@
  *
  * Usage:
  * ```typescript
- * import { AgentEventBus } from "@deepractice-ai/agentx-core";
+ * import { AgentEventBus } from "@deepractice-ai/agentx-engine";
  * import type { EventBus, EventProducer, EventConsumer } from "@deepractice-ai/agentx-event/bus";
  *
  * const bus: EventBus = new AgentEventBus();

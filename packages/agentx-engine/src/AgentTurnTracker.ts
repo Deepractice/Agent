@@ -20,7 +20,7 @@
  * 5. Emit Turn Layer events
  */
 
-import type { AgentReactor, AgentReactorContext } from "~/interfaces/AgentReactor";
+import type { AgentReactor, AgentReactorContext } from "./AgentReactor";
 import type {
   // Stream Events (input)
   MessageDeltaEvent,
