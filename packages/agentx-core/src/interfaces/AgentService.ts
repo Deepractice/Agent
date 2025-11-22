@@ -63,33 +63,32 @@ export interface AgentService extends AgentDriver {
   send(message: string): Promise<void>;
 
   /**
-   * Register event handlers using method naming convention
+   * Register an AgentReactor
    *
-   * Automatically discovers all handler methods (starting with "on") and binds them
-   * to corresponding event types.
+   * Registers a reactor with full lifecycle management (initialize/destroy).
+   * The reactor will be initialized immediately if the agent is already initialized.
    *
-   * Method naming convention:
-   * - onTextDelta → subscribes to "text_delta" event
-   * - onMessageStop → subscribes to "message_stop" event
-   * - onUserMessage → subscribes to "user_message" event
-   * - onAssistantMessage → subscribes to "assistant_message" event
-   *
-   * @param handlers - An object with event handler methods
-   * @returns Unsubscribe function to remove all handlers
+   * @param reactor - AgentReactor to register
+   * @returns Unsubscribe function to destroy and remove the reactor
    *
    * @example
    * ```typescript
-   * agent.react({
-   *   onAssistantMessage(event) {
+   * const LoggerReactor = defineReactor({
+   *   name: "Logger",
+   *   onAssistantMessage: (event) => {
    *     console.log("Assistant:", event.data.content);
-   *   },
-   *   onUserMessage(event) {
-   *     console.log("User:", event.data.content);
-   *   },
+   *   }
    * });
+   *
+   * const unsubscribe = await agent.registerReactor(
+   *   LoggerReactor.create()
+   * );
+   *
+   * // Later: unsubscribe to stop the reactor
+   * await unsubscribe();
    * ```
    */
-  react(handlers: Record<string, any>): () => void;
+  registerReactor(reactor: any): Promise<() => void>;
 
   /**
    * Clear message history and abort current operation

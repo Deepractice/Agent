@@ -168,7 +168,7 @@ export interface DefinedReactor<TConfig = any> {
 }
 
 /**
- * Build user reactor object from definition
+ * Build reactor adapter object from definition
  *
  * This creates an object that implements the appropriate layer interfaces
  * (StreamReactor, StateReactor, MessageReactor, ExchangeReactor) based on
@@ -176,7 +176,7 @@ export interface DefinedReactor<TConfig = any> {
  *
  * The object is then wrapped by core's wrapUserReactor to become an AgentReactor.
  */
-function buildUserReactor(definition: ReactorDefinition, config: any): any {
+function buildReactorAdapter(definition: ReactorDefinition, config: any): any {
   const userReactor: any = {};
 
   // ==================== Lifecycle ====================
@@ -330,8 +330,8 @@ export function defineReactor<TConfig = any>(
     name: definition.name,
 
     create: (config?: TConfig) => {
-      // Build user reactor object that implements 4-layer interfaces
-      const userReactor = buildUserReactor(definition, config || {});
+      // Build reactor adapter object that implements 4-layer interfaces
+      const userReactor = buildReactorAdapter(definition, config || {});
 
       // Use core's wrapUserReactor to convert to AgentReactor
       // This automatically handles event subscription and lifecycle

@@ -64,7 +64,12 @@ async function* receiveSSEStream(
     const events: StreamEventType[] = [];
     // Normalize SSE URL: if relative, prepend serverUrl
     const fullSseUrl = sseUrl.startsWith("http") ? sseUrl : `${serverUrl}${sseUrl}`;
+    console.log("[SSEDriver] Opening EventSource connection to:", fullSseUrl);
     const eventSource = new EventSource(fullSseUrl);
+
+    eventSource.onopen = () => {
+      console.log("[SSEDriver] EventSource connection opened");
+    };
 
     eventSource.onmessage = (event) => {
       try {

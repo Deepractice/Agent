@@ -223,62 +223,48 @@ export class AgentServiceImpl implements AgentService {
   }
 
   /**
-   * Register event handlers
+   * Register an AgentReactor
    *
-   * Automatically discovers all handler methods (starting with "on") and binds them
-   * to corresponding event types.
+   * Registers a reactor with full lifecycle management (initialize/destroy).
+   * The reactor will be initialized immediately if the agent is already initialized.
    *
-   * Method naming convention:
-   * - onTextDelta → subscribes to "text_delta" event
-   * - onMessageStop → subscribes to "message_stop" event
-   * - onUserMessage → subscribes to "user_message" event
-   * - onAssistantMessage → subscribes to "assistant_message" event
-   *
-   * @param handlers - An object with event handler methods
-   * @returns Unsubscribe function to remove all handlers
+   * @param reactor - AgentReactor to register
+   * @returns Unsubscribe function to destroy and remove the reactor
    *
    * @example
    * ```typescript
-   * // Simple event handlers
-   * agent.react({
-   *   onAssistantMessage(event) {
+   * const LoggerReactor = defineReactor({
+   *   name: "Logger",
+   *   onAssistantMessage: (event) => {
    *     console.log("Assistant:", event.data.content);
-   *   },
-   *   onUserMessage(event) {
-   *     console.log("User:", event.data.content);
-   *   },
+   *   }
    * });
    *
-   * // Handler class
-   * class ChatUI {
-   *   onUserMessage(event) {
-   *     this.displayUserMessage(event.data);
-   *   }
-   *   onAssistantMessage(event) {
-   *     this.displayAssistantMessage(event.data);
-   *   }
-   * }
+   * const unsubscribe = await agent.registerReactor(
+   *   LoggerReactor.create()
+   * );
    *
-   * agent.react(new ChatUI());
+   * // Later: unsubscribe to stop the reactor
+   * await unsubscribe();
    * ```
    */
-  react(handlers: Record<string, any>): () => void {
-    const handlerNames = Object.keys(handlers).filter((k) => k.startsWith("on"));
-    this.logger.debug("Registering event handlers", { handlers: handlerNames });
+  async registerReactor(reactor: any): Promise<() => void> {
+    this.logger.debug("Registering reactor", { reactorName: reactor.name || "Unknown" });
 
     if (!this.consumer) {
-      this.logger.error("React failed: Agent not initialized");
+      this.logger.error("RegisterReactor failed: Agent not initialized");
       throw new Error("[AgentService] Agent not initialized. Call initialize() first.");
     }
 
-    // Bind the handlers
-    const unsubscribe = this.bindHandlers(this.consumer, handlers);
+    // Register via engine
+    const unsubscribe = await this.engine.registerPeerReactor(reactor);
     this.handlerUnsubscribers.push(unsubscribe);
 
-    this.logger.info("Event handlers registered", {
-      handlerCount: handlerNames.length,
+    this.logger.info("Reactor registered", {
+      reactorName: reactor.name || "Unknown",
       totalSubscriptions: this.handlerUnsubscribers.length,
     });
+
     return unsubscribe;
   }
 
@@ -349,60 +335,6 @@ export class AgentServiceImpl implements AgentService {
    *
    * @private
    */
-  private bindHandlers(consumer: EventConsumer, handlers: Record<string, any>): Unsubscribe {
-    const unsubscribers: Unsubscribe[] = [];
-
-    // Discover all handler methods (methods starting with "on")
-    const handlerMethods = Object.keys(handlers).filter(
-      (key) => key.startsWith("on") && typeof handlers[key] === "function"
-    );
-
-    this.logger.debug("Binding event handlers", { methods: handlerMethods });
-
-    // Bind each handler method
-    for (const methodName of handlerMethods) {
-      // Convert method name to event type
-      // onTextDelta → text_delta
-      // onMessageStop → message_stop
-      const eventType = this.methodNameToEventType(methodName);
-
-      this.logger.debug("Binding handler", { methodName, eventType });
-
-      // Bind the handler
-      const handler = handlers[methodName].bind(handlers);
-      const unsubscribe = consumer.consumeByType(eventType as any, handler);
-      unsubscribers.push(unsubscribe);
-    }
-
-    this.logger.debug("All handlers bound", { count: unsubscribers.length });
-
-    // Return combined unsubscribe function
-    return () => {
-      unsubscribers.forEach((unsub) => unsub());
-    };
-  }
-
-  /**
-   * Convert method name to event type
-   *
-   * Examples:
-   * - onTextDelta → text_delta
-   * - onMessageStop → message_stop
-   * - onUserMessage → user_message
-   * - onToolUseContentBlockStart → tool_use_content_block_start
-   *
-   * @private
-   */
-  private methodNameToEventType(methodName: string): string {
-    // Remove "on" prefix
-    const withoutOn = methodName.slice(2);
-
-    // Convert PascalCase to snake_case
-    return withoutOn
-      .replace(/([A-Z])/g, "_$1")
-      .toLowerCase()
-      .slice(1); // Remove leading underscore
-  }
 
   /**
    * Subscribe to message events to maintain history

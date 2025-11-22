@@ -89,6 +89,7 @@ export class SSEServer implements AgentServer {
 
   async handleRequest(req: IncomingMessage, res: ServerResponse): Promise<void> {
     const url = req.url || "/";
+    console.log(`[SSEServer] ${req.method} ${url}`);
 
     // Handle CORS preflight
     if (req.method === "OPTIONS") {
@@ -136,10 +137,12 @@ export class SSEServer implements AgentServer {
         return;
       }
 
+      console.log(`[SSEServer DEBUG] POST /api/message - Session: ${sessionId}`);
       logger.info(`POST /api/message - Session: ${sessionId}`);
 
       // Get or create agent for this session
       let session = this.sessions.get(sessionId);
+      console.log(`[SSEServer DEBUG] Found existing session: ${!!session}`);
       if (!session) {
         const agent = await this.config.createAgent(sessionId);
         await agent.initialize();
@@ -149,10 +152,13 @@ export class SSEServer implements AgentServer {
       }
 
       // Queue message if SSE not connected yet, otherwise send immediately
+      console.log(`[SSEServer DEBUG] Reactor exists: ${!!session.reactor}`);
       if (!session.reactor) {
+        console.log(`[SSEServer DEBUG] Queueing message`);
         logger.info(`Queueing message for session ${sessionId} (SSE not connected yet)`);
         session.pendingMessages.push(message);
       } else {
+        console.log(`[SSEServer DEBUG] Sending immediately`);
         logger.info(`Sending message immediately for session ${sessionId}`);
         session.agent.send(message).catch((error) => {
           logger.error(`Agent error in session ${sessionId}`, { error });
@@ -181,14 +187,18 @@ export class SSEServer implements AgentServer {
     res: ServerResponse,
     sessionId: string
   ): Promise<void> {
+    console.log(`[SSEServer] handleSSE called - sessionId: ${sessionId}`);
     try {
+      console.log(`[SSEServer DEBUG] GET /api/sse/${sessionId}`);
       const session = this.sessions.get(sessionId);
+      console.log(`[SSEServer DEBUG] Session found: ${!!session}`);
       if (!session) {
         res.writeHead(404, { "Content-Type": "application/json" });
         res.end(JSON.stringify({ error: "Session not found" }));
         return;
       }
 
+      console.log(`[SSEServer DEBUG] Opening SSE connection`);
       logger.info(`GET /api/sse/${sessionId} - Opening SSE connection`);
 
       // Create SSE session with CORS headers
@@ -200,10 +210,13 @@ export class SSEServer implements AgentServer {
         },
       });
 
-      // Attach SSEReactor to agent using react()
+      // Attach SSEReactor to agent using registerReactor()
+      console.log(`[SSEServer DEBUG] Creating SSEReactor`);
       const reactor = SSEReactor.create({ session: sseSession as any });
+      console.log(`[SSEServer DEBUG] Registering SSEReactor`);
       logger.info(`Registering SSEReactor for session: ${sessionId}`);
-      const unsubscribe = session.agent.react(reactor);
+      const unsubscribe = await session.agent.registerReactor(reactor);
+      console.log(`[SSEServer DEBUG] SSEReactor registered, unsubscribe type: ${typeof unsubscribe}`);
       logger.debug(`SSEReactor registered`, {
         sessionId,
         unsubscribeType: typeof unsubscribe,
@@ -212,7 +225,9 @@ export class SSEServer implements AgentServer {
       session.unsubscribe = unsubscribe;
 
       // Send any pending messages now that SSE is connected
+      console.log(`[SSEServer DEBUG] Pending messages: ${session.pendingMessages.length}`);
       if (session.pendingMessages.length > 0) {
+        console.log(`[SSEServer DEBUG] Processing pending messages`);
         logger.info(`Processing ${session.pendingMessages.length} pending messages`);
         for (const pendingMessage of session.pendingMessages) {
           session.agent.send(pendingMessage).catch((error) => {
@@ -225,7 +240,14 @@ export class SSEServer implements AgentServer {
       // Handle SSE disconnect
       sseSession.on("disconnected", () => {
         logger.info(`SSE disconnected: ${sessionId}`);
-        unsubscribe();
+        // unsubscribe returns Promise, handle it properly
+        (async () => {
+          try {
+            await unsubscribe();
+          } catch (error) {
+            logger.error(`Error unsubscribing reactor`, { error });
+          }
+        })();
         session.reactor = undefined;
         session.unsubscribe = undefined;
       });

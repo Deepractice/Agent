@@ -2,21 +2,13 @@ import { useState, useEffect } from "react";
 import type { AgentService } from "@deepractice-ai/agentx-framework";
 import type { Message } from "@deepractice-ai/agentx-framework";
 import type {
-  ErrorMessageEvent,
-  TextDeltaEvent,
-  ToolResultEvent,
-  // UserMessageEvent,  // Removed - no longer used (user messages handled locally)
-  AssistantMessageEvent,
-  ToolUseMessageEvent,
-  ConversationStartStateEvent,
-  ConversationEndStateEvent,
-  TurnResponseEvent,
   ErrorMessage as ErrorMessageType,
 } from "@deepractice-ai/agentx-framework";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
 import { ErrorMessage } from "./messages/ErrorMessage";
 import { LoggerFactory } from "../../../dev-tools/WebSocketLogger";
+import { ChatReactor } from "./ChatReactor";
 
 const logger = LoggerFactory.getLogger("Chat");
 
@@ -73,113 +65,37 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
   const [errors, setErrors] = useState<ErrorMessageType[]>([]);
 
   useEffect(() => {
-    logger.info("Setting up event listeners using agent.react()");
+    logger.info("Setting up event listeners using agent.registerReactor()");
 
-    // Use agent.react() - the new Framework API
-    const unsubscribe = agent.react({
-      // Stream layer - handle text deltas for real-time streaming
-      onTextDelta(event: TextDeltaEvent) {
-        logger.debug("text_delta", { text: event.data.text });
-        setStreaming((prev) => prev + event.data.text);
-      },
+    let unsubscribe: (() => void) | null = null;
 
-      // Message layer - handle complete messages
-      // NOTE: onUserMessage is REMOVED - user messages are added locally in handleSend
-      // Server should NOT echo user_message back to client (see Issue #002)
-      // onUserMessage(event: UserMessageEvent) {
-      //   console.log("[Chat] user_message:", event.uuid);
-      //   const userMsg = event.data;
-      //   setMessages((prev) => {
-      //     if (prev.some((m) => m.id === userMsg.id)) {
-      //       return prev;
-      //     }
-      //     return [...prev, userMsg];
-      //   });
-      // },
-
-      onAssistantMessage(event: AssistantMessageEvent) {
-        logger.info("assistant_message", { uuid: event.uuid });
-        const assistantMsg = event.data;
-
-        // Clear streaming but keep loading (turn may continue with tool calls)
-        setStreaming("");
-        // DON'T set isLoading(false) here - wait for turn_response
-        setMessages((prev) => {
-          // Check if message already exists
-          if (prev.some((m) => m.id === assistantMsg.id)) {
-            return prev;
-          }
-          return [...prev, assistantMsg];
-        });
-      },
-
-      onToolUseMessage(event: ToolUseMessageEvent) {
-        logger.info("tool_use_message", { uuid: event.uuid });
-        const toolMsg = event.data;
-
-        setMessages((prev) => {
-          // Check if message already exists
-          if (prev.some((m) => m.id === toolMsg.id)) {
-            return prev;
-          }
-          return [...prev, toolMsg];
-        });
-      },
-
-      // Stream layer - handle tool results
-      onToolResult(event: ToolResultEvent) {
-        logger.info("tool_result", { toolId: event.data.toolId, content: event.data.content });
-        const { toolId, content, isError } = event.data;
-
-        setMessages((prev) =>
-          prev.map((msg) => {
-            // Find the ToolUseMessage with matching toolCall.id
-            if (msg.role === "tool-use" && msg.toolCall.id === toolId) {
-              return {
-                ...msg,
-                toolResult: {
-                  ...msg.toolResult,
-                  output: {
-                    type: isError ? ("error-text" as const) : ("text" as const),
-                    value: typeof content === "string" ? content : JSON.stringify(content),
-                  },
-                },
-              };
-            }
-            return msg;
-          })
-        );
-      },
-
-      // Message layer - handle error messages
-      onErrorMessage(event: ErrorMessageEvent) {
-        logger.error("error_message", { event });
-        setErrors((prev) => [...prev, event.data]);
-        setIsLoading(false);
-      },
-
-      // State layer - conversation lifecycle
-      onConversationStart(_event: ConversationStartStateEvent) {
-        logger.info("conversation_start");
-        setIsLoading(true);
-      },
-
-      onConversationEnd(_event: ConversationEndStateEvent) {
-        logger.info("conversation_end");
-        setIsLoading(false);
-      },
-
-      // Turn layer - turn completion (handles multi-turn agentic flows)
-      onTurnResponse(_event: TurnResponseEvent) {
-        logger.info("turn_response - turn complete");
-        setIsLoading(false);
-        setStreaming("");
-      },
-    });
+    // Register ChatReactor
+    agent
+      .registerReactor(
+        ChatReactor.create({
+          setStreaming,
+          setMessages,
+          setIsLoading,
+          setErrors,
+          logger,
+        })
+      )
+      .then((unsub) => {
+        unsubscribe = unsub;
+      })
+      .catch((error) => {
+        logger.error("Failed to register ChatReactor", { error });
+      });
 
     // Cleanup on unmount
     return () => {
-      unsubscribe();
+      if (unsubscribe) {
+        try {
+          unsubscribe();
+        } catch (error) {
+          logger.error("Failed to unsubscribe ChatReactor", { error });
+        }
+      }
     };
   }, [agent]);
 
