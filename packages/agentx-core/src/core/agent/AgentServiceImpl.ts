@@ -5,7 +5,7 @@
  * Provides a simple, reactive interface for agent interactions.
  *
  * Responsibilities:
- * 1. Provide simple public API (send, react, clear, destroy)
+ * 1. Provide simple public API (queue, registerReactor, clear, destroy)
  * 2. Manage message history
  * 3. Delegate to AgentEngine for orchestration
  * 4. Support dynamic event handlers via react() method
@@ -32,7 +32,7 @@
  *   },
  * });
  *
- * await agent.send("Hello!");
+ * await agent.queue("Hello!");
  * await agent.destroy();
  * ```
  */
@@ -178,13 +178,13 @@ export class AgentServiceImpl implements AgentService {
   }
 
   /**
-   * Send a message to the agent
+   * Queue a message for the agent to process
    */
-  async send(message: string): Promise<void> {
-    this.logger.info("Sending message", { messagePreview: message.substring(0, 50) });
+  async queue(message: string): Promise<void> {
+    this.logger.info("Queuing message", { messagePreview: message.substring(0, 50) });
 
     if (!this.consumer) {
-      this.logger.error("Send failed: Agent not initialized");
+      this.logger.error("Queue failed: Agent not initialized");
       throw new Error("[AgentService] Agent not initialized. Call initialize() first.");
     }
 
@@ -208,8 +208,8 @@ export class AgentServiceImpl implements AgentService {
       throw new Error("Message cannot be empty");
     }
 
-    // Set pending state immediately (before network request)
-    this.engine.setState("pending");
+    // Set queued state immediately (message received by agent)
+    this.engine.setState("queued");
 
     // Create UserMessage
     const userMessage: UserMessage = {
@@ -289,18 +289,18 @@ export class AgentServiceImpl implements AgentService {
   }
 
   /**
-   * Send message(s) and yield stream events (from AgentDriver interface)
+   * Process message(s) and yield stream events (from AgentDriver interface)
    *
    * This allows AgentService to be used as a Driver in nested Agent compositions.
    *
    * @param messages - Single message or async iterable of messages
    * @returns Async iterable of stream events
    */
-  async *sendMessage(
+  async *processMessage(
     messages: UserMessage | AsyncIterable<UserMessage>
   ): AsyncIterable<StreamEventType> {
     // Delegate directly to underlying driver
-    yield* this.driver.sendMessage(messages);
+    yield* this.driver.processMessage(messages);
   }
 
   /**

@@ -2,7 +2,7 @@
  * defineDriver
  *
  * Framework helper for creating AgentDriver implementations with minimal boilerplate.
- * Developers implement the core sendMessage logic to transform external data sources
+ * Developers implement the core processMessage logic to transform external data sources
  * into AgentX StreamEventType.
  *
  * @example
@@ -13,7 +13,7 @@
  * const MyDriver = defineDriver({
  *   name: "MyDriver",
  *
- *   async *sendMessage(message, config) {
+ *   async *processMessage(message, config) {
  *     // Extract first message if iterable
  *     const firstMsg = await getFirst(message);
  *
@@ -41,7 +41,7 @@
  *
  * // Use it
  * const driver = MyDriver.create({ apiKey: "xxx" });
- * for await (const event of driver.sendMessage(userMessage)) {
+ * for await (const event of driver.processMessage(userMessage)) {
  *   console.log(event);
  * }
  * ```
@@ -74,7 +74,7 @@ export interface DriverDefinition<TConfig = any> {
    *
    * @example
    * ```typescript
-   * async *sendMessage(message, config) {
+   * async *processMessage(message, config) {
    *   const builder = new StreamEventBuilder("agent-id");
    *   const firstMsg = await extractFirst(message);
    *
@@ -84,7 +84,7 @@ export interface DriverDefinition<TConfig = any> {
    * }
    * ```
    */
-  sendMessage: (
+  processMessage: (
     message: UserMessage | AsyncIterable<UserMessage>,
     config: TConfig
   ) => AsyncIterable<StreamEventType>;
@@ -138,7 +138,7 @@ class SimpleAgentDriver implements AgentDriver {
     return null;
   }
 
-  async *sendMessage(
+  async *processMessage(
     messages: UserMessage | AsyncIterable<UserMessage>
   ): AsyncIterable<StreamEventType> {
     // Delegate to definition with sessionId injected into config
@@ -146,7 +146,7 @@ class SimpleAgentDriver implements AgentDriver {
       ...this.config,
       sessionId: this.sessionId, // Inject framework session ID
     };
-    yield* this.definition.sendMessage(messages, configWithSession);
+    yield* this.definition.processMessage(messages, configWithSession);
   }
 
   /**
@@ -178,7 +178,7 @@ class SimpleAgentDriver implements AgentDriver {
  * ```typescript
  * const EchoDriver = defineDriver({
  *   name: "Echo",
- *   async *sendMessage(message, config) {
+ *   async *processMessage(message, config) {
  *     const builder = new StreamEventBuilder("echo");
  *     const firstMsg = await extractFirst(message);
  *

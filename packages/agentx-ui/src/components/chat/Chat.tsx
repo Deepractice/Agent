@@ -115,10 +115,10 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
     setMessages((prev) => [...prev, userMessage]);
 
     try {
-      await agent.send(text);
-      logger.info("Send completed");
+      await agent.queue(text);
+      logger.info("Queue completed");
     } catch (error) {
-      logger.error("Send failed", { error });
+      logger.error("Queue failed", { error });
     }
   };
 

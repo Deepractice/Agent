@@ -2,7 +2,7 @@
  * AgentService Interface
  *
  * User-facing API for interacting with an Agent instance.
- * Provides methods for sending messages, reacting to events, and managing the agent lifecycle.
+ * Provides methods for queuing messages, registering reactors, and managing the agent lifecycle.
  *
  * This interface defines the contract for agent runtime behavior.
  * The default implementation is AgentServiceImpl.
@@ -46,7 +46,7 @@ export interface AgentService extends AgentDriver {
    * @example
    * ```typescript
    * if (agent.state === "idle") {
-   *   await agent.send("Hello!");
+   *   await agent.queue("Hello!");
    * }
    * ```
    */
@@ -81,7 +81,7 @@ export interface AgentService extends AgentDriver {
   /**
    * Initialize agent and start event pipeline
    *
-   * Must be called before using send() or react()
+   * Must be called before using queue() or registerReactor()
    *
    * @example
    * ```typescript
@@ -91,16 +91,18 @@ export interface AgentService extends AgentDriver {
   initialize(): Promise<void>;
 
   /**
-   * Send a text message to the agent
+   * Queue a text message for the agent to process
    *
-   * @param message - Text message to send
+   * From the agent's perspective, this queues an incoming message for processing.
+   *
+   * @param message - Text message to queue
    *
    * @example
    * ```typescript
-   * await agent.send("Hello!");
+   * await agent.queue("Hello!");
    * ```
    */
-  send(message: string): Promise<void>;
+  queue(message: string): Promise<void>;
 
   /**
    * Register an AgentReactor

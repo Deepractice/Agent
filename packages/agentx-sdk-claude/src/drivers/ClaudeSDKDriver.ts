@@ -124,7 +124,7 @@ export interface ClaudeSDKDriverConfig {
  * Shared state for ClaudeSDKDriver instances (per driver definition)
  */
 interface DriverState {
-  promptSubject: Subject<SDKUserMessage>; // Input: sendMessage pushes SDK-formatted messages
+  promptSubject: Subject<SDKUserMessage>; // Input: processMessage pushes SDK-formatted messages
   responseSubject: Subject<SDKMessage>; // Output: broadcasts responses to all consumers
   claudeQuery: Query | null;
   abortController: AbortController;
@@ -519,7 +519,7 @@ export const ClaudeSDKDriver = defineDriver<ClaudeSDKDriverConfig>({
     logger.debug("Ready to handle messages with persistent process");
   },
 
-  async *sendMessage(message, config) {
+  async *processMessage(message, config) {
     const state = getDriverState(ClaudeSDKDriver, config);
 
     if (!state.isInitialized || !state.claudeQuery) {

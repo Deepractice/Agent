@@ -135,18 +135,143 @@ packages/[package-name]/
 
 ### Cross-platform Architecture
 
+AgentX 使用 **Stream Events 转发 + 客户端重组装** 的架构，实现服务器和浏览器之间的高效通信。
+
+#### 核心设计理念
+
+**关键原则**: 服务器只转发 Stream Layer 事件，浏览器端完整的 AgentEngine 会自动重新组装出 Message/State/Turn Layer 事件。
+
 ```
-┌─────────────────────┐          ┌─────────────────────┐
-│   Server (Node.js)  │          │   Browser (Web)     │
-├─────────────────────┤          ├─────────────────────┤
-│ AgentServer         │          │ defineAgent({       │
-│ = ClaudeDriver      │  ←───→   │   driver: SSEDriver │
-│   + SSEReactor      │   SSE    │ })                  │
-│                     │          │                     │
-│ • Generates Events  │  ─────→  │ • Receives Events   │
-│ • Forwards via SSE  │  Events  │ • Renders to UI     │
-└─────────────────────┘          └─────────────────────┘
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Server (Node.js)                             │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  ClaudeSDKDriver                                                     │
+│       ↓ (yields Stream Events)                                       │
+│  AgentDriverBridge ───→ EventBus                                     │
+│       ↓                     ↓                                        │
+│  [AgentMessageAssembler]   [AgentStateMachine]   [AgentTurnTracker] │
+│   (服务器端本地使用)        (服务器端本地使用)     (服务器端本地使用)   │
+│       ↓                     ↓                         ↓              │
+│  assistant_message    conversation_active        turn_complete       │
+│  tool_use_message     tool_executing             ...                 │
+│       ↓                     ↓                         ↓              │
+│  SSEReactor (⚠️ 只订阅 Stream Events!)                               │
+│       ↓                                                              │
+│  转发: message_start, text_delta, tool_use_content_block_start, ...  │
+│       ↓                                                              │
+│  SimpleSSESession → HTTP Response Stream                             │
+│       ↓                                                              │
+└───────┼──────────────────────────────────────────────────────────────┘
+        │ SSE (Server-Sent Events)
+        │ 只传输 Stream Events (高效，低带宽)
+        ↓
+┌─────────────────────────────────────────────────────────────────────┐
+│                         Browser (Web)                                │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                       │
+│  EventSource.onmessage                                               │
+│       ↓                                                              │
+│  SSEDriver (receives Stream Events)                                  │
+│       ↓ (yields to AgentEngine)                                      │
+│  AgentEngine (完整引擎，自动注册所有 Reactors)                         │
+│       ↓                                                              │
+│  EventBus (浏览器端)                                                  │
+│       ↓                                                              │
+│  ┌────────────────────────────────────────────────────────────┐     │
+│  │ AgentMessageAssembler (浏览器端，自动注册)                    │     │
+│  │  - 订阅 Stream Events                                       │     │
+│  │  - 组装 Message Layer:                                      │     │
+│  │    * assistant_message (从 text_delta 组装)                 │     │
+│  │    * tool_use_message (从 tool_use_content_block_* 组装)    │     │
+│  │    * error_message                                          │     │
+│  └────────────────────────────────────────────────────────────┘     │
+│       ↓                                                              │
+│  ┌────────────────────────────────────────────────────────────┐     │
+│  │ AgentStateMachine (浏览器端，自动注册)                        │     │
+│  │  - 订阅 Stream Events                                       │     │
+│  │  - 组装 State Layer:                                        │     │
+│  │    * conversation_active, responding, tool_executing, ...   │     │
+│  └────────────────────────────────────────────────────────────┘     │
+│       ↓                                                              │
+│  ┌────────────────────────────────────────────────────────────┐     │
+│  │ AgentTurnTracker (浏览器端，自动注册)                         │     │
+│  │  - 订阅 Message Events                                      │     │
+│  │  - 组装 Turn Layer: cost, tokens, duration                  │     │
+│  └────────────────────────────────────────────────────────────┘     │
+│       ↓                                                              │
+│  ┌────────────────────────────────────────────────────────────┐     │
+│  │ UIReactor (用户注册)                                         │     │
+│  │  - 订阅 Message Events:                                     │     │
+│  │    * onAssistantMessage → setMessages()                     │     │
+│  │    * onToolUseMessage → setMessages()                       │     │
+│  │    * onTextDelta → setStreaming()                           │     │
+│  │    * onErrorMessage → setErrors()                           │     │
+│  └────────────────────────────────────────────────────────────┘     │
+│       ↓                                                              │
+│  React State Update → UI Render                                      │
+│                                                                       │
+└─────────────────────────────────────────────────────────────────────┘
 ```
+
+#### 为什么这样设计？
+
+1. **高效传输**: 只传输增量的 Stream Events，避免传输完整组装后的消息（减少带宽）
+2. **解耦合**: 服务器不需要知道客户端如何使用这些事件
+3. **灵活性**: 不同客户端（Web、移动端）可以用不同方式组装和展示
+4. **一致性**: 服务器端和浏览器端使用相同的 agentx-core 引擎，保证行为一致
+
+#### 事件流详解
+
+**Stream Layer Events** (通过 SSE 传输):
+- `message_start` - 开始处理消息
+- `text_delta` - 文本增量片段
+- `text_content_block_start/stop` - 文本块生命周期
+- `tool_use_content_block_start` - Claude 决定调用工具
+- `input_json_delta` - 工具参数 JSON 增量
+- `tool_use_content_block_stop` - 工具参数接收完成
+- `tool_call` - 工具调用事件（完整参数）
+- `tool_result` - 工具执行结果
+- `message_stop` - 消息处理完成
+
+**Message Layer Events** (浏览器端组装，不通过 SSE):
+- `assistant_message` - 完整的 AI 回复消息
+- `tool_use_message` - 完整的工具使用记录（toolCall + toolResult）
+- `error_message` - 错误消息
+
+**State Layer Events** (浏览器端组装，不通过 SSE):
+- `conversation_active` - 对话活跃
+- `responding` - AI 正在回复
+- `tool_executing` - 工具正在执行
+
+**Turn Layer Events** (浏览器端组装，不通过 SSE):
+- `turn_complete` - 包含 cost, tokens, duration 等分析数据
+
+#### 关键组件
+
+**服务器端**:
+- `SSEServer` (`packages/agentx-framework/src/server/SSEServer.ts`) - HTTP + SSE 服务器
+- `SSEReactor` (`packages/agentx-framework/src/server/SSEReactor.ts`) - 只转发 Stream Events
+- `SimpleSSESession` - 原生 SSE 实现，无外部依赖
+
+**浏览器端**:
+- `SSEDriver` (`packages/agentx-framework/src/browser/SSEDriver.ts`) - 接收 SSE，使用 EventSource API
+- `SSEAgent` (`packages/agentx-framework/src/browser/SSEAgent.ts`) - 预配置的浏览器端 Agent
+- `AgentEngine` - 自动注册 MessageAssembler、StateMachine、TurnTracker
+- `UIReactor` (`packages/agentx-ui/src/components/agent/UIReactor.ts`) - UI 数据绑定
+
+#### 重要提醒
+
+**⚠️ 不要修改 SSEReactor 去转发 Message Layer 事件！**
+
+这是常见的误解。SSEReactor 的设计就是只转发 Stream Events。如果发现浏览器端没有收到 Message Events：
+
+1. ✅ 检查浏览器端是否正确接收了 Stream Events
+2. ✅ 检查浏览器端 AgentEngine 是否正确初始化
+3. ✅ 检查浏览器端 AgentMessageAssembler 是否正确订阅和组装
+4. ❌ 不要在服务器端转发已组装的 Message Events
+
+这种架构确保了服务器和浏览器之间的清晰职责分离。
 
 ## Development Workflow
 

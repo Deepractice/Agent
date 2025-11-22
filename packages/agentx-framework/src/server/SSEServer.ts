@@ -160,7 +160,7 @@ export class SSEServer implements AgentServer {
       } else {
         console.log(`[SSEServer DEBUG] Sending immediately`);
         logger.info(`Sending message immediately for session ${sessionId}`);
-        session.agent.send(message).catch((error) => {
+        session.agent.queue(message).catch((error: any) => {
           logger.error(`Agent error in session ${sessionId}`, { error });
         });
       }
@@ -231,7 +231,7 @@ export class SSEServer implements AgentServer {
         console.log(`[SSEServer DEBUG] Processing pending messages`);
         logger.info(`Processing ${session.pendingMessages.length} pending messages`);
         for (const pendingMessage of session.pendingMessages) {
-          session.agent.send(pendingMessage).catch((error) => {
+          session.agent.queue(pendingMessage).catch((error: any) => {
             logger.error(`Agent error processing pending message`, { error });
           });
         }

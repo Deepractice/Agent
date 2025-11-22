@@ -46,7 +46,7 @@
  * class CustomDriver implements AgentDriver {
  *   private builder = new StreamEventBuilder("agent-id");
  *
- *   async *sendMessage(message: UserMessage) {
+ *   async *processMessage(message: UserMessage) {
  *     yield this.builder.messageStart("msg-1", "model");
  *     // ... custom logic
  *     yield this.builder.messageStop();
@@ -103,11 +103,12 @@ export interface AgentDriver {
   readonly driverSessionId: string | null;
 
   /**
-   * Send user message(s) and stream back AgentX Stream events
+   * Process user message(s) and stream back AgentX Stream events
    *
+   * From the agent's perspective, this processes incoming messages.
    * Supports both single-turn and multi-turn conversations:
-   * - Single message: `sendMessage(userMessage)`
-   * - Multi-turn: `sendMessage(asyncIterableOfMessages)`
+   * - Single message: `processMessage(userMessage)`
+   * - Multi-turn: `processMessage(asyncIterableOfMessages)`
    *
    * @param messages - Single UserMessage or AsyncIterable for multi-turn
    * @returns AsyncIterable of Stream events
@@ -121,7 +122,7 @@ export interface AgentDriver {
    *   timestamp: Date.now()
    * };
    *
-   * for await (const event of driver.sendMessage(message)) {
+   * for await (const event of driver.processMessage(message)) {
    *   if (event.type === "text_delta") {
    *     console.log(event.data.text);
    *   }
@@ -137,18 +138,18 @@ export interface AgentDriver {
    *   yield { role: "user", content: "Tool result: 4" };
    * }
    *
-   * for await (const event of driver.sendMessage(conversation())) {
+   * for await (const event of driver.processMessage(conversation())) {
    *   console.log(event);
    * }
    * ```
    */
-  sendMessage(messages: UserMessage | AsyncIterable<UserMessage>): AsyncIterable<StreamEventType>;
+  processMessage(messages: UserMessage | AsyncIterable<UserMessage>): AsyncIterable<StreamEventType>;
 
   /**
    * Abort the current streaming operation
    *
    * Should cancel any in-flight requests but keep the driver alive.
-   * Next sendMessage() call should work normally.
+   * Next processMessage() call should work normally.
    */
   abort(): void;
 

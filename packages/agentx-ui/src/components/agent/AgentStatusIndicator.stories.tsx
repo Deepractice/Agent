@@ -71,11 +71,11 @@ export const Responding: Story = {
 };
 
 /**
- * Pending state - message sent, waiting for response
+ * Queued state - message received, queued for processing
  */
-export const Pending: Story = {
+export const Queued: Story = {
   args: {
-    agent: createMockAgent("pending"),
+    agent: createMockAgent("queued"),
   },
 };
 
@@ -124,10 +124,10 @@ export const Interactive: Story = {
             Set Idle
           </button>
           <button
-            onClick={() => agent.setState("pending")}
+            onClick={() => agent.setState("queued")}
             className="px-3 py-1 bg-purple-200 rounded hover:bg-purple-300"
           >
-            Set Pending
+            Set Queued
           </button>
           <button
             onClick={() => agent.setState("thinking")}

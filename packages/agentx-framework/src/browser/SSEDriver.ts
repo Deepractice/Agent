@@ -160,7 +160,7 @@ async function* receiveSSEStream(
 export const SSEDriver = defineDriver<SSEDriverConfig>({
   name: "SSE",
 
-  async *sendMessage(message, config) {
+  async *processMessage(message, config) {
     const serverUrl = config.serverUrl || "http://localhost:5200";
     const sessionId = config.sessionId || `session_${Date.now()}`;
 

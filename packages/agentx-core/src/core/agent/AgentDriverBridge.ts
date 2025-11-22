@@ -5,7 +5,7 @@
  *
  * Responsibilities:
  * 1. Subscribe to user_message events from EventBus
- * 2. Call driver.sendMessage() and iterate through Stream events
+ * 2. Call driver.processMessage() and iterate through Stream events
  * 3. Forward all events to EventBus (no transformation needed)
  *
  * This is an internal implementation detail.
@@ -70,7 +70,7 @@ export class AgentDriverBridge implements AgentReactor {
   /**
    * Handle user message event
    *
-   * Calls driver.sendMessage() and forwards all Stream events to EventBus.
+   * Calls driver.processMessage() and forwards all Stream events to EventBus.
    */
   private async handleUserMessage(event: UserMessageEvent): Promise<void> {
     this.logger.info("Handling user message", {
@@ -94,13 +94,13 @@ export class AgentDriverBridge implements AgentReactor {
     this.abortController = new AbortController();
 
     try {
-      this.logger.debug("Calling driver.sendMessage", {
+      this.logger.debug("Calling driver.processMessage", {
         driverType: this.driver.constructor.name,
       });
 
       // Iterate through Stream events from driver
       let eventCount = 0;
-      for await (const streamEvent of this.driver.sendMessage(event.data)) {
+      for await (const streamEvent of this.driver.processMessage(event.data)) {
         eventCount++;
 
         // Log ALL events to diagnose forwarding issue
