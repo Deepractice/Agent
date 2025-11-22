@@ -80,11 +80,20 @@ export const Queued: Story = {
 };
 
 /**
- * Tool executing state
+ * Planning tool state - agent is generating tool call JSON
  */
-export const ToolExecuting: Story = {
+export const PlanningTool: Story = {
   args: {
-    agent: createMockAgent("tool_executing"),
+    agent: createMockAgent("planning_tool"),
+  },
+};
+
+/**
+ * Awaiting tool result state - agent is waiting for tool execution
+ */
+export const AwaitingToolResult: Story = {
+  args: {
+    agent: createMockAgent("awaiting_tool_result"),
   },
 };
 
@@ -142,10 +151,16 @@ export const Interactive: Story = {
             Set Responding
           </button>
           <button
-            onClick={() => agent.setState("tool_executing")}
+            onClick={() => agent.setState("planning_tool")}
             className="px-3 py-1 bg-yellow-200 rounded hover:bg-yellow-300"
           >
-            Set Tool Executing
+            Set Planning Tool
+          </button>
+          <button
+            onClick={() => agent.setState("awaiting_tool_result")}
+            className="px-3 py-1 bg-orange-200 rounded hover:bg-orange-300"
+          >
+            Set Awaiting Tool Result
           </button>
         </div>
         <div className="border-t pt-4">

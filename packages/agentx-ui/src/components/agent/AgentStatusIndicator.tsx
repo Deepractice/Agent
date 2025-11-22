@@ -44,8 +44,10 @@ function getStatusText(state: AgentState): string {
       return "Thinking";
     case "responding":
       return "Responding";
-    case "tool_executing":
-      return "Executing tool";
+    case "planning_tool":
+      return "Planning tool use";
+    case "awaiting_tool_result":
+      return "Awaiting tool result";
     case "conversation_active":
       return "Processing";
     default:
