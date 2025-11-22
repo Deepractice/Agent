@@ -2,12 +2,12 @@
  * SSEServer - Server-Sent Events implementation of AgentServer
  *
  * Handles HTTP + SSE connections for agent communication.
- * Hides better-sse and SSEReactor implementation details.
+ * Uses native SSE implementation without external dependencies.
  */
 
 import http from "http";
 import type { IncomingMessage, ServerResponse } from "http";
-import { createSession } from "better-sse";
+import { createSimpleSSESession } from "~/server/SimpleSSESession";
 import type { AgentServer, AgentServerConfig } from "~/server/AgentServer";
 import type { AgentService } from "@deepractice-ai/agentx-core";
 import { SSEReactor } from "~/server/SSEReactor";
@@ -183,7 +183,7 @@ export class SSEServer implements AgentServer {
   }
 
   private async handleSSE(
-    req: IncomingMessage,
+    _req: IncomingMessage,
     res: ServerResponse,
     sessionId: string
   ): Promise<void> {
@@ -202,7 +202,8 @@ export class SSEServer implements AgentServer {
       logger.info(`GET /api/sse/${sessionId} - Opening SSE connection`);
 
       // Create SSE session with CORS headers
-      const sseSession = await createSession(req, res, {
+      const sseSession = createSimpleSSESession({
+        res,
         headers: {
           "Access-Control-Allow-Origin": "*",
           "Access-Control-Allow-Methods": "GET, POST, OPTIONS",
@@ -212,7 +213,7 @@ export class SSEServer implements AgentServer {
 
       // Attach SSEReactor to agent using registerReactor()
       console.log(`[SSEServer DEBUG] Creating SSEReactor`);
-      const reactor = SSEReactor.create({ session: sseSession as any });
+      const reactor = SSEReactor.create({ session: sseSession });
       console.log(`[SSEServer DEBUG] Registering SSEReactor`);
       logger.info(`Registering SSEReactor for session: ${sessionId}`);
       const unsubscribe = await session.agent.registerReactor(reactor);
@@ -237,8 +238,8 @@ export class SSEServer implements AgentServer {
         session.pendingMessages = [];
       }
 
-      // Handle SSE disconnect
-      sseSession.on("disconnected", () => {
+      // Handle SSE disconnect (when client closes connection)
+      res.on("close", () => {
         logger.info(`SSE disconnected: ${sessionId}`);
         // unsubscribe returns Promise, handle it properly
         (async () => {

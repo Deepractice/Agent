@@ -17,6 +17,6 @@ export {
   StateReactorAdapter,
   MessageReactorAdapter,
   TurnReactorAdapter,
-  wrapUserReactor,
-  type UserReactor,
+  createReactorAdapter,
+  type ReactorAdapter,
 } from "@deepractice-ai/agentx-core";

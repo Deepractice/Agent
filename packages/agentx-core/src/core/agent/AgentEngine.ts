@@ -143,17 +143,17 @@ export class AgentEngine {
   }
 
   /**
-   * Register and initialize a peer reactor at runtime
+   * Register and initialize a reactor at runtime
    *
-   * This is used for dynamic reactor registration (e.g., SSEReactor with session).
+   * This is used for dynamic reactor registration (e.g., ChatReactor, SSEReactor with session).
    * The reactor will be registered in the ReactorRegistry and initialized immediately
    * if the engine is already initialized.
    *
    * @param reactor - AgentReactor to register
    * @returns Unsubscribe function that destroys the reactor
    */
-  async registerPeerReactor(reactor: AgentReactor): Promise<() => void> {
-    this.logger.info("Registering peer reactor", { reactorName: reactor.name });
+  async registerReactor(reactor: AgentReactor): Promise<() => void> {
+    this.logger.info("Registering reactor", { reactorName: reactor.name });
 
     // Register in registry
     this.registry.register(reactor);
@@ -167,12 +167,12 @@ export class AgentEngine {
         sessionId: this.sessionId,
       };
       await reactor.initialize(context);
-      this.logger.info("Peer reactor initialized", { reactorName: reactor.name });
+      this.logger.info("Reactor initialized", { reactorName: reactor.name });
     }
 
     // Return unsubscribe function
     return async () => {
-      this.logger.debug("Unregistering peer reactor", { reactorName: reactor.name });
+      this.logger.debug("Unregistering reactor", { reactorName: reactor.name });
       await reactor.destroy();
     };
   }

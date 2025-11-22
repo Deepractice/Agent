@@ -55,50 +55,86 @@ function buildPrompt(message: UserMessage): string {
 
 /**
  * Helper: Receive and parse SSE stream
+ *
+ * IMPORTANT: This must yield events in real-time, not batch them!
+ * We use a queue-based approach to bridge EventSource callbacks with async generator.
  */
 async function* receiveSSEStream(
   sseUrl: string,
   serverUrl: string
 ): AsyncIterable<StreamEventType> {
-  return new Promise<AsyncIterable<StreamEventType>>((resolve, reject) => {
-    const events: StreamEventType[] = [];
-    // Normalize SSE URL: if relative, prepend serverUrl
-    const fullSseUrl = sseUrl.startsWith("http") ? sseUrl : `${serverUrl}${sseUrl}`;
-    console.log("[SSEDriver] Opening EventSource connection to:", fullSseUrl);
-    const eventSource = new EventSource(fullSseUrl);
+  // Normalize SSE URL: if relative, prepend serverUrl
+  const fullSseUrl = sseUrl.startsWith("http") ? sseUrl : `${serverUrl}${sseUrl}`;
+  console.log("[SSEDriver] Opening EventSource connection to:", fullSseUrl);
 
-    eventSource.onopen = () => {
-      console.log("[SSEDriver] EventSource connection opened");
-    };
+  const eventQueue: StreamEventType[] = [];
+  let resolveNext: ((value: IteratorResult<StreamEventType>) => void) | null = null;
+  let isDone = false;
+  let error: Error | null = null;
 
-    eventSource.onmessage = (event) => {
-      try {
-        const streamEvent = JSON.parse(event.data) as StreamEventType;
-        console.log("[SSEDriver] Received event:", streamEvent.type);
-        events.push(streamEvent);
+  const eventSource = new EventSource(fullSseUrl);
 
-        // Check if this is the last event
-        if (streamEvent.type === "message_stop") {
-          eventSource.close();
-          resolve(
-            (async function* () {
-              for (const e of events) {
-                yield e;
-              }
-            })()
-          );
-        }
-      } catch (error) {
-        console.error("[SSEDriver] Failed to parse SSE event:", error);
+  eventSource.onopen = () => {
+    console.log("[SSEDriver] EventSource connection opened");
+  };
+
+  eventSource.onmessage = (event) => {
+    try {
+      const streamEvent = JSON.parse(event.data) as StreamEventType;
+      console.log("[SSEDriver] Received event:", streamEvent.type);
+
+      // Add to queue
+      eventQueue.push(streamEvent);
+
+      // If someone is waiting, resolve immediately
+      if (resolveNext) {
+        const resolve = resolveNext;
+        resolveNext = null;
+        resolve({ value: eventQueue.shift()!, done: false });
       }
-    };
 
-    eventSource.onerror = (error) => {
-      console.error("[SSEDriver] SSE connection error:", error);
+      // Check if this is the last event
+      if (streamEvent.type === "message_stop") {
+        eventSource.close();
+        isDone = true;
+      }
+    } catch (err) {
+      console.error("[SSEDriver] Failed to parse SSE event:", err);
+      error = err instanceof Error ? err : new Error(String(err));
       eventSource.close();
-      reject(new Error("SSE connection failed"));
-    };
-  });
+      if (resolveNext) {
+        resolveNext({ value: undefined, done: true });
+        resolveNext = null;
+      }
+    }
+  };
+
+  eventSource.onerror = (err) => {
+    console.error("[SSEDriver] SSE connection error:", err);
+    eventSource.close();
+    error = new Error("SSE connection failed");
+    isDone = true;
+    if (resolveNext) {
+      resolveNext({ value: undefined, done: true });
+      resolveNext = null;
+    }
+  };
+
+  // Generator loop: yield events as they arrive
+  while (!isDone || eventQueue.length > 0) {
+    if (error) {
+      throw error;
+    }
+
+    if (eventQueue.length > 0) {
+      yield eventQueue.shift()!;
+    } else if (!isDone) {
+      // Wait for next event
+      await new Promise<IteratorResult<StreamEventType>>((resolve) => {
+        resolveNext = resolve;
+      });
+    }
+  }
 }
 
 /**

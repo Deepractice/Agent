@@ -1,34 +1,35 @@
 /**
  * SSEReactor - Server-side SSE event forwarder
  *
- * Forwards all Agent events to SSE clients using better-sse.
+ * Forwards all Agent events to SSE clients using native SSE implementation.
  * Built with defineReactor for minimal boilerplate.
  *
  * @example
  * ```typescript
- * import { SSEReactor } from "@deepractice-ai/agentx-sdk-server";
- * import { createSession } from "better-sse";
+ * import { SSEReactor, createSimpleSSESession } from "@deepractice-ai/agentx-sdk-server";
  *
- * const session = await createSession(req, res);
+ * const session = createSimpleSSESession({ res });
  * const reactor = SSEReactor.create({ session });
  * ```
  */
 
 import { defineReactor } from "~/defineReactor";
-import type { Session } from "better-sse";
+import type { SimpleSSESession } from "~/server/SimpleSSESession";
 
 /**
  * SSEReactor config
  */
 export interface SSEReactorConfig {
-  session: Session;
+  session: SimpleSSESession;
 }
 
 /**
  * Helper to send event to SSE client
  */
-function sendEvent(session: Session, event: any): void {
+function sendEvent(session: SimpleSSESession, event: any): void {
   try {
+    console.log(`[SSEReactor sendEvent] Event type: ${event.type}, isConnected: ${session.isConnected}`);
+
     // Check if session is still active
     if (!session.isConnected) {
       console.warn(`[SSEReactor] ❌ Cannot send event - SSE session disconnected`, {
@@ -37,18 +38,15 @@ function sendEvent(session: Session, event: any): void {
       return;
     }
 
-    // Log important events
-    if (event.type === "error_message" || event.type === "assistant_message") {
-      console.log(`[SSEReactor] ✅ Sending ${event.type} to client`);
-    }
-
-    // Send event via SSE
-    // better-sse automatically handles the SSE format (data: ...)
+    // Send event via SSE (SimpleSSESession handles formatting)
+    console.log(`[SSEReactor sendEvent] Calling session.push() for ${event.type}`);
     session.push(event, event.type);
+    console.log(`[SSEReactor sendEvent] ✅ session.push() completed for ${event.type}`);
   } catch (error) {
     console.error("[SSEReactor] ❌ Failed to send event:", {
       eventType: event.type,
       error: error instanceof Error ? error.message : String(error),
+      stack: error instanceof Error ? error.stack : undefined,
     });
   }
 }

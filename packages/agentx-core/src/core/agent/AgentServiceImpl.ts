@@ -257,7 +257,7 @@ export class AgentServiceImpl implements AgentService {
     }
 
     // Register via engine
-    const unsubscribe = await this.engine.registerPeerReactor(reactor);
+    const unsubscribe = await this.engine.registerReactor(reactor);
     this.handlerUnsubscribers.push(unsubscribe);
 
     this.logger.info("Reactor registered", {

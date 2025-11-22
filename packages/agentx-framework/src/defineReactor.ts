@@ -5,8 +5,8 @@
  * Developers only need to define handlers for events they care about.
  *
  * This function creates reactors that are compatible with agentx-core's 4-layer
- * reactor interfaces (StreamReactor, StateReactor, MessageReactor, ExchangeReactor)
- * and automatically wraps them using wrapUserReactor.
+ * reactor interfaces (StreamReactor, StateReactor, MessageReactor, TurnReactor)
+ * and automatically wraps them using createReactorAdapter.
  *
  * @example
  * ```typescript
@@ -33,7 +33,7 @@
  */
 
 import type { AgentReactor, AgentReactorContext } from "@deepractice-ai/agentx-core";
-import { wrapUserReactor as coreWrapUserReactor } from "@deepractice-ai/agentx-core";
+import { createReactorAdapter } from "@deepractice-ai/agentx-core";
 import type {
   // Stream events
   MessageStartEvent,
@@ -168,15 +168,15 @@ export interface DefinedReactor<TConfig = any> {
 }
 
 /**
- * Build reactor adapter object from definition
+ * Build reactor object from definition
  *
  * This creates an object that implements the appropriate layer interfaces
- * (StreamReactor, StateReactor, MessageReactor, ExchangeReactor) based on
+ * (StreamReactor, StateReactor, MessageReactor, TurnReactor) based on
  * which event handlers are defined.
  *
- * The object is then wrapped by core's wrapUserReactor to become an AgentReactor.
+ * The object is then wrapped by core's createReactorAdapter to become an AgentReactor.
  */
-function buildReactorAdapter(definition: ReactorDefinition, config: any): any {
+function buildReactorObject(definition: ReactorDefinition, config: any): any {
   const userReactor: any = {};
 
   // ==================== Lifecycle ====================
@@ -306,7 +306,7 @@ function buildReactorAdapter(definition: ReactorDefinition, config: any): any {
  *
  * This creates a reactor definition that can be instantiated with config.
  * Internally, it builds an object compatible with agentx-core's 4-layer reactor
- * interfaces and wraps it using wrapUserReactor.
+ * interfaces and wraps it using createReactorAdapter.
  *
  * @param definition - Reactor definition
  * @returns Defined reactor factory
@@ -330,12 +330,12 @@ export function defineReactor<TConfig = any>(
     name: definition.name,
 
     create: (config?: TConfig) => {
-      // Build reactor adapter object that implements 4-layer interfaces
-      const userReactor = buildReactorAdapter(definition, config || {});
+      // Build reactor object that implements 4-layer interfaces
+      const userReactor = buildReactorObject(definition, config || {});
 
-      // Use core's wrapUserReactor to convert to AgentReactor
+      // Use core's createReactorAdapter to convert to AgentReactor
       // This automatically handles event subscription and lifecycle
-      return coreWrapUserReactor(userReactor);
+      return createReactorAdapter(userReactor);
     },
   };
 }

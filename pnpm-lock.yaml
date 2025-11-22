@@ -210,9 +210,6 @@ importers:
       '@deepractice-ai/agentx-types':
         specifier: workspace:*
         version: link:../agentx-types
-      better-sse:
-        specifier: ^0.15.1
-        version: 0.15.1
       rxjs:
         specifier: ^7.8.2
         version: 7.8.2
@@ -2025,10 +2022,6 @@ packages:
   better-path-resolve@1.0.0:
     resolution: {integrity: sha512-pbnl5XzGBdrFU/wT4jqmJVPn2B6UHPBOhzMQkY/SPUPB6QtUXtmBHBIwCbXJol93mOpGMnQyP/+BB19q04xj7g==}
     engines: {node: '>=4'}
-
-  better-sse@0.15.1:
-    resolution: {integrity: sha512-E8YmmIs7P2T5nHM8VG5Pmtp8CgDsIhT+6CYhg+8Gmke5kJb11ohN1jtEXn/2taSr7WkcU3yNTgoqNYvZ/GQ4sw==}
-    engines: {node: '>=20', pnpm: '>=9'}
 
   brace-expansion@1.1.12:
     resolution: {integrity: sha512-9T9UjW3r0UW5c1Q7GTwllptXwhvYmEzFhzMfZ9H7FQWt+uZePjZPjBP/W1ZEyZ1twGWom5/56TF4lPcqjnDHcg==}
@@ -6247,8 +6240,6 @@ snapshots:
   better-path-resolve@1.0.0:
     dependencies:
       is-windows: 1.0.2
-
-  better-sse@0.15.1: {}
 
   brace-expansion@1.1.12:
     dependencies:

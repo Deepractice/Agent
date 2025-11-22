@@ -236,9 +236,9 @@ export class TurnReactorAdapter extends BaseReactorAdapter {
 }
 
 /**
- * Union type for all user-facing reactors
+ * Union type for all reactor adapter interfaces
  */
-export type UserReactor = StreamReactor | StateReactor | MessageReactor | TurnReactor;
+export type ReactorAdapter = StreamReactor | StateReactor | MessageReactor | TurnReactor;
 
 /**
  * Composite adapter that supports multiple layers
@@ -410,48 +410,53 @@ class CompositeReactorAdapter implements AgentReactor {
 }
 
 /**
- * Detect which type of reactor the user provided and wrap it
+ * Create a reactor adapter based on the provided reactor interface
  *
- * If reactor has methods from multiple layers, uses CompositeReactorAdapter.
- * Otherwise, uses a specific layer adapter for performance.
+ * Automatically detects which layer interfaces the reactor implements and
+ * wraps it with the appropriate adapter:
+ * - Single-layer reactors use specific adapters (StreamReactorAdapter, etc.)
+ * - Multi-layer reactors use CompositeReactorAdapter
+ *
+ * @param reactor - Reactor implementing one or more layer interfaces
+ * @returns AgentReactor with full lifecycle support
  */
-export function wrapUserReactor(userReactor: UserReactor): AgentReactor {
+export function createReactorAdapter(reactor: ReactorAdapter): AgentReactor {
   // Check which interface methods are present to determine reactor type
 
-  const hasTurnMethods = "onTurnRequest" in userReactor || "onTurnResponse" in userReactor;
+  const hasTurnMethods = "onTurnRequest" in reactor || "onTurnResponse" in reactor;
 
   const hasMessageMethods =
-    "onUserMessage" in userReactor ||
-    "onAssistantMessage" in userReactor ||
-    "onToolUseMessage" in userReactor ||
-    "onErrorMessage" in userReactor;
+    "onUserMessage" in reactor ||
+    "onAssistantMessage" in reactor ||
+    "onToolUseMessage" in reactor ||
+    "onErrorMessage" in reactor;
 
   const hasStateMethods =
-    "onAgentReady" in userReactor ||
-    "onConversationStart" in userReactor ||
-    "onConversationThinking" in userReactor ||
-    "onConversationResponding" in userReactor ||
-    "onConversationEnd" in userReactor ||
-    "onToolPlanned" in userReactor ||
-    "onToolExecuting" in userReactor ||
-    "onToolCompleted" in userReactor ||
-    "onToolFailed" in userReactor ||
-    "onStreamStart" in userReactor ||
-    "onStreamComplete" in userReactor ||
-    "onErrorOccurred" in userReactor;
+    "onAgentReady" in reactor ||
+    "onConversationStart" in reactor ||
+    "onConversationThinking" in reactor ||
+    "onConversationResponding" in reactor ||
+    "onConversationEnd" in reactor ||
+    "onToolPlanned" in reactor ||
+    "onToolExecuting" in reactor ||
+    "onToolCompleted" in reactor ||
+    "onToolFailed" in reactor ||
+    "onStreamStart" in reactor ||
+    "onStreamComplete" in reactor ||
+    "onErrorOccurred" in reactor;
 
   const hasStreamMethods =
-    "onMessageStart" in userReactor ||
-    "onMessageDelta" in userReactor ||
-    "onMessageStop" in userReactor ||
-    "onTextContentBlockStart" in userReactor ||
-    "onTextDelta" in userReactor ||
-    "onTextContentBlockStop" in userReactor ||
-    "onToolUseContentBlockStart" in userReactor ||
-    "onInputJsonDelta" in userReactor ||
-    "onToolUseContentBlockStop" in userReactor ||
-    "onToolCall" in userReactor ||
-    "onToolResult" in userReactor;
+    "onMessageStart" in reactor ||
+    "onMessageDelta" in reactor ||
+    "onMessageStop" in reactor ||
+    "onTextContentBlockStart" in reactor ||
+    "onTextDelta" in reactor ||
+    "onTextContentBlockStop" in reactor ||
+    "onToolUseContentBlockStart" in reactor ||
+    "onInputJsonDelta" in reactor ||
+    "onToolUseContentBlockStop" in reactor ||
+    "onToolCall" in reactor ||
+    "onToolResult" in reactor;
 
   // Count how many layers this reactor implements
   const layerCount = [hasStreamMethods, hasStateMethods, hasMessageMethods, hasTurnMethods].filter(
@@ -460,24 +465,24 @@ export function wrapUserReactor(userReactor: UserReactor): AgentReactor {
 
   // If multi-layer reactor, use CompositeAdapter
   if (layerCount > 1) {
-    return new CompositeReactorAdapter(userReactor);
+    return new CompositeReactorAdapter(reactor);
   }
 
   // Single-layer reactors use specific adapters for performance
   if (hasTurnMethods) {
-    return new TurnReactorAdapter(userReactor as TurnReactor);
+    return new TurnReactorAdapter(reactor as TurnReactor);
   }
 
   if (hasMessageMethods) {
-    return new MessageReactorAdapter(userReactor as MessageReactor);
+    return new MessageReactorAdapter(reactor as MessageReactor);
   }
 
   if (hasStateMethods) {
-    return new StateReactorAdapter(userReactor as StateReactor);
+    return new StateReactorAdapter(reactor as StateReactor);
   }
 
   if (hasStreamMethods) {
-    return new StreamReactorAdapter(userReactor as StreamReactor);
+    return new StreamReactorAdapter(reactor as StreamReactor);
   }
 
   throw new Error(

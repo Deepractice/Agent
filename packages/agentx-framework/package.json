@@ -36,7 +36,6 @@
     "@deepractice-ai/agentx-event": "workspace:*",
     "@deepractice-ai/agentx-logger": "workspace:*",
     "@deepractice-ai/agentx-types": "workspace:*",
-    "better-sse": "^0.15.1",
     "rxjs": "^7.8.2"
   },
   "devDependencies": {

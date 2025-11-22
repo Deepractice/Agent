@@ -11,12 +11,12 @@ export { StreamEventBuilder } from "./StreamEventBuilder";
 // Error emission utility
 export { emitError } from "./emitError";
 
-// Reactor adapters - convert user-friendly interfaces to AgentReactor
+// Reactor adapters - convert layer interfaces to AgentReactor
 export {
   StreamReactorAdapter,
   StateReactorAdapter,
   MessageReactorAdapter,
   TurnReactorAdapter,
-  wrapUserReactor,
-  type UserReactor,
+  createReactorAdapter,
+  type ReactorAdapter,
 } from "./ReactorAdapter";
