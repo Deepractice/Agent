@@ -81,10 +81,10 @@ export class LoggerFactory {
       return this.loggers.get(name)!;
     }
 
-    // Create new logger
-    const logger = this.createLogger(name);
-    this.loggers.set(name, logger);
-    return logger;
+    // Create lazy logger proxy that resolves implementation on first use
+    const lazyLogger = this.createLazyLogger(name);
+    this.loggers.set(name, lazyLogger);
+    return lazyLogger;
   }
 
   /**
@@ -102,8 +102,7 @@ export class LoggerFactory {
    */
   static configure(config: LoggerFactoryConfig): void {
     this.config = { ...this.config, ...config };
-    // Clear existing loggers to apply new config
-    this.loggers.clear();
+    // Note: No need to clear loggers anymore - lazy proxies will use new config automatically
   }
 
   /**
@@ -128,6 +127,53 @@ export class LoggerFactory {
    */
   static getLoggerNames(): string[] {
     return Array.from(this.loggers.keys());
+  }
+
+  /**
+   * Create lazy logger proxy
+   *
+   * Returns a proxy that delays actual logger creation until first use.
+   * This ensures loggers always use the latest configuration, even if
+   * configure() is called after createLogger().
+   */
+  private static createLazyLogger(name: string): LoggerProvider {
+    // Cache for the actual logger instance (created lazily)
+    let realLogger: LoggerProvider | null = null;
+
+    // Get or create the real logger instance
+    const getRealLogger = (): LoggerProvider => {
+      if (!realLogger) {
+        realLogger = this.createLogger(name);
+      }
+      return realLogger;
+    };
+
+    // Return proxy that delegates to real logger
+    return {
+      name,
+      level: this.config.defaultLevel || LogLevel.INFO,
+
+      debug: (message: string, context?: any) => {
+        getRealLogger().debug(message, context);
+      },
+
+      info: (message: string, context?: any) => {
+        getRealLogger().info(message, context);
+      },
+
+      warn: (message: string, context?: any) => {
+        getRealLogger().warn(message, context);
+      },
+
+      error: (message: string | Error, context?: any) => {
+        getRealLogger().error(message, context);
+      },
+
+      isDebugEnabled: () => getRealLogger().isDebugEnabled(),
+      isInfoEnabled: () => getRealLogger().isInfoEnabled(),
+      isWarnEnabled: () => getRealLogger().isWarnEnabled(),
+      isErrorEnabled: () => getRealLogger().isErrorEnabled(),
+    };
   }
 
   /**

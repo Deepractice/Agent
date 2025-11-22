@@ -5,24 +5,19 @@
  * Uses the new AgentX Framework with automatic session management.
  */
 
+// ==================== STEP 1: Import only configuration utilities ====================
 import {
   configure,
   LogLevel,
   type LoggerProvider,
   type LogContext,
 } from "@deepractice-ai/agentx-framework";
-import { createAgentServer } from "@deepractice-ai/agentx-framework/server";
-import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
 import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { appendFileSync, writeFileSync } from "fs";
 import http from "http";
 import { WebSocketServer } from "ws";
-
-// Global references for cleanup on hot reload
-let globalLogCollector: http.Server | null = null;
-let globalAgentServer: Awaited<ReturnType<typeof createAgentServer>> | null = null;
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -138,16 +133,25 @@ class FileLogger implements LoggerProvider {
   }
 }
 
-// Configure AgentX framework globally (before creating any agents)
+// ==================== STEP 2: Configure logger BEFORE importing AgentX modules ====================
 const backendLogPath = resolve(__dirname, "logs/backend.log");
 const frontendLogPath = resolve(__dirname, "logs/frontend.log");
 
 configure({
   logger: {
-    defaultLevel: LogLevel.DEBUG,
-    defaultImplementation: (name) => new FileLogger(name, backendLogPath, LogLevel.DEBUG),
+    defaultLevel: LogLevel.INFO,
+    defaultImplementation: (name) => new FileLogger(name, backendLogPath, LogLevel.INFO),
   },
 });
+
+// ==================== STEP 3: Import AgentX modules AFTER configure() ====================
+// This ensures all loggers created during module loading use FileLogger
+import { createAgentServer } from "@deepractice-ai/agentx-framework/server";
+import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
+
+// Global references for cleanup on hot reload
+let globalLogCollector: http.Server | null = null;
+let globalAgentServer: Awaited<ReturnType<typeof createAgentServer>> | null = null;
 
 /**
  * Kill process using a specific port

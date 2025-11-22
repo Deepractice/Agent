@@ -340,6 +340,117 @@ pnpm dev --filter=@deepractice-ai/agentx-ui
 
 **File Organization**: One type per file. Export via `index.ts` barrel files.
 
+### Logging Standards
+
+**⚠️ IMPORTANT: Always use `agentx-logger` facade, never direct `console.*` calls in production code.**
+
+AgentX uses a SLF4J-style logging facade (`agentx-logger`) for unified logging across all packages.
+
+**Correct Usage**:
+
+```typescript
+// ✅ Correct - Use createLogger() or @Logger() decorator
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("module/ComponentName");
+
+logger.debug("Detailed debug information", { context });
+logger.info("Important runtime information");
+logger.warn("Warning condition", { details });
+logger.error("Error occurred", { error });
+
+// Or with decorator (for classes)
+import { Logger } from "@deepractice-ai/agentx-logger";
+
+class MyService {
+  @Logger("service/MyService")
+  private logger!: LoggerProvider;
+
+  someMethod() {
+    this.logger.info("Method called");
+  }
+}
+```
+
+**Incorrect Usage**:
+
+```typescript
+// ❌ Wrong - Direct console calls
+console.log("[MyComponent] Something happened");
+console.error("Error:", error);
+console.warn("Warning");
+console.debug("Debug info");
+```
+
+**Exceptions**:
+- ✅ Storybook story files (`.stories.tsx`) - console calls acceptable for demo purposes
+- ✅ Test files - console calls acceptable for test debugging
+
+**Logger Naming Convention**:
+- Use hierarchical names: `"core/agent/AgentEngine"`, `"framework/SSEReactor"`, `"ui/Chat"`
+- Use forward slashes `/` to separate hierarchy levels
+- Use PascalCase for component names
+
+**Lazy Initialization**:
+
+`agentx-logger` uses **lazy initialization** - you can safely create loggers at module level without worrying about configuration timing:
+
+```typescript
+// ✅ Safe to create at module level - logger uses lazy initialization
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("framework/SSEReactor");  // Safe!
+
+// Later in your app's entry point
+import { configure, LogLevel } from "@deepractice-ai/agentx-framework";
+
+configure({
+  logger: {
+    defaultLevel: LogLevel.INFO,
+    defaultImplementation: (name) => new CustomLogger(name),
+  },
+});
+
+// The logger will use CustomLogger when actually called,
+// even though it was created before configure()
+```
+
+The logger facade delays actual logger creation until the first log call, ensuring it always uses the latest configuration.
+
+**Log Levels**:
+- `DEBUG` - Detailed information for debugging (method calls, state changes)
+- `INFO` - Important runtime events (initialization, connections, completions)
+- `WARN` - Potential issues that don't prevent operation
+- `ERROR` - Errors that need attention
+
+**LOG_LEVEL Environment Variable**:
+
+The `LOG_LEVEL` environment variable (defined in `turbo.json`) controls log output:
+
+```bash
+# Set in .env or .env.local
+LOG_LEVEL=debug  # Show all logs
+LOG_LEVEL=info   # Show info, warn, error (default)
+LOG_LEVEL=warn   # Show warn, error only
+LOG_LEVEL=error  # Show errors only
+```
+
+**Architecture**:
+
+```
+Backend (Node.js):
+  agentx-logger → ConsoleLogger → stdout/stderr
+
+Frontend (Browser):
+  agentx-logger → WebSocketLogger → Log Server (for collection)
+                → ConsoleLogger → Browser DevTools
+```
+
+**Related Files**:
+- `packages/agentx-logger/` - Logging facade implementation
+- `packages/agentx-ui/dev-tools/WebSocketLogger.ts` - Browser log collector
+- `issues/008-logging-system-cleanup.md` - Logging system cleanup plan
+
 ## Environment Variables (via turbo.json)
 
 The following environment variables are passed to all tasks:
