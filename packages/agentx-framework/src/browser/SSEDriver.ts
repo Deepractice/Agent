@@ -94,20 +94,14 @@ async function* receiveSSEStream(
         resolve({ value: undefined as any, done: false });
       }
 
-      // Check if this is the last event
-      // Note: Don't close on message_stop because State Layer events (like conversation_end)
-      // may arrive after it. Instead, close on a timeout or explicit end signal.
-      // For now, we rely on server closing the connection or a timeout.
-      if (streamEvent.type === "message_stop") {
-        // Mark as done but don't close EventSource yet
-        // Let state events (conversation_end, etc.) come through
-        isDone = true;
-        // Close after a short delay to allow trailing events
-        setTimeout(() => {
-          console.log("[SSEDriver] Closing EventSource after message_stop delay");
-          eventSource.close();
-        }, 500); // 500ms grace period for state events
-      }
+      // IMPORTANT: Don't close connection on message_stop!
+      // In tool use scenarios, multiple message_stop events can occur:
+      // 1. First message_stop: After initial assistant response
+      // 2. Tool use events: tool_use_content_block_start/stop, input_json_delta
+      // 3. Second message_stop: After tool result response
+      //
+      // Keep connection open to receive all events. Server will close when appropriate.
+      // If we close here, we'll miss tool use events and subsequent messages.
     } catch (err) {
       console.error("[SSEDriver] Failed to parse SSE event:", err);
       error = err instanceof Error ? err : new Error(String(err));
