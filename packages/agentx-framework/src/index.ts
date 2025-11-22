@@ -32,7 +32,7 @@ export { createAgent } from "./createAgent";
  * Methods: initialize(), send(), react(), clear(), destroy()
  * Properties: id, sessionId, messages
  */
-export type { AgentService } from "@deepractice-ai/agentx-engine";
+export type { AgentService } from "@deepractice-ai/agentx-core";
 
 // ==================== Messages (User Data) ====================
 // Re-export from @deepractice-ai/agentx-types

@@ -2,9 +2,19 @@
  * @deepractice-ai/agentx-core
  *
  * Core implementations for AgentX ecosystem
+ * - Agent instance (AgentInstance, AgentService)
  * - Session management (SessionStore)
  * - Agent registry (AgentRegistry)
  */
+
+// Agent instance
+export type {
+  AgentInstance,
+  TurnStats,
+  EventHandlers,
+  AgentInstanceInfo,
+} from "./AgentInstance";
+export { AgentService } from "./AgentService";
 
 // Session management
 export { SessionStore } from "./SessionStore";

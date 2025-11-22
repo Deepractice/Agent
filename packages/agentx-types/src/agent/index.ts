@@ -9,7 +9,7 @@
  * - Type guards (type safety)
  */
 
-export type { Agent } from "./Agent";
+export type { AgentInfo } from "./AgentInfo";
 export type { AgentState } from "./AgentState";
 
 // Message types

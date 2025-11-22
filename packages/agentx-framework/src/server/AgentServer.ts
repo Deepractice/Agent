@@ -4,7 +4,7 @@
  * Provides a unified interface for different transport protocols (SSE, WebSocket).
  */
 
-import type { AgentService } from "@deepractice-ai/agentx-engine";
+import type { AgentService } from "@deepractice-ai/agentx-core";
 import type { IncomingMessage, ServerResponse } from "http";
 
 /**

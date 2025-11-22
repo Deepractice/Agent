@@ -1,17 +1,17 @@
 /**
- * Agent
+ * AgentInfo
  *
  * Static definition of an AI agent.
  * Pure data structure describing agent identity and capabilities.
  *
  * This represents "WHO am I?" - the agent's identity and metadata.
- * For runtime state ("WHAT am I doing?"), see AgentContext.
+ * For runtime state ("WHAT am I doing?"), see AgentInstance in agentx-core.
  *
  * Think of it as:
- * - Agent: "I am Claude, a writing assistant created on 2025-01-01"
- * - AgentContext: "I'm currently in session-456 talking to user-123"
+ * - AgentInfo: "I am Claude, a writing assistant created on 2025-01-01"
+ * - AgentInstance: "I'm currently in session-456 talking to user-123"
  */
-export interface Agent {
+export interface AgentInfo {
   /**
    * Agent unique identifier
    * Identifies the agent type/definition

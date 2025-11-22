@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { SSEAgent } from "./agent";
-import type { AgentService } from "@deepractice-ai/agentx-core";
+import type { AgentService } from "@deepractice-ai/agentx-framework";
 import { Chat } from "@deepractice-ai/agentx-ui";
 
 export default function App() {

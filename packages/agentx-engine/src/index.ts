@@ -5,8 +5,9 @@
  */
 
 // ==================== Core Agent Runtime ====================
-export { AgentService } from "./AgentService";
+// NOTE: AgentService has been moved to @deepractice-ai/agentx-core
 export type { EngineConfig } from "./AgentEngine";
+export { AgentEngine } from "./AgentEngine";
 
 // ==================== Interfaces (SPI Contracts) ====================
 // Driver interface

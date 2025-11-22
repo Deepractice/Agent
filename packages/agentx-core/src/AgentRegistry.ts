@@ -44,7 +44,7 @@
  * ```
  */
 
-import type { AgentService } from "@deepractice-ai/agentx-engine";
+import type { AgentInstance } from "./AgentInstance";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
 
 /**
@@ -72,7 +72,7 @@ export interface AgentRegistryConfig {
  * Session metadata
  */
 interface SessionMetadata {
-  agent: AgentService;
+  agent: AgentInstance;
   createdAt: Date;
   lastActivityAt: Date;
   timeoutHandle?: NodeJS.Timeout;
@@ -103,8 +103,8 @@ export class AgentRegistry {
    */
   async createSession(
     sessionId: string,
-    factory: () => Promise<AgentService> | AgentService
-  ): Promise<AgentService> {
+    factory: () => Promise<AgentInstance> | AgentInstance
+  ): Promise<AgentInstance> {
     if (this.agents.has(sessionId)) {
       throw new Error(`Session already exists: ${sessionId}`);
     }
@@ -144,7 +144,7 @@ export class AgentRegistry {
    * @param sessionId - Session identifier
    * @returns Agent instance or undefined if not found
    */
-  getSession(sessionId: string): AgentService | undefined {
+  getSession(sessionId: string): AgentInstance | undefined {
     const metadata = this.agents.get(sessionId);
     if (metadata) {
       // Update last activity time
