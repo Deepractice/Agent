@@ -48,8 +48,6 @@ export type {
   ToolCompletedStateEvent,
   ToolResultData,
   ToolFailedStateEvent,
-  StreamStartStateEvent,
-  StreamCompleteStateEvent,
   ErrorOccurredStateEvent,
 } from "./state";
 

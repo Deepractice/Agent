@@ -509,7 +509,7 @@ Then("I should receive {string} state event", (eventType: string) => {
   // Some state events may not be implemented yet
   const events = ctx.getEvents(eventType);
   // Lenient check
-  if (eventType === "stream_complete") {
+  if (eventType === "conversation_end") {
     // May or may not have this event
     expect(ctx.agent).toBeDefined();
   }

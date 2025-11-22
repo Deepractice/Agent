@@ -37,10 +37,6 @@ export type { ToolCompletedStateEvent, ToolResultData } from "./ToolCompletedSta
 
 export type { ToolFailedStateEvent } from "./ToolFailedStateEvent";
 
-// ===== Stream Lifecycle States =====
-export type { StreamStartStateEvent } from "./StreamStartStateEvent";
-export type { StreamCompleteStateEvent } from "./StreamCompleteStateEvent";
-
 // ===== Error State =====
 export type { ErrorOccurredStateEvent } from "./ErrorOccurredStateEvent";
 
@@ -59,6 +55,4 @@ export type StateEventType =
   | import("./ToolExecutingStateEvent").ToolExecutingStateEvent
   | import("./ToolCompletedStateEvent").ToolCompletedStateEvent
   | import("./ToolFailedStateEvent").ToolFailedStateEvent
-  | import("./StreamStartStateEvent").StreamStartStateEvent
-  | import("./StreamCompleteStateEvent").StreamCompleteStateEvent
   | import("./ErrorOccurredStateEvent").ErrorOccurredStateEvent;

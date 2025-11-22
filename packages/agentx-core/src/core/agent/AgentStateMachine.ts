@@ -44,13 +44,13 @@ import type {
   // State Events (output)
   AgentInitializingStateEvent,
   AgentReadyStateEvent,
+  ConversationStartStateEvent,
   ConversationThinkingStateEvent,
   ConversationRespondingStateEvent,
+  ConversationEndStateEvent,
   ToolPlannedStateEvent,
   ToolExecutingStateEvent,
   ToolCompletedStateEvent,
-  StreamStartStateEvent,
-  StreamCompleteStateEvent,
 } from "@deepractice-ai/agentx-event";
 import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
 
@@ -148,25 +148,29 @@ export class AgentStateMachine implements AgentReactor {
 
   /**
    * Handle MessageStartEvent
-   * Triggers: StreamStartStateEvent
+   * Triggers: ConversationStartStateEvent
    */
   private onMessageStart(event: MessageStartEvent): void {
     this.conversationStartTime = event.timestamp;
 
-    // Emit StreamStartStateEvent
-    const streamStartEvent: StreamStartStateEvent = {
-      type: "stream_start",
+    // Emit ConversationStartStateEvent
+    const conversationStartEvent: ConversationStartStateEvent = {
+      type: "conversation_start",
       uuid: this.generateId(),
       agentId: this.context!.agentId,
       timestamp: Date.now(),
       previousState: this.currentState,
       transition: {
-        reason: "message_started",
+        reason: "conversation_started",
         trigger: "message_start",
       },
-      data: {},
+      data: {
+        // Note: We don't have UserMessage here in stream layer
+        // This will be populated by a higher-level reactor that has message context
+        userMessage: {} as any,
+      },
     };
-    this.emitStateEvent(streamStartEvent);
+    this.emitStateEvent(conversationStartEvent);
 
     // Transition state
     this.transitionState("conversation_active");
@@ -174,26 +178,40 @@ export class AgentStateMachine implements AgentReactor {
 
   /**
    * Handle MessageStopEvent
-   * Triggers: StreamCompleteStateEvent
+   * Triggers: ConversationEndStateEvent
    */
   private onMessageStop(event: MessageStopEvent): void {
     const duration = this.conversationStartTime ? event.timestamp - this.conversationStartTime : 0;
 
-    // Emit StreamCompleteStateEvent
-    const streamCompleteEvent: StreamCompleteStateEvent = {
-      type: "stream_complete",
+    // Emit ConversationEndStateEvent
+    const conversationEndEvent: ConversationEndStateEvent = {
+      type: "conversation_end",
       uuid: this.generateId(),
       agentId: this.context!.agentId,
       timestamp: Date.now(),
       previousState: this.currentState,
       transition: {
-        reason: "stream_completed",
+        reason: "conversation_completed",
         durationMs: duration,
         trigger: "message_stop",
       },
-      data: {},
+      data: {
+        // Note: These fields should be populated by a higher-level reactor
+        // that has access to complete messages and stats.
+        // AgentStateMachine only tracks state transitions at stream level.
+        assistantMessage: {} as any,
+        durationMs: duration,
+        durationApiMs: 0,
+        numTurns: 0,
+        result: "completed",
+        totalCostUsd: 0,
+        usage: {
+          input: 0,
+          output: 0,
+        },
+      },
     };
-    this.emitStateEvent(streamCompleteEvent);
+    this.emitStateEvent(conversationEndEvent);
 
     // Transition state
     this.transitionState("idle");
@@ -293,13 +311,13 @@ export class AgentStateMachine implements AgentReactor {
     event:
       | AgentInitializingStateEvent
       | AgentReadyStateEvent
+      | ConversationStartStateEvent
       | ConversationThinkingStateEvent
       | ConversationRespondingStateEvent
+      | ConversationEndStateEvent
       | ToolPlannedStateEvent
       | ToolExecutingStateEvent
       | ToolCompletedStateEvent
-      | StreamStartStateEvent
-      | StreamCompleteStateEvent
   ): void {
     if (!this.context) return;
     this.context.producer.produce(event as any);

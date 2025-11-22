@@ -171,14 +171,6 @@ export class StateReactorAdapter extends BaseReactorAdapter {
       consumer.consumeByType("tool_failed_state", reactor.onToolFailed.bind(reactor));
     }
 
-    if (reactor.onStreamStart) {
-      consumer.consumeByType("stream_start_state", reactor.onStreamStart.bind(reactor));
-    }
-
-    if (reactor.onStreamComplete) {
-      consumer.consumeByType("stream_complete_state", reactor.onStreamComplete.bind(reactor));
-    }
-
     if (reactor.onErrorOccurred) {
       consumer.consumeByType("error_occurred_state", reactor.onErrorOccurred.bind(reactor));
     }
@@ -366,15 +358,6 @@ class CompositeReactorAdapter implements AgentReactor {
     if (reactor.onToolFailed) {
       context.consumer.consumeByType("tool_failed_state", reactor.onToolFailed.bind(reactor));
     }
-    if (reactor.onStreamStart) {
-      context.consumer.consumeByType("stream_start_state", reactor.onStreamStart.bind(reactor));
-    }
-    if (reactor.onStreamComplete) {
-      context.consumer.consumeByType(
-        "stream_complete_state",
-        reactor.onStreamComplete.bind(reactor)
-      );
-    }
     if (reactor.onErrorOccurred) {
       context.consumer.consumeByType("error_occurred_state", reactor.onErrorOccurred.bind(reactor));
     }
@@ -441,8 +424,6 @@ export function createReactorAdapter(reactor: ReactorAdapter): AgentReactor {
     "onToolExecuting" in reactor ||
     "onToolCompleted" in reactor ||
     "onToolFailed" in reactor ||
-    "onStreamStart" in reactor ||
-    "onStreamComplete" in reactor ||
     "onErrorOccurred" in reactor;
 
   const hasStreamMethods =

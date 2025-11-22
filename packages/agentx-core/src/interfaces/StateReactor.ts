@@ -15,8 +15,6 @@ import type {
   ToolExecutingStateEvent,
   ToolCompletedStateEvent,
   ToolFailedStateEvent,
-  StreamStartStateEvent,
-  StreamCompleteStateEvent,
   ErrorOccurredStateEvent,
 } from "@deepractice-ai/agentx-event";
 import type { AgentReactorContext } from "./AgentReactor";
@@ -85,16 +83,6 @@ export interface StateReactor {
    * Called when a tool execution fails
    */
   onToolFailed?(event: ToolFailedStateEvent): void;
-
-  /**
-   * Called when streaming starts
-   */
-  onStreamStart?(event: StreamStartStateEvent): void;
-
-  /**
-   * Called when streaming completes
-   */
-  onStreamComplete?(event: StreamCompleteStateEvent): void;
 
   /**
    * Called when an error occurs

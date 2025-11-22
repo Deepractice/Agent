@@ -67,8 +67,8 @@ Given("I subscribe to all event layers", () => {
   ctx.subscribeToEvent("conversation_thinking");
   ctx.subscribeToEvent("conversation_responding");
   ctx.subscribeToEvent("conversation_end");
-  ctx.subscribeToEvent("stream_start");
-  ctx.subscribeToEvent("stream_complete");
+  ctx.subscribeToEvent("conversation_start");
+  ctx.subscribeToEvent("conversation_end");
   ctx.subscribeToEvent("tool_planned");
   ctx.subscribeToEvent("tool_executing");
   ctx.subscribeToEvent("tool_completed");

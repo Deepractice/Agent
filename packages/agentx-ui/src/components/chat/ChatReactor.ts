@@ -10,8 +10,7 @@ import type {
   AssistantMessageEvent,
   ToolUseMessageEvent,
   ToolResultEvent,
-  ConversationStartStateEvent,
-  ConversationEndStateEvent,
+  TurnRequestEvent,
   TurnResponseEvent,
   ErrorMessageEvent,
   Message,
@@ -89,19 +88,14 @@ export const ChatReactor = defineReactor<ChatReactorConfig>({
     );
   },
 
-  // State layer - handle conversation lifecycle
-  onConversationStart(event: ConversationStartStateEvent, config: ChatReactorConfig) {
-    config.logger.info("conversation_start", { uuid: event.uuid });
+  // Turn layer - handle turn lifecycle (replaces conversation_start/end)
+  onTurnRequest(event: TurnRequestEvent, config: ChatReactorConfig) {
+    config.logger.info("turn_request", { uuid: event.uuid });
     config.setIsLoading(true);
     config.setStreaming(() => ""); // Clear any previous streaming
     config.setErrors(() => []); // Clear previous errors
   },
 
-  onConversationEnd(event: ConversationEndStateEvent, config: ChatReactorConfig) {
-    config.logger.info("conversation_end", { uuid: event.uuid });
-  },
-
-  // Turn layer - handle turn completion
   onTurnResponse(event: TurnResponseEvent, config: ChatReactorConfig) {
     config.logger.info("turn_response", {
       uuid: event.uuid,

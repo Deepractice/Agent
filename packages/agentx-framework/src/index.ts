@@ -118,8 +118,6 @@ export type {
   ToolExecutingStateEvent,
   ToolCompletedStateEvent,
   ToolFailedStateEvent,
-  StreamStartStateEvent,
-  StreamCompleteStateEvent,
   ErrorOccurredStateEvent,
 } from "@deepractice-ai/agentx-event";
 

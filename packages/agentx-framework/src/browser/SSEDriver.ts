@@ -86,11 +86,12 @@ async function* receiveSSEStream(
       // Add to queue
       eventQueue.push(streamEvent);
 
-      // If someone is waiting, resolve immediately
+      // If someone is waiting, wake them up (but don't remove from queue yet)
       if (resolveNext) {
         const resolve = resolveNext;
         resolveNext = null;
-        resolve({ value: eventQueue.shift()!, done: false });
+        // Signal that a new event is available (generator loop will yield it)
+        resolve({ value: undefined as any, done: false });
       }
 
       // Check if this is the last event

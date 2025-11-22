@@ -79,7 +79,7 @@ Given("I create and initialize an agent with custom responses", async () => {
   ctx.subscribeToEvent("assistant_message");
   ctx.subscribeToEvent("error_message");
   ctx.subscribeToEvent("text_delta");
-  ctx.subscribeToEvent("stream_complete");
+  ctx.subscribeToEvent("conversation_end");
 });
 
 // ===== When steps =====
@@ -377,7 +377,7 @@ Then("the partial response should be stored in messages", () => {
 });
 
 Then("I should receive {string} state event", (eventType: string) => {
-  // State events like stream_complete may not be fully implemented
+  // State events like conversation_end may not be fully implemented
   const events = ctx.getEvents(eventType);
   // Lenient check - just verify agent is operational
   expect(ctx.agent).toBeDefined();

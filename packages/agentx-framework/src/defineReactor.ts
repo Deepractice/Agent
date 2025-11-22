@@ -57,8 +57,6 @@ import type {
   ToolExecutingStateEvent,
   ToolCompletedStateEvent,
   ToolFailedStateEvent,
-  StreamStartStateEvent,
-  StreamCompleteStateEvent,
   ErrorOccurredStateEvent,
   // Message events
   UserMessageEvent,
@@ -137,8 +135,6 @@ export interface ReactorDefinition<TConfig = any> {
   onToolExecuting?: (event: ToolExecutingStateEvent, config: TConfig) => void | Promise<void>;
   onToolCompleted?: (event: ToolCompletedStateEvent, config: TConfig) => void | Promise<void>;
   onToolFailed?: (event: ToolFailedStateEvent, config: TConfig) => void | Promise<void>;
-  onStreamStart?: (event: StreamStartStateEvent, config: TConfig) => void | Promise<void>;
-  onStreamComplete?: (event: StreamCompleteStateEvent, config: TConfig) => void | Promise<void>;
   onErrorOccurred?: (event: ErrorOccurredStateEvent, config: TConfig) => void | Promise<void>;
 
   // ==================== Message Layer ====================
@@ -261,13 +257,6 @@ function buildReactorObject(definition: ReactorDefinition, config: any): any {
   }
   if (definition.onToolFailed) {
     userReactor.onToolFailed = (e: ToolFailedStateEvent) => definition.onToolFailed!(e, config);
-  }
-  if (definition.onStreamStart) {
-    userReactor.onStreamStart = (e: StreamStartStateEvent) => definition.onStreamStart!(e, config);
-  }
-  if (definition.onStreamComplete) {
-    userReactor.onStreamComplete = (e: StreamCompleteStateEvent) =>
-      definition.onStreamComplete!(e, config);
   }
   if (definition.onErrorOccurred) {
     userReactor.onErrorOccurred = (e: ErrorOccurredStateEvent) =>
