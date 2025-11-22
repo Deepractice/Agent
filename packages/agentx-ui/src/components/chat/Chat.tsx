@@ -24,7 +24,7 @@
  */
 
 import { useState, useEffect } from "react";
-import type { AgentService } from "@deepractice-ai/agentx-framework";
+import type { AgentInstance } from "@deepractice-ai/agentx-framework";
 import type { Message } from "@deepractice-ai/agentx-framework";
 import type { ErrorMessage as ErrorMessageType } from "@deepractice-ai/agentx-framework";
 import { ChatMessageList } from "./ChatMessageList";
@@ -40,7 +40,7 @@ export interface ChatProps {
   /**
    * Agent instance from agentx-framework
    */
-  agent: AgentService;
+  agent: AgentInstance;
 
   /**
    * Initial messages to display
@@ -78,10 +78,10 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
           logger,
         })
       )
-      .then((unsub) => {
+      .then((unsub: () => void) => {
         unsubscribe = unsub;
       })
-      .catch((error) => {
+      .catch((error: Error) => {
         logger.error("Failed to register UIReactor", { error });
       });
 

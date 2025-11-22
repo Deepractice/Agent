@@ -2,7 +2,7 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useState, useEffect, type ReactNode } from "react";
 import { Chat } from "./Chat";
 import { SSEAgent } from "@deepractice-ai/agentx-framework/browser";
-import type { AgentService } from "@deepractice-ai/agentx-framework";
+import type { AgentInstance } from "@deepractice-ai/agentx-framework";
 
 const SERVER_URL = "http://localhost:5200";
 
@@ -32,12 +32,12 @@ async function createSession(): Promise<{ sessionId: string; sseUrl: string }> {
  * 3. agent.initialize() -> GET /api/sse/{sessionId}
  * 4. Ready for chat
  */
-function ChatStory({ children }: { children: (agent: AgentService) => ReactNode }) {
-  const [agent, setAgent] = useState<AgentService | null>(null);
+function ChatStory({ children }: { children: (agent: AgentInstance) => ReactNode }) {
+  const [agent, setAgent] = useState<AgentInstance | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let currentAgent: AgentService | null = null;
+    let currentAgent: AgentInstance | null = null;
 
     async function setup() {
       try {
@@ -67,7 +67,7 @@ function ChatStory({ children }: { children: (agent: AgentService) => ReactNode 
 
     return () => {
       if (currentAgent) {
-        currentAgent.destroy().catch((err) => {
+        currentAgent.destroy().catch((err: Error) => {
           console.error("[Story] Failed to destroy agent:", err);
         });
       }

@@ -11,13 +11,13 @@
  */
 
 import { useState, useEffect } from "react";
-import type { AgentService, AgentState } from "@deepractice-ai/agentx-framework";
+import type { AgentInstance, AgentState } from "@deepractice-ai/agentx-framework";
 
 export interface AgentStatusIndicatorProps {
   /**
    * Agent instance to monitor
    */
-  agent: AgentService;
+  agent: AgentInstance;
 
   /**
    * Custom className
@@ -76,7 +76,7 @@ export function AgentStatusIndicator({
 
   // Subscribe to agent state changes
   useEffect(() => {
-    const unsubscribe = agent.onStateChange((newState) => {
+    const unsubscribe = agent.onStateChange((newState: AgentState) => {
       setState(newState);
     });
 

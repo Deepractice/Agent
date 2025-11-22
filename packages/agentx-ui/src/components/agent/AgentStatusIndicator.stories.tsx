@@ -3,7 +3,7 @@ import { AgentStatusIndicator } from "./AgentStatusIndicator";
 import type { AgentState } from "@deepractice-ai/agentx-framework";
 
 /**
- * Mock AgentService for Storybook
+ * Mock AgentInstance for Storybook
  */
 function createMockAgent(initialState: AgentState = "idle") {
   let currentState = initialState;

@@ -25,7 +25,7 @@
  * ```
  */
 
-import type { AgentService } from "@deepractice-ai/agentx-core";
+import type { AgentInstance } from "@deepractice-ai/agentx-core";
 import type { DefinedAgent } from "~/defineAgent";
 import type { ConfigSchema, InferConfig } from "~/defineConfig";
 
@@ -34,11 +34,11 @@ import type { ConfigSchema, InferConfig } from "~/defineConfig";
  *
  * @param definedAgent - The defined agent (from defineAgent)
  * @param config - Agent configuration
- * @returns AgentService instance
+ * @returns AgentInstance instance
  */
 export function createAgent<TConfig extends ConfigSchema = any>(
   definedAgent: DefinedAgent<TConfig>,
   config?: Partial<InferConfig<TConfig>>
-): AgentService {
+): AgentInstance {
   return definedAgent.create(config);
 }

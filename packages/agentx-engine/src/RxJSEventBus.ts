@@ -7,16 +7,13 @@
 
 import { Subject, type Observable, type Subscription } from "rxjs";
 import { filter } from "rxjs/operators";
-import type {
-  EventBus,
-  EventProducer,
-  EventConsumer,
-  Unsubscribe,
-} from "@deepractice-ai/agentx-engine";
+import type { EventBus } from "./bus/EventBus";
+import type { EventProducer } from "./bus/EventProducer";
+import type { EventConsumer, Unsubscribe } from "./bus/EventConsumer";
 import type { AgentEventType } from "@deepractice-ai/agentx-event";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 
-const logger = createLogger("core/agent/RxJSEventBus");
+const logger = createLogger("engine/RxJSEventBus");
 
 /**
  * RxJS-based EventBus implementation
@@ -194,3 +191,13 @@ class RxJSEventConsumer implements EventConsumer {
     return !this.isBusClosed();
   }
 }
+
+/**
+ * Global singleton EventBus instance
+ *
+ * All agents share this single EventBus instance for event communication.
+ * Events are isolated by agentId field.
+ *
+ * @warning Do not call close() on this instance - it's shared globally
+ */
+export const globalEventBus = new RxJSEventBus();

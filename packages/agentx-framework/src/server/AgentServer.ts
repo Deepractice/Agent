@@ -4,13 +4,13 @@
  * Provides a unified interface for different transport protocols (SSE, WebSocket).
  */
 
-import type { AgentService } from "@deepractice-ai/agentx-core";
+import type { AgentInstance } from "@deepractice-ai/agentx-core";
 import type { IncomingMessage, ServerResponse } from "http";
 
 /**
  * Agent factory function
  */
-export type AgentFactory = (sessionId: string) => AgentService | Promise<AgentService>;
+export type AgentFactory = (sessionId: string) => AgentInstance | Promise<AgentInstance>;
 
 
 /**

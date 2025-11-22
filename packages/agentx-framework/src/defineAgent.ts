@@ -39,7 +39,7 @@
  */
 
 import type { AgentDriver, EngineConfig } from "@deepractice-ai/agentx-engine";
-import { AgentService } from "@deepractice-ai/agentx-core";
+import { AgentInstance } from "@deepractice-ai/agentx-core";
 import type { AgentInfo } from "@deepractice-ai/agentx-types";
 import type { DefinedDriver } from "./defineDriver";
 import type { DefinedReactor } from "./defineReactor";
@@ -59,9 +59,9 @@ export interface AgentDefinition<TConfig extends ConfigSchema = any> {
    * Can be:
    * - DefinedDriver (from defineDriver())
    * - DefinedAgent (from defineAgent()) - enables Agent composition!
-   * - AgentService instance - for dynamic composition
+   * - AgentInstance instance - for dynamic composition
    */
-  driver: DefinedDriver<any> | DefinedAgent<any> | AgentService | { create: (config: any) => any };
+  driver: DefinedDriver<any> | DefinedAgent<any> | AgentInstance | { create: (config: any) => any };
 
   /**
    * Reactor definitions (optional)
@@ -95,9 +95,9 @@ export interface DefinedAgent<TConfig extends ConfigSchema = any> {
    * Create agent instance
    *
    * @param userConfig - User configuration (merged with defaults)
-   * @returns AgentService instance
+   * @returns AgentInstance instance
    */
-  create: (userConfig?: Partial<InferConfig<TConfig>>) => AgentService;
+  create: (userConfig?: Partial<InferConfig<TConfig>>) => AgentInstance;
 
   /**
    * Get agent definition
@@ -181,14 +181,14 @@ export function defineAgent<TConfig extends ConfigSchema = any>(
       // 2. Create or get driver
       let driver: AgentDriver;
 
-      // Check if driver is an AgentService instance (duck typing)
+      // Check if driver is an AgentInstance instance (duck typing)
       if (
         typeof definition.driver === "object" &&
         "send" in definition.driver &&
         "initialize" in definition.driver
       ) {
-        // Direct AgentService instance - it implements AgentDriver interface
-        driver = definition.driver as AgentDriver;
+        // Direct AgentInstance instance - it has processMessage method from driver
+        driver = definition.driver as any as AgentDriver;
       } else if ("create" in definition.driver) {
         // DefinedDriver or DefinedAgent - both have create() method
         driver = definition.driver.create(config);
@@ -209,8 +209,8 @@ export function defineAgent<TConfig extends ConfigSchema = any>(
       // 5. Build engine config
       const engineConfig: EngineConfig | undefined = reactors ? { reactors } : undefined;
 
-      // 6. Create and return AgentService instance
-      return new AgentService(agentInfo, driver, engineConfig);
+      // 6. Create and return AgentInstance instance
+      return new AgentInstance(agentInfo, driver, engineConfig);
     },
 
     getDefinition: () => definition,

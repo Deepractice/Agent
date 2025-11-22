@@ -5,7 +5,10 @@
  */
 
 // ==================== Core Agent Runtime ====================
-// NOTE: AgentService has been moved to @deepractice-ai/agentx-core
+// AgentService - Stateless runtime manager (singleton)
+export { AgentService, agentService } from "./AgentService";
+
+// AgentEngine - Per-agent runtime orchestrator
 export type { EngineConfig } from "./AgentEngine";
 export { AgentEngine } from "./AgentEngine";
 
@@ -14,6 +17,9 @@ export { AgentEngine } from "./AgentEngine";
 export type { EventBus } from "./bus/EventBus";
 export type { EventProducer } from "./bus/EventProducer";
 export type { EventConsumer, Unsubscribe } from "./bus/EventConsumer";
+
+// EventBus implementation (RxJS-based)
+export { RxJSEventBus, globalEventBus } from "./RxJSEventBus";
 
 // Driver interface
 export type { AgentDriver } from "./AgentDriver";

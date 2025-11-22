@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
 import { SSEAgent } from "./agent";
-import type { AgentService } from "@deepractice-ai/agentx-framework";
+import type { AgentInstance } from "@deepractice-ai/agentx-framework";
 import { Chat } from "@deepractice-ai/agentx-ui";
 
 export default function App() {
-  const [agent, setAgent] = useState<AgentService | null>(null);
+  const [agent, setAgent] = useState<AgentInstance | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {

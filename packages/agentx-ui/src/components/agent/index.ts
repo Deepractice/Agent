@@ -1,7 +1,7 @@
 /**
  * Agent components - Agent state monitoring and UI integration
  *
- * Components for integrating AgentService with React UI:
+ * Components for integrating AgentInstance with React UI:
  * - AgentStatusIndicator: Displays agent status with animations
  * - UIReactor: Reactor for accumulating UI data (messages, streaming, errors)
  */
