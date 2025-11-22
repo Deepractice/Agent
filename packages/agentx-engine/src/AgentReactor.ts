@@ -15,17 +15,15 @@
  *
  * Context provided to AgentReactors during initialization.
  * Gives access to EventBus for subscribing to events and emitting new ones.
+ *
+ * Note: Session management is handled at Core layer (AgentRegistry),
+ * not at Engine layer. Reactors only need agentId for event correlation.
  */
 export interface AgentReactorContext {
   /**
    * Agent unique identifier
    */
   readonly agentId: string;
-
-  /**
-   * Session identifier
-   */
-  readonly sessionId: string;
 
   /**
    * Event consumer for subscribing to events

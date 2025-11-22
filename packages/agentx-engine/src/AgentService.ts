@@ -60,7 +60,6 @@ import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger
  */
 export class AgentService implements AgentDriver {
   readonly id: string;
-  readonly sessionId: string;
 
   // Agent data (from agentx-types) - static definition
   private readonly agentData: Agent;
@@ -87,20 +86,17 @@ export class AgentService implements AgentDriver {
     this.engine = new AgentEngine(driver, config);
     this.driver = driver;
     this.id = agent.id;
-    this.sessionId = this.engine.sessionId;
 
     // Create runtime context
     this.context = {
-      sessionId: this.engine.sessionId,
       driverSessionId: driver.driverSessionId || undefined,
       createdAt: Date.now(),
     };
 
-    this.logger = createLogger(`core/agent/AgentServiceImpl/${agent.id}`);
+    this.logger = createLogger(`core/agent/AgentService/${agent.id}`);
 
     this.logger.debug("AgentService created", {
       agentId: agent.id,
-      sessionId: this.context.sessionId,
       driverSessionId: this.context.driverSessionId,
       driverType: driver.constructor.name,
     });

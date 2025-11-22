@@ -6,30 +6,18 @@
  *
  * Separation of concerns:
  * - **Agent** (agentx-types): Static definition (who am I?)
- * - **AgentContext** (agentx-core): Runtime state (what am I doing?)
+ * - **AgentContext** (agentx-engine): Runtime state (what am I doing?)
  *
- * Think of it as:
- * - Agent: "I am Claude, a writing assistant"
- * - AgentContext: "I'm currently talking to user-123 in session-456"
+ * Note: Session management (sessionId) is handled at Core layer (AgentRegistry),
+ * not at Engine layer. Engine only tracks driver-level context.
  */
 export interface AgentContext {
-  /**
-   * Session ID (framework-level)
-   *
-   * Our session identifier, used for:
-   * - Tracking conversation context
-   * - Session persistence and retrieval
-   * - Mapping to Session in SessionService
-   */
-  sessionId: string;
-
   /**
    * Driver session ID (driver-level)
    *
    * The underlying driver's session identifier (e.g., Claude SDK session ID).
    * Used for:
    * - Driver-level session recovery
-   * - Mapping framework session to driver session
    * - Coordinating with driver's internal state
    *
    * Optional because:

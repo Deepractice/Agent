@@ -69,7 +69,6 @@ export interface EngineConfig {
  */
 export class AgentEngine {
   readonly agentId: string;
-  readonly sessionId: string;
 
   // Core components
   readonly eventBus: AgentEventBus;
@@ -83,12 +82,10 @@ export class AgentEngine {
   constructor(driver: AgentDriver, config?: EngineConfig) {
     this.driver = driver;
     this.agentId = this.generateId();
-    this.sessionId = driver.sessionId;
     this.logger = createLogger(`core/agent/AgentEngine/${this.agentId}`);
 
     this.logger.info("Creating AgentEngine", {
       agentId: this.agentId,
-      sessionId: this.sessionId,
       driverType: driver.constructor.name,
     });
 
@@ -99,7 +96,6 @@ export class AgentEngine {
     // Create AgentReactorRegistry
     this.registry = new AgentReactorRegistry(this.eventBus, {
       agentId: this.agentId,
-      sessionId: this.sessionId,
     });
     this.logger.debug("ReactorRegistry created");
 
@@ -187,7 +183,6 @@ export class AgentEngine {
         consumer: this.eventBus.createConsumer(),
         producer: this.eventBus.createProducer(),
         agentId: this.agentId,
-        sessionId: this.sessionId,
       };
       await reactor.initialize(context);
       this.logger.info("Reactor initialized", { reactorName: reactor.name });

@@ -40,7 +40,6 @@ export class AgentDriverBridge implements AgentReactor {
 
     this.logger.info("Initializing DriverBridge", {
       agentId: context.agentId,
-      sessionId: context.sessionId,
       driverType: this.driver.constructor.name,
     });
 

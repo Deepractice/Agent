@@ -14,7 +14,6 @@ import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger
  */
 export interface AgentReactorRegistryConfig {
   agentId: string;
-  sessionId: string;
 }
 
 /**
@@ -35,7 +34,6 @@ export class AgentReactorRegistry {
     this.logger = createLogger(`core/agent/AgentReactorRegistry/${config.agentId}`);
     this.logger.debug("ReactorRegistry created", {
       agentId: config.agentId,
-      sessionId: config.sessionId,
     });
   }
 
@@ -83,7 +81,6 @@ export class AgentReactorRegistry {
         consumer: this.eventBus.createConsumer(),
         producer: this.eventBus.createProducer(),
         agentId: this.config.agentId,
-        sessionId: this.config.sessionId,
       };
 
       try {

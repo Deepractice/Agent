@@ -4,42 +4,96 @@ import { Chat } from "./Chat";
 import { SSEAgent } from "@deepractice-ai/agentx-framework/browser";
 import type { AgentService } from "@deepractice-ai/agentx-framework";
 
+const SERVER_URL = "http://localhost:5200";
+
 /**
- * Wrapper component to handle agent initialization
+ * Create a session on the server
+ * Returns { sessionId, sseUrl }
  */
-function ChatStory({
-  children,
-  agent,
-}: {
-  children: (agent: AgentService) => ReactNode;
-  agent: AgentService;
-}) {
-  const [isInitialized, setIsInitialized] = useState(false);
+async function createSession(): Promise<{ sessionId: string; sseUrl: string }> {
+  const response = await fetch(`${SERVER_URL}/api/session`, {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+  });
+
+  if (!response.ok) {
+    throw new Error(`Failed to create session: ${response.status}`);
+  }
+
+  return response.json();
+}
+
+/**
+ * Wrapper component to handle session creation and agent initialization
+ *
+ * Flow:
+ * 1. POST /api/session -> get sessionId
+ * 2. Create SSEAgent with sessionId
+ * 3. agent.initialize() -> GET /api/sse/{sessionId}
+ * 4. Ready for chat
+ */
+function ChatStory({ children }: { children: (agent: AgentService) => ReactNode }) {
+  const [agent, setAgent] = useState<AgentService | null>(null);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    agent
-      .initialize()
-      .then(() => {
+    let currentAgent: AgentService | null = null;
+
+    async function setup() {
+      try {
+        // Step 1: Create session on server
+        console.log("[Story] Creating session...");
+        const { sessionId } = await createSession();
+        console.log("[Story] Session created:", sessionId);
+
+        // Step 2: Create SSEAgent with the session ID
+        currentAgent = SSEAgent.create({
+          serverUrl: SERVER_URL,
+          sessionId,
+        } as any);
+
+        // Step 3: Initialize agent (establishes SSE connection)
+        await currentAgent.initialize();
         console.log("[Story] Agent initialized successfully");
-        setIsInitialized(true);
-      })
-      .catch((error) => {
-        console.error("[Story] Failed to initialize agent:", error);
-      });
+
+        setAgent(currentAgent);
+      } catch (err) {
+        console.error("[Story] Setup failed:", err);
+        setError(err instanceof Error ? err.message : String(err));
+      }
+    }
+
+    setup();
 
     return () => {
-      agent.destroy().catch((error) => {
-        console.error("[Story] Failed to destroy agent:", error);
-      });
+      if (currentAgent) {
+        currentAgent.destroy().catch((err) => {
+          console.error("[Story] Failed to destroy agent:", err);
+        });
+      }
     };
-  }, [agent]);
+  }, []);
 
-  if (!isInitialized) {
+  if (error) {
+    return (
+      <div className="h-full flex items-center justify-center">
+        <div className="text-center text-red-500">
+          <div className="text-lg mb-2">Failed to connect</div>
+          <div className="text-sm">{error}</div>
+          <div className="text-xs mt-2 text-gray-500">
+            Make sure the server is running: pnpm dev:server
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (!agent) {
     return (
       <div className="h-full flex items-center justify-center">
         <div className="text-center">
           <div className="text-lg mb-2">Initializing agent...</div>
-          <div className="text-sm text-gray-500">Connecting to http://localhost:5200</div>
+          <div className="text-sm text-gray-500">Connecting to {SERVER_URL}</div>
         </div>
       </div>
     );
@@ -75,24 +129,15 @@ type Story = StoryObj<typeof Chat>;
  * 3. Type a message and get real AI responses!
  */
 export const LiveChat: Story = {
-  render: () => {
-    const [agent] = useState(() =>
-      SSEAgent.create({
-        serverUrl: "http://localhost:5200",
-        sessionId: `story-chat-${Date.now()}`,
-      } as any)
-    );
-
-    return (
-      <ChatStory agent={agent}>
-        {(agent) => (
-          <div className="h-screen">
-            <Chat agent={agent} />
-          </div>
-        )}
-      </ChatStory>
-    );
-  },
+  render: () => (
+    <ChatStory>
+      {(agent) => (
+        <div className="h-screen">
+          <Chat agent={agent} />
+        </div>
+      )}
+    </ChatStory>
+  ),
 };
 
 /**
@@ -105,24 +150,15 @@ export const LiveChat: Story = {
  * - Error events
  */
 export const WithLogging: Story = {
-  render: () => {
-    const [agent] = useState(() =>
-      SSEAgent.create({
-        serverUrl: "http://localhost:5200",
-        sessionId: `story-debug-${Date.now()}`,
-      } as any)
-    );
-
-    return (
-      <ChatStory agent={agent}>
-        {(agent) => (
-          <div className="h-screen">
-            <Chat agent={agent} />
-          </div>
-        )}
-      </ChatStory>
-    );
-  },
+  render: () => (
+    <ChatStory>
+      {(agent) => (
+        <div className="h-screen">
+          <Chat agent={agent} />
+        </div>
+      )}
+    </ChatStory>
+  ),
 };
 
 /**
@@ -131,41 +167,32 @@ export const WithLogging: Story = {
  * Start with some conversation history
  */
 export const WithInitialMessages: Story = {
-  render: () => {
-    const [agent] = useState(() =>
-      SSEAgent.create({
-        serverUrl: "http://localhost:5200",
-        sessionId: `story-history-${Date.now()}`,
-      } as any)
-    );
-
-    return (
-      <ChatStory agent={agent}>
-        {(agent) => (
-          <div className="h-screen">
-            <Chat
-              agent={agent}
-              initialMessages={[
-                {
-                  id: "1",
-                  role: "user",
-                  content: "Hello! What can you help me with?",
-                  timestamp: Date.now() - 60000,
-                },
-                {
-                  id: "2",
-                  role: "assistant",
-                  content:
-                    "Hello! I can help you with a variety of tasks including coding, answering questions, and providing explanations. What would you like to know?",
-                  timestamp: Date.now() - 30000,
-                },
-              ]}
-            />
-          </div>
-        )}
-      </ChatStory>
-    );
-  },
+  render: () => (
+    <ChatStory>
+      {(agent) => (
+        <div className="h-screen">
+          <Chat
+            agent={agent}
+            initialMessages={[
+              {
+                id: "1",
+                role: "user",
+                content: "Hello! What can you help me with?",
+                timestamp: Date.now() - 60000,
+              },
+              {
+                id: "2",
+                role: "assistant",
+                content:
+                  "Hello! I can help you with a variety of tasks including coding, answering questions, and providing explanations. What would you like to know?",
+                timestamp: Date.now() - 30000,
+              },
+            ]}
+          />
+        </div>
+      )}
+    </ChatStory>
+  ),
 };
 
 /**
@@ -175,20 +202,13 @@ export const WithInitialMessages: Story = {
  */
 export const WithSendCallback: Story = {
   render: () => {
-    const [agent] = useState(() =>
-      SSEAgent.create({
-        serverUrl: "http://localhost:5200",
-        sessionId: `story-callback-${Date.now()}`,
-      } as any)
-    );
-
     const handleMessageSend = (message: string) => {
       console.log("User sent:", message);
       console.log("Timestamp:", new Date().toISOString());
     };
 
     return (
-      <ChatStory agent={agent}>
+      <ChatStory>
         {(agent) => (
           <div className="h-screen">
             <Chat agent={agent} onMessageSend={handleMessageSend} />
@@ -203,94 +223,60 @@ export const WithSendCallback: Story = {
  * Compact chat (smaller viewport)
  */
 export const CompactView: Story = {
-  render: () => {
-    const [agent] = useState(() =>
-      SSEAgent.create({
-        serverUrl: "http://localhost:5200",
-        sessionId: `story-compact-${Date.now()}`,
-      } as any)
-    );
-
-    return (
-      <ChatStory agent={agent}>
-        {(agent) => (
-          <div className="h-[600px] border rounded-lg">
-            <Chat agent={agent} />
-          </div>
-        )}
-      </ChatStory>
-    );
-  },
+  render: () => (
+    <ChatStory>
+      {(agent) => (
+        <div className="h-[600px] border rounded-lg">
+          <Chat agent={agent} />
+        </div>
+      )}
+    </ChatStory>
+  ),
 };
 
 /**
  * Side-by-side chats (multiple agents)
  */
 export const SideBySide: Story = {
-  render: () => {
-    const [agent1] = useState(() =>
-      SSEAgent.create({
-        serverUrl: "http://localhost:5200",
-        sessionId: `story-left-${Date.now()}`,
-      } as any)
-    );
-
-    const [agent2] = useState(() =>
-      SSEAgent.create({
-        serverUrl: "http://localhost:5200",
-        sessionId: `story-right-${Date.now()}`,
-      } as any)
-    );
-
-    return (
-      <div className="h-screen flex gap-4 p-4">
-        <ChatStory agent={agent1}>
-          {(agent) => (
-            <div className="flex-1 border rounded-lg overflow-hidden">
-              <Chat agent={agent} />
-            </div>
-          )}
-        </ChatStory>
-        <ChatStory agent={agent2}>
-          {(agent) => (
-            <div className="flex-1 border rounded-lg overflow-hidden">
-              <Chat agent={agent} />
-            </div>
-          )}
-        </ChatStory>
-      </div>
-    );
-  },
+  render: () => (
+    <div className="h-screen flex gap-4 p-4">
+      <ChatStory>
+        {(agent) => (
+          <div className="flex-1 border rounded-lg overflow-hidden">
+            <Chat agent={agent} />
+          </div>
+        )}
+      </ChatStory>
+      <ChatStory>
+        {(agent) => (
+          <div className="flex-1 border rounded-lg overflow-hidden">
+            <Chat agent={agent} />
+          </div>
+        )}
+      </ChatStory>
+    </div>
+  ),
 };
 
 /**
  * Embedded in layout
  */
 export const InLayout: Story = {
-  render: () => {
-    const [agent] = useState(() =>
-      SSEAgent.create({
-        serverUrl: "http://localhost:5200",
-        sessionId: `story-layout-${Date.now()}`,
-      } as any)
-    );
-
-    return (
-      <ChatStory agent={agent}>
-        {(agent) => (
-          <div className="h-screen flex flex-col">
-            {/* Header */}
-            <div className="h-14 border-b flex items-center px-4 bg-white dark:bg-gray-800">
-              <h1 className="font-semibold text-lg">Deepractice Agent</h1>
-            </div>
-
-            {/* Chat area */}
-            <div className="flex-1">
-              <Chat agent={agent} />
-            </div>
+  render: () => (
+    <ChatStory>
+      {(agent) => (
+        <div className="h-screen flex flex-col">
+          {/* Header */}
+          <div className="h-14 border-b flex items-center px-4 bg-white dark:bg-gray-800">
+            <h1 className="font-semibold text-lg">Deepractice Agent</h1>
           </div>
-        )}
-      </ChatStory>
-    );
-  },
+
+          {/* Chat area */}
+          <div className="flex-1">
+            <Chat agent={agent} />
+          </div>
+        </div>
+      )}
+    </ChatStory>
+  ),
 };

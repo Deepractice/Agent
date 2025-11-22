@@ -156,14 +156,16 @@ export interface DefinedDriver<TConfig = any> {
  */
 class SimpleAgentDriver<TConfig = any, TInstance = void> implements AgentDriver {
   private instance: TInstance;
+  private _sessionId: string;
 
   constructor(
     private definition: DriverDefinition<TConfig, TInstance>,
     private config: TConfig,
-    public readonly sessionId: string,
+    sessionId: string,
     instance: TInstance
   ) {
     this.instance = instance;
+    this._sessionId = sessionId;
   }
 
   get driverSessionId(): string | null {
@@ -175,9 +177,10 @@ class SimpleAgentDriver<TConfig = any, TInstance = void> implements AgentDriver 
     messages: UserMessage | AsyncIterable<UserMessage>
   ): AsyncIterable<StreamEventType> {
     // Delegate to definition with sessionId injected into config
+    // Note: sessionId is passed via config for drivers that need it (e.g., for resume)
     const configWithSession = {
       ...this.config,
-      sessionId: this.sessionId, // Inject framework session ID
+      sessionId: this._sessionId,
     } as TConfig;
     yield* this.definition.processMessage(messages, configWithSession, this.instance);
   }
@@ -300,7 +303,6 @@ function createAsyncDriver<TConfig, TInstance>(
     });
 
   return {
-    sessionId,
     driverSessionId: null,
 
     async *processMessage(messages: UserMessage | AsyncIterable<UserMessage>) {

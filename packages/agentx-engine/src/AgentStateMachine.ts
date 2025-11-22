@@ -128,7 +128,6 @@ export class AgentStateMachine implements AgentReactor {
 
     this.logger.info("Initializing StateMachine", {
       agentId: context.agentId,
-      sessionId: context.sessionId,
     });
 
     // Subscribe to Stream Layer events

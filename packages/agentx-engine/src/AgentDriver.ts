@@ -89,16 +89,14 @@ import type { StreamEventType } from "@deepractice-ai/agentx-event";
  *
  * Platform-specific driver for connecting to LLM providers.
  * Returns stream of already-transformed AgentEvents.
+ *
+ * Note: Session management (sessionId) is handled at Core layer (AgentRegistry),
+ * not at Driver layer. Driver only needs to track its internal session state.
  */
 export interface AgentDriver {
   /**
-   * Logical session ID (assigned by AgentX)
-   */
-  readonly sessionId: string;
-
-  /**
    * Driver's internal session ID (e.g., Claude SDK session ID)
-   * May be null before first message is sent
+   * May be null before first message is sent or if driver is stateless
    */
   readonly driverSessionId: string | null;
 
