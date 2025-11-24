@@ -93,10 +93,13 @@ export const WebSocketReactor = defineReactor<WebSocketReactorConfig>({
   onErrorOccurred: (e, cfg) => sendEvent(cfg.ws, e),
 
   // ==================== Message Layer ====================
-  // NOTE: user_message is NOT forwarded to client - it originated from client!
-  // onUserMessage: (e, cfg) => sendEvent(cfg.ws, e),  // ❌ Disabled - client already has this
-  onAssistantMessage: (e, cfg) => sendEvent(cfg.ws, e),
-  onToolUseMessage: (e, cfg) => sendEvent(cfg.ws, e),
+  // NOTE: Message Layer events should NOT be forwarded - client assembles them locally from Stream Layer events
+  // This prevents duplicate messages (server assembles + client assembles = double!)
+  // onUserMessage: (e, cfg) => sendEvent(cfg.ws, e),  // ❌ Client already has this
+  // onAssistantMessage: (e, cfg) => sendEvent(cfg.ws, e),  // ❌ Client assembles from stream events
+  // onToolUseMessage: (e, cfg) => sendEvent(cfg.ws, e),  // ❌ Client assembles from stream events
+
+  // EXCEPTION: error_message MUST be forwarded (critical errors from server)
   onErrorMessage: (e, cfg) => sendEvent(cfg.ws, e),
 
   // ==================== Turn Layer ====================

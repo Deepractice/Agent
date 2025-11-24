@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useRef } from "react";
 import type { AgentService } from "@deepractice-ai/agentx-framework/browser";
 import type { Message } from "@deepractice-ai/agentx-framework/browser";
 import type {
@@ -72,6 +72,9 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
   const [isLoading, setIsLoading] = useState(false);
   const [errors, setErrors] = useState<ErrorMessageType[]>([]);
 
+  // Flag to ignore text_delta after assistant_message received
+  const streamingCompleteRef = useRef(false);
+
   useEffect(() => {
     logger.info("Setting up event listeners using agent.react()");
 
@@ -79,8 +82,33 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
     const unsubscribe = agent.react({
       // Stream layer - handle text deltas for real-time streaming
       onTextDelta(event: TextDeltaEvent) {
+        console.log("[Linus] 🔵 onTextDelta triggered", {
+          textLength: event.data.text.length,
+          streamingCompleteFlag: streamingCompleteRef.current,
+          timestamp: new Date().toISOString(),
+        });
+
+        // Ignore text_delta after assistant_message is received
+        if (streamingCompleteRef.current) {
+          console.log("[Linus] ❌ IGNORED - streaming already complete");
+          return;
+        }
+
         logger.debug("text_delta", { text: event.data.text });
-        setStreaming((prev) => prev + event.data.text);
+        setStreaming((prev) => {
+          // Double-check inside setState callback (async state updates may be queued)
+          if (streamingCompleteRef.current) {
+            console.log("[Linus] ❌ IGNORED in setState - streaming completed during queue");
+            return ""; // Clear streaming
+          }
+          const newValue = prev + event.data.text;
+          console.log("[Linus] ✅ Streaming updated:", {
+            prevLength: prev.length,
+            newLength: newValue.length,
+            deltaLength: event.data.text.length,
+          });
+          return newValue;
+        });
       },
 
       // Message layer - handle complete messages
@@ -101,14 +129,47 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
         logger.info("assistant_message", { uuid: event.uuid });
         const assistantMsg = event.data;
 
+        console.log("[Linus] 🟢 onAssistantMessage triggered", {
+          eventUuid: event.uuid,
+          messageId: assistantMsg.id,
+          contentType: typeof assistantMsg.content,
+          contentLength: typeof assistantMsg.content === 'string' ? assistantMsg.content.length : assistantMsg.content.length,
+          contentPreview: typeof assistantMsg.content === 'string'
+            ? assistantMsg.content.substring(0, 50) + "..."
+            : JSON.stringify(assistantMsg.content).substring(0, 50) + "...",
+          timestamp: new Date().toISOString(),
+          streamingCompleteFlagBefore: streamingCompleteRef.current,
+        });
+
+        // Mark streaming as complete to ignore subsequent text_delta events
+        streamingCompleteRef.current = true;
+        console.log("[Linus] 🔒 Set streamingCompleteRef = true");
+
         // Clear streaming but keep loading (turn may continue with tool calls)
+        console.log("[Linus] 🧹 Clearing streaming state...");
         setStreaming("");
+
         // DON'T set isLoading(false) here - wait for turn_response
         setMessages((prev) => {
+          console.log("[Linus] 📝 setMessages callback - Current state:", {
+            currentMessagesCount: prev.length,
+            currentMessageIds: prev.map(m => ({ id: m.id, role: m.role })),
+          });
+
           // Check if message already exists
           if (prev.some((m) => m.id === assistantMsg.id)) {
+            console.log("[Linus] ⚠️ DUPLICATE DETECTED - Message already exists, skipping", {
+              duplicateId: assistantMsg.id,
+            });
             return prev;
           }
+
+          console.log("[Linus] ✅ Adding NEW assistant message to array", {
+            newMessageId: assistantMsg.id,
+            prevLength: prev.length,
+            newLength: prev.length + 1,
+            lastMessageRole: prev[prev.length - 1]?.role,
+          });
           return [...prev, assistantMsg];
         });
       },
@@ -160,6 +221,8 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
       onConversationStart(_event: ConversationStartStateEvent) {
         logger.info("conversation_start");
         setIsLoading(true);
+        // Reset streaming flag for new conversation
+        streamingCompleteRef.current = false;
       },
 
       onConversationEnd(_event: ConversationEndStateEvent) {
@@ -182,8 +245,16 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
   }, [agent]);
 
   const handleSend = async (text: string) => {
+    console.log("[Linus] 🚀 handleSend called - Starting new turn", {
+      textLength: text.length,
+      timestamp: new Date().toISOString(),
+    });
+
     logger.info("handleSend called", { text });
-    // console.trace("[Chat.handleSend] Stack trace");
+
+    // Reset streaming flag for new turn (allow streaming for new response)
+    console.log("[Linus] 🔓 Resetting streamingCompleteRef to false");
+    streamingCompleteRef.current = false;
 
     setIsLoading(true);
     onMessageSend?.(text);
@@ -196,12 +267,26 @@ export function Chat({ agent, initialMessages = [], onMessageSend, className = "
       content: text,
       timestamp: Date.now(),
     };
-    setMessages((prev) => [...prev, userMessage]);
+
+    console.log("[Linus] 📤 Adding user message locally", {
+      userId: userMessage.id,
+    });
+
+    setMessages((prev) => {
+      console.log("[Linus] 📝 User message added - Messages state:", {
+        prevCount: prev.length,
+        newCount: prev.length + 1,
+      });
+      return [...prev, userMessage];
+    });
 
     try {
+      console.log("[Linus] 📡 Sending message to agent...");
       await agent.send(text);
+      console.log("[Linus] ✅ Agent.send() completed");
       logger.info("Send completed");
     } catch (error) {
+      console.error("[Linus] ❌ Agent.send() failed:", error);
       logger.error("Send failed", { error });
     }
   };

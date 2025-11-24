@@ -52,7 +52,8 @@ export class WebSocketLogger implements LoggerProvider {
 
   private connect(): void {
     // Only connect in development environment
-    const isDev = import.meta.env?.DEV || process.env?.NODE_ENV === 'development';
+    // Use import.meta.env.DEV for browser compatibility (process.env is not available in browser)
+    const isDev = import.meta.env?.DEV;
     if (!isDev) {
       return; // Skip WebSocket connection in production
     }

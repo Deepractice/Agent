@@ -37,8 +37,9 @@ export default function App() {
 
     // Cleanup on unmount
     return () => {
-      if (agent) {
-        agent.destroy();
+      console.log("🔴 Cleaning up agent instance");
+      if (agentInstance) {
+        agentInstance.destroy();
       }
     };
   }, []);

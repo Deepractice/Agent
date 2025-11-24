@@ -149,6 +149,7 @@ export class AgentMessageAssembler implements AgentReactor {
     const index = 0;
 
     if (!this.pendingContents.has(index)) {
+      console.log("[Linus-MessageAssembler] 🆕 Creating new text accumulator");
       this.pendingContents.set(index, {
         type: "text",
         index,
@@ -159,6 +160,11 @@ export class AgentMessageAssembler implements AgentReactor {
     const pending = this.pendingContents.get(index)!;
     if (pending.type === "text") {
       pending.textDeltas!.push(event.data.text);
+      console.log("[Linus-MessageAssembler] ➕ Text delta added", {
+        deltaLength: event.data.text.length,
+        totalDeltas: pending.textDeltas!.length,
+        totalLength: pending.textDeltas!.join("").length,
+      });
     }
   }
 
@@ -328,7 +334,14 @@ export class AgentMessageAssembler implements AgentReactor {
    * Assemble complete AssistantMessage from all accumulated content
    */
   private onMessageStop(event: MessageStopEvent): void {
+    console.log("[Linus-MessageAssembler] 🛑 onMessageStop called", {
+      currentMessageId: this.currentMessageId,
+      pendingContentsCount: this.pendingContents.size,
+      timestamp: new Date().toISOString(),
+    });
+
     if (!this.currentMessageId) {
+      console.log("[Linus-MessageAssembler] ⚠️ No currentMessageId, skipping");
       return;
     }
 
@@ -339,14 +352,30 @@ export class AgentMessageAssembler implements AgentReactor {
     const sortedContents = Array.from(this.pendingContents.values())
       .sort((a, b) => a.index - b.index);
 
+    console.log("[Linus-MessageAssembler] 📦 Assembling content", {
+      sortedContentsCount: sortedContents.length,
+    });
+
     for (const pending of sortedContents) {
       if (pending.type === "text" && pending.textDeltas) {
         const fullText = pending.textDeltas.join("");
+        console.log("[Linus-MessageAssembler] 📝 Text part assembled", {
+          index: pending.index,
+          deltasCount: pending.textDeltas.length,
+          fullTextLength: fullText.length,
+          fullTextPreview: fullText.substring(0, 50) + "...",
+        });
         textParts.push(fullText);
       }
     }
 
     const content = textParts.join(""); // Combine all text parts
+
+    console.log("[Linus-MessageAssembler] ✅ Final content assembled", {
+      textPartsCount: textParts.length,
+      contentLength: content.length,
+      contentPreview: content.substring(0, 50) + "...",
+    });
 
     // Skip empty messages (e.g., tool-only messages with no text)
     if (!content || content.trim().length === 0) {

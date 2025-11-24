@@ -234,7 +234,8 @@ function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortContr
  */
 async function* processAssistantContent(
   sdkMsg: SDKAssistantMessage,
-  builder: StreamEventBuilder
+  builder: StreamEventBuilder,
+  skipTextContent: boolean = false
 ): AsyncIterable<StreamEventType> {
   const content = sdkMsg.message.content;
 
@@ -242,10 +243,14 @@ async function* processAssistantContent(
     const block = content[i];
 
     if (block.type === "text") {
-      yield builder.textContentBlockStart(i);
-      yield builder.textDelta(block.text, i);
-      yield builder.textContentBlockStop(i);
+      // Skip text content in streaming mode (already sent via stream_event)
+      if (!skipTextContent) {
+        yield builder.textContentBlockStart(i);
+        yield builder.textDelta(block.text, i);
+        yield builder.textContentBlockStop(i);
+      }
     } else if (block.type === "tool_use") {
+      // Always process tool_use (not sent in stream_event)
       yield builder.toolUseContentBlockStart(block.id, block.name, i);
       yield builder.inputJsonDelta(JSON.stringify(block.input), i);
       yield builder.toolUseContentBlockStop(block.id, i);
@@ -322,6 +327,7 @@ async function* transformSDKMessages(
 ): AsyncIterable<StreamEventType> {
   let messageId: string | null = null;
   let hasStartedMessage = false;
+  let hasReceivedStreamEvents = false;  // Track if we received stream_event messages
 
   for await (const sdkMsg of sdkMessages) {
     // Capture Claude SDK session_id
@@ -354,12 +360,17 @@ async function* transformSDKMessages(
           hasStartedMessage = true;
         }
 
-        yield* processAssistantContent(sdkMsg, builder);
+        // IMPORTANT: In streaming mode, skip text content (already sent via stream_event)
+        // but always process tool_use (only sent in assistant message)
+        yield* processAssistantContent(sdkMsg, builder, hasReceivedStreamEvents);
+
         yield builder.messageStop();
         hasStartedMessage = false;
+        hasReceivedStreamEvents = false;  // Reset for next message
         break;
 
       case "stream_event":
+        hasReceivedStreamEvents = true;  // Mark that we're in streaming mode
         yield* processStreamEvent(sdkMsg, builder);
         if (!hasStartedMessage && sdkMsg.event.type === "message_start") {
           hasStartedMessage = true;

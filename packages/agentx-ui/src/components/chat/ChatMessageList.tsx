@@ -81,11 +81,30 @@ export function ChatMessageList({
     <div className={`flex-1 overflow-y-auto overflow-x-hidden relative ${className}`}>
       <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
         {/* Existing messages - route by role */}
-        {messages.map((msg) => {
+        {messages.map((msg, index) => {
+          const getContentInfo = () => {
+            if (msg.role === 'assistant' || msg.role === 'user') {
+              return {
+                length: typeof msg.content === 'string' ? msg.content.length : JSON.stringify(msg.content).length,
+                preview: typeof msg.content === 'string' ? msg.content.substring(0, 30) + "..." : "complex content",
+              };
+            }
+            return { length: 0, preview: "N/A" };
+          };
+
+          const contentInfo = getContentInfo();
+          console.log(`[Linus] 🖼️ Rendering message [${index}]:`, {
+            id: msg.id,
+            role: msg.role,
+            contentLength: contentInfo.length,
+            contentPreview: contentInfo.preview,
+          });
+
           switch (msg.role) {
             case "user":
               return <UserMessage key={msg.id} message={msg} />;
             case "assistant":
+              console.log(`[Linus] ✅ Rendering AssistantMessage component for id:`, msg.id);
               return <AssistantMessage key={msg.id} message={msg} />;
             case "tool-use":
               return <ToolUseMessage key={msg.id} message={msg} />;
@@ -96,18 +115,49 @@ export function ChatMessageList({
           }
         })}
 
-        {/* Streaming message */}
-        {streamingText && (
-          <AssistantMessage
-            message={{
-              id: "streaming",
-              role: "assistant",
-              content: streamingText,
-              timestamp: Date.now(),
-            }}
-            isStreaming
-          />
-        )}
+        {/* Streaming message - only show if last message is NOT assistant (避免与完整消息重复) */}
+        {(() => {
+          const lastMsg = messages[messages.length - 1];
+          const shouldShowStreaming = streamingText && lastMsg?.role !== 'assistant';
+
+          const getContentLength = (msg: typeof lastMsg) => {
+            if (!msg) return 0;
+            if (msg.role === 'assistant' || msg.role === 'user') {
+              return typeof msg.content === 'string' ? msg.content.length : JSON.stringify(msg.content).length;
+            }
+            return 0;
+          };
+
+          console.log("[Linus] 🎬 Streaming render decision:", {
+            hasStreamingText: !!streamingText,
+            streamingLength: streamingText?.length || 0,
+            messagesCount: messages.length,
+            lastMessageId: lastMsg?.id,
+            lastMessageRole: lastMsg?.role,
+            lastMessageContentLength: getContentLength(lastMsg),
+            shouldShowStreaming,
+            streamingPreview: streamingText ? streamingText.substring(0, 50) + "..." : "N/A",
+            timestamp: new Date().toISOString(),
+          });
+
+          if (shouldShowStreaming && streamingText) {
+            console.log("[Linus] 🎥 RENDERING streaming AssistantMessage component");
+            return (
+              <AssistantMessage
+                message={{
+                  id: "streaming",
+                  role: "assistant",
+                  content: streamingText,
+                  timestamp: Date.now(),
+                }}
+                isStreaming
+              />
+            );
+          } else {
+            console.log("[Linus] 🚫 NOT rendering streaming component");
+            return null;
+          }
+        })()}
 
         {/* Loading indicator (only if no streaming text) */}
         {isLoading && !streamingText && (

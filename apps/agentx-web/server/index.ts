@@ -6,7 +6,7 @@
  * - Static file serving (production only)
  */
 
-import { createWebSocketServer, ClaudeAgent } from "@deepractice-ai/agentx-framework";
+import { createWebSocketServer, ClaudeSDKDriver } from "@deepractice-ai/agentx-framework";
 import { dirname, join, extname } from "path";
 import { fileURLToPath } from "url";
 import { readFile, stat } from "fs/promises";
@@ -151,8 +151,8 @@ async function startServer() {
 
   // Create WebSocket Server using agentx-framework
   const wsServer = createWebSocketServer({
-    // Agent definition
-    agentDefinition: ClaudeAgent,
+    // Driver definition (use ClaudeSDKDriver directly to prevent nested Agent architecture)
+    driver: ClaudeSDKDriver,
 
     // Agent config factory
     createAgentConfig: () => ({

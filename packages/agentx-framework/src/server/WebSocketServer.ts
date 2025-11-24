@@ -13,16 +13,18 @@ import { WebSocketServer as WsServer, WebSocket } from "ws";
 import type { AgentService } from "@deepractice-ai/agentx-core";
 import { WebSocketReactor } from "../reactors/WebSocketReactor";
 import { defineAgent } from "../defineAgent";
-import type { DefinedAgent } from "../defineAgent";
+import type { DefinedDriver } from "../defineDriver";
 
 /**
  * WebSocket Server configuration
  */
 export interface WebSocketServerConfig {
   /**
-   * Base Agent definition to create for each connection
+   * Driver definition to create agents with (e.g., ClaudeSDKDriver)
+   * Using driver directly instead of agentDefinition prevents nested Agent architecture
+   * which was causing duplicate MessageAssemblers.
    */
-  agentDefinition: DefinedAgent<any>;
+  driver: DefinedDriver<any>;
 
   /**
    * Agent config factory - creates config for each new connection
@@ -71,14 +73,15 @@ class AgentSession {
   private ws: WebSocket;
   private sessionId: string;
 
-  constructor(agentDefinition: DefinedAgent<any>, config: any, ws: WebSocket) {
+  constructor(driver: DefinedDriver<any>, config: any, ws: WebSocket) {
     this.ws = ws;
     this.sessionId = `session_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
 
-    // Create Agent with WebSocketReactor
+    // Create Agent directly with driver (not nested Agent!)
+    // This prevents duplicate MessageAssembler instances
     const agentWithReactor = defineAgent({
-      name: `${agentDefinition.name}_Session`,
-      driver: agentDefinition,
+      name: `Agent_Session`,
+      driver: driver,  // ← Use ClaudeSDKDriver directly
       reactors: [WebSocketReactor],
     });
 
@@ -211,8 +214,8 @@ export class WebSocketServer {
       // Create agent config for this session
       const agentConfig = this.config.createAgentConfig();
 
-      // Create session
-      const session = new AgentSession(this.config.agentDefinition, agentConfig, ws);
+      // Create session (use driver directly, not agentDefinition)
+      const session = new AgentSession(this.config.driver, agentConfig, ws);
       this.sessions.set(ws, session);
 
       // Initialize session

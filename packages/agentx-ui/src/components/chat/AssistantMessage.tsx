@@ -40,6 +40,17 @@ export interface AssistantMessageProps {
  * ```
  */
 export function AssistantMessage({ message, isStreaming = false }: AssistantMessageProps) {
+  console.log("[Linus] 🎨 AssistantMessage component rendering:", {
+    id: message.id,
+    isStreaming,
+    contentType: typeof message.content,
+    contentLength: typeof message.content === 'string' ? message.content.length : message.content.length,
+    contentPreview: typeof message.content === 'string'
+      ? message.content.substring(0, 50) + "..."
+      : `[${message.content.length} parts]`,
+    timestamp: new Date(message.timestamp).toISOString(),
+  });
+
   return (
     <div className="chat-message assistant">
       <div className="w-full">
