@@ -29,19 +29,16 @@ ENV NODE_ENV=production \
 # - ANTHROPIC_API_KEY (required) → mapped to AGENTX_API_KEY
 # - ANTHROPIC_BASE_URL (optional, default: https://api.anthropic.com) → mapped to AGENTX_BASE_URL
 # - AGENTX_MODEL (optional, default: claude-sonnet-4-5-20250929)
-# - AGENT_WORK_DIR (optional, default: /workspace)
+# - AGENT_WORK_DIR (optional, default: /project)
 # - AGENT_SYSTEM_PROMPT (optional)
 # - AGENT_MAX_TURNS (optional)
 # - AGENT_PERMISSION_MODE (optional, default: bypassPermissions)
 
 # Create working directory and set ownership
-RUN mkdir -p /workspace && chown node:node /workspace
+RUN mkdir -p /project && chown node:node /project
 
 # Switch to non-root user
 USER node
-
-# Set default work directory
-ENV AGENT_WORK_DIR=/workspace
 
 # Expose port
 EXPOSE 5200
