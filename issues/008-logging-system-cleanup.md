@@ -52,7 +52,7 @@ console.log("[SSEReactor] Initialized", {...});
 
 **Problem**: Core framework code should use `createLogger()`, not hardcoded console calls.
 
-#### 2. WebSocketLogger calls console.* internally
+#### 2. WebSocketLogger calls console.\* internally
 
 **Location**: `packages/agentx-ui/dev-tools/WebSocketLogger.ts`
 
@@ -87,7 +87,7 @@ console.error("[Static Server] Error serving file:", error);
 
 ```typescript
 // Lines 51, 90, 100
-console.log("[EventBus]", type, data);  // debugMode conditional
+console.log("[EventBus]", type, data); // debugMode conditional
 console.log("[EventBus] Debug mode enabled");
 console.log("[EventBus] Debug mode disabled");
 ```
@@ -108,7 +108,7 @@ Console calls in Storybook story files are acceptable for demo purposes.
 // turbo.json
 {
   "globalEnv": [
-    "LOG_LEVEL"  // Defined but not used
+    "LOG_LEVEL" // Defined but not used
   ]
 }
 ```
@@ -120,7 +120,7 @@ Console calls in Storybook story files are acceptable for demo purposes.
 Option A: Make `WebSocketLogger` a wrapper around `agentx-logger`
 Option B: Create browser-compatible build of `agentx-logger`
 
-### 2. Replace All console.* Calls in Non-Story Code
+### 2. Replace All console.\* Calls in Non-Story Code
 
 ```typescript
 // Before
@@ -150,13 +150,13 @@ Remove internal `console.*` calls or use callbacks/events instead.
 
 ## Files to Modify
 
-| File | Action |
-|------|--------|
-| `packages/agentx-framework/src/server/SSEReactor.ts` | Replace 8 console.* with createLogger() |
-| `packages/agentx-ui/dev-tools/WebSocketLogger.ts` | Remove internal console.* calls |
-| `apps/agentx-web/server/index.ts` | Replace console.error with createLogger() |
-| `packages/agentx-ui/src/utils/eventBus.ts` | Replace console.log with logger |
-| New file: initialization code | Add LOG_LEVEL environment variable reading |
+| File                                                 | Action                                     |
+| ---------------------------------------------------- | ------------------------------------------ |
+| `packages/agentx-framework/src/server/SSEReactor.ts` | Replace 8 console.\* with createLogger()   |
+| `packages/agentx-ui/dev-tools/WebSocketLogger.ts`    | Remove internal console.\* calls           |
+| `apps/agentx-web/server/index.ts`                    | Replace console.error with createLogger()  |
+| `packages/agentx-ui/src/utils/eventBus.ts`           | Replace console.log with logger            |
+| New file: initialization code                        | Add LOG_LEVEL environment variable reading |
 
 ## Acceptance Criteria
 

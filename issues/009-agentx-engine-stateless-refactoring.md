@@ -8,6 +8,7 @@
 ## Problem
 
 The `agentx-engine` package contains stateful components (AgentMessageAssembler, AgentStateMachine, AgentTurnTracker) that hold state in their instance variables. This violates the layered architecture principle where:
+
 - **Engine Layer** = Pure logic (stateless)
 - **Core Layer** = State management (stateful)
 
@@ -52,6 +53,7 @@ Current architecture causes high memory consumption in multi-session scenarios b
 **Location**: `packages/agentx-engine/src/AgentMessageAssembler.ts`
 
 **State**:
+
 ```typescript
 private pendingContents: Map<number, PendingContent> = new Map();
 private currentMessageId: string | null = null;
@@ -65,6 +67,7 @@ private messageStartTime: number | null = null;
 **Location**: `packages/agentx-engine/src/AgentStateMachine.ts`
 
 **State**:
+
 ```typescript
 private currentState: AgentState = "initializing";
 private stateChangeCallbacks: Set<StateChangeCallback> = new Set();
@@ -78,6 +81,7 @@ private conversationStartTime: number | null = null;
 **Location**: `packages/agentx-engine/src/AgentTurnTracker.ts`
 
 **State**:
+
 ```typescript
 private pendingTurn: PendingTurn | null = null;
 private costPerInputToken: number = 0.000003;
@@ -123,12 +127,13 @@ private costPerOutputToken: number = 0.000015;
 ```typescript
 export interface AgentEvent {
   uuid: string;
-  agentId: string;    // ← Key for state isolation
+  agentId: string; // ← Key for state isolation
   timestamp: number;
 }
 ```
 
 This means we can:
+
 1. Store state externally by `agentId`
 2. Reactors retrieve state using `event.agentId`
 3. Multiple sessions' events naturally isolated by different `agentId` values
@@ -151,6 +156,7 @@ Similar to EventBus refactoring (interfaces in engine, implementation in core):
 ### Example Refactoring: AgentMessageAssembler
 
 **Before** (Stateful):
+
 ```typescript
 // agentx-engine/src/AgentMessageAssembler.ts
 class AgentMessageAssembler {
@@ -163,6 +169,7 @@ class AgentMessageAssembler {
 ```
 
 **After** (Stateless):
+
 ```typescript
 // agentx-engine/src/AgentMessageAssembler.ts
 interface MessageAssemblerState {
@@ -253,28 +260,31 @@ class MessageAssemblerStateStore implements MessageAssemblerStateStore {
 ## Files to Create/Modify
 
 ### New Files (agentx-core)
+
 - `packages/agentx-core/src/state/MessageAssemblerStateStore.ts`
 - `packages/agentx-core/src/state/StateMachineStateStore.ts`
 - `packages/agentx-core/src/state/TurnTrackerStateStore.ts`
 - `packages/agentx-core/src/state/index.ts`
 
 ### New Files (agentx-engine - interfaces only)
+
 - `packages/agentx-engine/src/state/MessageAssemblerState.ts`
 - `packages/agentx-engine/src/state/StateMachineState.ts`
 - `packages/agentx-engine/src/state/TurnTrackerState.ts`
 - `packages/agentx-engine/src/state/index.ts`
 
 ### Modified Files
-| File | Changes |
-|------|---------|
+
+| File                                                  | Changes                                          |
+| ----------------------------------------------------- | ------------------------------------------------ |
 | `packages/agentx-engine/src/AgentMessageAssembler.ts` | Remove instance state, add stateStore dependency |
-| `packages/agentx-engine/src/AgentStateMachine.ts` | Remove instance state, add stateStore dependency |
-| `packages/agentx-engine/src/AgentTurnTracker.ts` | Remove instance state, add stateStore dependency |
-| `packages/agentx-engine/src/AgentEngine.ts` | Inject state stores into reactors |
-| `packages/agentx-engine/src/index.ts` | Export state interfaces |
-| `packages/agentx-core/src/AgentService.ts` | Create and manage state stores |
-| `packages/agentx-core/src/index.ts` | Export state store implementations |
-| `CLAUDE.md` | Document state externalization pattern |
+| `packages/agentx-engine/src/AgentStateMachine.ts`     | Remove instance state, add stateStore dependency |
+| `packages/agentx-engine/src/AgentTurnTracker.ts`      | Remove instance state, add stateStore dependency |
+| `packages/agentx-engine/src/AgentEngine.ts`           | Inject state stores into reactors                |
+| `packages/agentx-engine/src/index.ts`                 | Export state interfaces                          |
+| `packages/agentx-core/src/AgentService.ts`            | Create and manage state stores                   |
+| `packages/agentx-core/src/index.ts`                   | Export state store implementations               |
+| `CLAUDE.md`                                           | Document state externalization pattern           |
 
 ## Acceptance Criteria
 
@@ -290,6 +300,7 @@ class MessageAssemblerStateStore implements MessageAssemblerStateStore {
 ## Benefits
 
 ### Before (Current)
+
 ```
 Memory per session: ~5MB (full reactor instances)
 1000 sessions: ~5GB
@@ -297,6 +308,7 @@ Scaling: Vertical only (single process)
 ```
 
 ### After (Stateless)
+
 ```
 Memory per session: ~100KB (state data only)
 1000 sessions: ~100MB (+ shared reactor logic)
@@ -320,6 +332,7 @@ Before refactoring individual reactors, we established the foundation by creatin
 #### 1. Global EventBus Singleton
 
 **Changed Files**:
+
 - `packages/agentx-engine/src/RxJSEventBus.ts` (moved from agentx-core)
   - Added global singleton export: `export const globalEventBus = new RxJSEventBus();`
   - Updated logger name from "core" to "engine"
@@ -331,6 +344,7 @@ Before refactoring individual reactors, we established the foundation by creatin
   - Removed rxjs dependency (no longer needed in core)
 
 **Rationale**: Having one EventBus per agent made the `agentId` field redundant. The correct architecture is:
+
 - One global EventBus shared by all agents
 - Events differentiated by `agentId` field
 - This aligns with true "bus" concept and saves memory
@@ -340,6 +354,7 @@ Before refactoring individual reactors, we established the foundation by creatin
 **New File**: `packages/agentx-engine/src/AgentService.ts`
 
 Created as a stateless runtime manager singleton (similar to web service layers):
+
 ```typescript
 export class AgentService {
   private static instance: AgentService | null = null;
@@ -361,6 +376,7 @@ export const agentService = AgentService.getInstance();
 ```
 
 **Key Design**:
+
 - Singleton pattern (like web services)
 - All methods accept `agentId` as first parameter
 - Stores runtime state per agent in a Map
@@ -371,12 +387,14 @@ export const agentService = AgentService.getInstance();
 **Changed File**: `packages/agentx-core/src/AgentInstance.ts`
 
 Converted from interface to class:
+
 ```typescript
 // Before: interface AgentInstance extends AgentDriver { ... }
 // After:  class AgentInstance implements AgentInfo { ... }
 ```
 
 **Key Changes**:
+
 - Removed `AgentDriver` inheritance (AgentInstance is no longer a driver itself)
 - AgentInstance becomes the user-facing API that delegates to agentService singleton
 - All runtime operations flow: `AgentInstance → agentService → AgentEngine → globalEventBus`
@@ -386,6 +404,7 @@ Converted from interface to class:
 #### 4. Updated All References
 
 **Changed Files**:
+
 - `packages/agentx-core/src/index.ts` - Export AgentInstance class
 - `packages/agentx-framework/src/index.ts` - Re-export AgentInstance
 - `packages/agentx-framework/src/createAgent.ts` - Return type
@@ -401,12 +420,14 @@ Converted from interface to class:
 **Changed File**: `packages/agentx-core/src/AgentInstance.ts`
 
 Fixed compilation errors:
+
 - Line 206: Handle UserMessage.content (string | ContentPart[])
 - Lines 379, 383: Fixed event types ("conversation_start" instead of "conversation_active", "turn_response" instead of "turn_complete")
 
 #### Build Status
 
 ✅ All packages compile successfully:
+
 ```
 Tasks:    10 successful, 10 total
 Cached:    8 cached, 10 total

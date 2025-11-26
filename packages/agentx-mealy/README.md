@@ -5,6 +5,7 @@
 ## Overview
 
 Prism is a pure functional event processing framework inspired by:
+
 - Redux/Elm (Reducer pattern)
 - Kafka Streams (Aggregator)
 - Apache Flink (ProcessFunction)
@@ -38,6 +39,7 @@ type Refract<TState, TInput, TOutput> = (
 ```
 
 **Key properties:**
+
 - Pure function (no side effects)
 - Deterministic (same input → same output)
 - Stateless (state is passed in, not held internally)
@@ -56,6 +58,7 @@ interface StateStore<T> {
 ```
 
 **Implementations:**
+
 - `InMemoryStateStore` - For development/testing
 - `RedisStateStore` - For production (future)
 - `PostgresStateStore` - For persistence (future)
@@ -74,7 +77,7 @@ const prism = createPrism({
   },
 });
 
-prism.dispatch('agent_123', event);
+prism.dispatch("agent_123", event);
 ```
 
 ## Usage
@@ -82,11 +85,7 @@ prism.dispatch('agent_123', event);
 ### Basic Example
 
 ```typescript
-import {
-  defineRefract,
-  createPrism,
-  InMemoryStateStore,
-} from '@deepractice-ai/agentx-prism';
+import { defineRefract, createPrism, InMemoryStateStore } from "@deepractice-ai/agentx-prism";
 
 // 1. Define state type
 interface CounterState {
@@ -95,29 +94,23 @@ interface CounterState {
 
 // 2. Define event types
 type CounterEvent =
-  | { type: 'increment' }
-  | { type: 'decrement' }
-  | { type: 'count_changed'; count: number };
+  | { type: "increment" }
+  | { type: "decrement" }
+  | { type: "count_changed"; count: number };
 
 // 3. Define refract
 const counterRefract = defineRefract<CounterState, CounterEvent, CounterEvent>({
-  name: 'Counter',
+  name: "Counter",
   initialState: () => ({ count: 0 }),
   refract: (state, event) => {
     switch (event.type) {
-      case 'increment': {
+      case "increment": {
         const newCount = state.count + 1;
-        return [
-          { count: newCount },
-          [{ type: 'count_changed', count: newCount }],
-        ];
+        return [{ count: newCount }, [{ type: "count_changed", count: newCount }]];
       }
-      case 'decrement': {
+      case "decrement": {
         const newCount = state.count - 1;
-        return [
-          { count: newCount },
-          [{ type: 'count_changed', count: newCount }],
-        ];
+        return [{ count: newCount }, [{ type: "count_changed", count: newCount }]];
       }
       default:
         return [state, []];
@@ -136,20 +129,20 @@ const prism = createPrism({
 });
 
 // 5. Dispatch events
-prism.dispatch('user_1', { type: 'increment' });
+prism.dispatch("user_1", { type: "increment" });
 // Output: [user_1] { type: 'count_changed', count: 1 }
 
-prism.dispatch('user_1', { type: 'increment' });
+prism.dispatch("user_1", { type: "increment" });
 // Output: [user_1] { type: 'count_changed', count: 2 }
 
-console.log(prism.getState('user_1'));
+console.log(prism.getState("user_1"));
 // { count: 2 }
 ```
 
 ### Combining Refracts
 
 ```typescript
-import { combineRefracts, combineInitialStates } from '@deepractice-ai/agentx-prism';
+import { combineRefracts, combineInitialStates } from "@deepractice-ai/agentx-prism";
 
 interface CombinedState {
   message: MessageState;
@@ -174,13 +167,13 @@ const initialState = combineInitialStates({
 
 ### vs EventBus/Reactor Pattern
 
-| Aspect | EventBus | Prism |
-|--------|----------|-------|
-| State | Internal to handlers | External (StateStore) |
-| Side effects | emit() calls | Return values |
-| Testing | Requires mocking | Direct function calls |
-| Debugging | Scattered state | Centralized state |
-| Performance | Pub/sub overhead | Direct function calls |
+| Aspect       | EventBus             | Prism                 |
+| ------------ | -------------------- | --------------------- |
+| State        | Internal to handlers | External (StateStore) |
+| Side effects | emit() calls         | Return values         |
+| Testing      | Requires mocking     | Direct function calls |
+| Debugging    | Scattered state      | Centralized state     |
+| Performance  | Pub/sub overhead     | Direct function calls |
 
 ### Benefits
 
@@ -218,12 +211,12 @@ const initialState = combineInitialStates({
 
 ## Terminology
 
-| Term | Meaning |
-|------|---------|
-| **Prism** | The engine/runtime that processes events |
-| **Refract** | Pure function that transforms state (like light refracting) |
-| **StateStore** | Where state is persisted between refracts |
-| **Dispatch** | Send an event into the prism for processing |
+| Term           | Meaning                                                     |
+| -------------- | ----------------------------------------------------------- |
+| **Prism**      | The engine/runtime that processes events                    |
+| **Refract**    | Pure function that transforms state (like light refracting) |
+| **StateStore** | Where state is persisted between refracts                   |
+| **Dispatch**   | Send an event into the prism for processing                 |
 
 ## License
 

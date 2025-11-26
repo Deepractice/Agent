@@ -200,7 +200,9 @@ export function defineAgent<TConfig extends ConfigSchema = any>(
       // Use sessionId as agent id if provided, otherwise use definition.name
       // This is critical for multi-session scenarios where each session needs
       // a unique agent id in the global AgentService runtime map
-      const agentId = config.sessionId || `${definition.name}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+      const agentId =
+        config.sessionId ||
+        `${definition.name}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
       const agentInfo: AgentInfo = {
         id: agentId,
         name: definition.name,

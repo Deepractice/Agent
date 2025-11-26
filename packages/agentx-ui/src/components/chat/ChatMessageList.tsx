@@ -42,11 +42,7 @@ export interface ChatMessageListProps {
   className?: string;
 }
 
-export function ChatMessageList({
-  messages,
-  streamingText,
-  className = "",
-}: ChatMessageListProps) {
+export function ChatMessageList({ messages, streamingText, className = "" }: ChatMessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Auto-scroll to bottom when messages change

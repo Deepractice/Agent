@@ -12,7 +12,6 @@ import type { IncomingMessage, ServerResponse } from "http";
  */
 export type AgentFactory = (sessionId: string) => AgentInstance | Promise<AgentInstance>;
 
-
 /**
  * HTTP request handler function
  */

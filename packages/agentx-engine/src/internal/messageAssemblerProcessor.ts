@@ -101,10 +101,7 @@ function generateId(): string {
 /**
  * Output event types from MessageAssembler
  */
-export type MessageAssemblerOutput =
-  | ToolCallEvent
-  | AssistantMessageEvent
-  | ToolUseMessageEvent;
+export type MessageAssemblerOutput = ToolCallEvent | AssistantMessageEvent | ToolUseMessageEvent;
 
 /**
  * Input event types for MessageAssembler (subset of StreamEventType)
@@ -175,16 +172,17 @@ function handleTextDelta(
   const index = 0; // Text content uses index 0
   const existingContent = state.pendingContents[index];
 
-  const pendingContent: PendingContent = existingContent?.type === "text"
-    ? {
-        ...existingContent,
-        textDeltas: [...(existingContent.textDeltas || []), event.data.text],
-      }
-    : {
-        type: "text",
-        index,
-        textDeltas: [event.data.text],
-      };
+  const pendingContent: PendingContent =
+    existingContent?.type === "text"
+      ? {
+          ...existingContent,
+          textDeltas: [...(existingContent.textDeltas || []), event.data.text],
+        }
+      : {
+          type: "text",
+          index,
+          textDeltas: [event.data.text],
+        };
 
   return [
     {
@@ -276,9 +274,7 @@ function handleToolUseContentBlockStop(
   // Parse tool input JSON
   let toolInput: Record<string, unknown> = {};
   try {
-    toolInput = pendingContent.toolInputJson
-      ? JSON.parse(pendingContent.toolInputJson)
-      : {};
+    toolInput = pendingContent.toolInputJson ? JSON.parse(pendingContent.toolInputJson) : {};
   } catch {
     // Failed to parse, use empty object
     toolInput = {};
@@ -361,9 +357,7 @@ function handleMessageStop(
 
   // Assemble all text content
   const textParts: string[] = [];
-  const sortedContents = Object.values(state.pendingContents).sort(
-    (a, b) => a.index - b.index
-  );
+  const sortedContents = Object.values(state.pendingContents).sort((a, b) => a.index - b.index);
 
   for (const pending of sortedContents) {
     if (pending.type === "text" && pending.textDeltas) {

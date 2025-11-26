@@ -21,7 +21,9 @@
     "build": "tsup",
     "dev": "tsup --watch",
     "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "keywords": [
     "ai",
@@ -49,9 +51,11 @@
     "@deepractice-ai/agentx-types": "workspace:*"
   },
   "devDependencies": {
+    "@deepracticex/vitest-cucumber": "^1.4.3",
     "@types/node": "^24.9.2",
     "tsup": "^8.5.0",
-    "typescript": "^5.9.3"
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.3"
   },
   "publishConfig": {
     "access": "public"

@@ -167,8 +167,8 @@ export const Interactive: Story = {
           <AgentStatusIndicator agent={agent} />
         </div>
         <p className="text-sm text-gray-500">
-          Note: Due to Storybook limitations, you may need to click a button
-          and wait for the polling interval to see the change.
+          Note: Due to Storybook limitations, you may need to click a button and wait for the
+          polling interval to see the change.
         </p>
       </div>
     );

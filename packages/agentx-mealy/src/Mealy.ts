@@ -133,11 +133,7 @@ export class Mealy<TState, TInput> {
   /**
    * Internal process with depth tracking
    */
-  private processInternal(
-    id: string,
-    input: TInput,
-    depth: number
-  ): ProcessResult<TState, TInput> {
+  private processInternal(id: string, input: TInput, depth: number): ProcessResult<TState, TInput> {
     // Guard against infinite recursion
     if (depth >= this.maxDepth) {
       console.warn(`[Mealy] Max recursion depth (${this.maxDepth}) reached for id: ${id}`);
@@ -205,9 +201,7 @@ export class Mealy<TState, TInput> {
         }
       } else {
         // SinkDefinition with filter/name
-        const filteredOutputs = sink.filter
-          ? outputs.filter(sink.filter)
-          : outputs;
+        const filteredOutputs = sink.filter ? outputs.filter(sink.filter) : outputs;
 
         if (filteredOutputs.length === 0) {
           continue;
@@ -259,9 +253,7 @@ export class Mealy<TState, TInput> {
    * Remove a sink by name (only works for SinkDefinitions)
    */
   removeSink(name: string): boolean {
-    const index = this.sinks.findIndex(
-      (s) => typeof s !== "function" && s.name === name
-    );
+    const index = this.sinks.findIndex((s) => typeof s !== "function" && s.name === name);
     if (index !== -1) {
       this.sinks.splice(index, 1);
       return true;

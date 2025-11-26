@@ -43,9 +43,7 @@ export interface SSEReactorInstance {
 function sendEvent(config: SSEReactorConfig, event: any): void {
   try {
     // Get current request from container
-    const request = config._requestContainer
-      ? config._requestContainer.current
-      : config.request;
+    const request = config._requestContainer ? config._requestContainer.current : config.request;
 
     logger.debug("Sending event to SSE client", {
       eventType: event.type,

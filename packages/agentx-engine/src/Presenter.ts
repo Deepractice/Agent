@@ -55,11 +55,7 @@ import type {
  * - MessageEventType: Assembled messages
  * - TurnEventType: Turn analytics
  */
-export type AgentOutput =
-  | StreamEventType
-  | StateEventType
-  | MessageEventType
-  | TurnEventType;
+export type AgentOutput = StreamEventType | StateEventType | MessageEventType | TurnEventType;
 
 // ===== Base Presenter =====
 
@@ -69,44 +65,29 @@ export type AgentOutput =
  * Unlike Mealy's Sink which receives batches, Presenter receives
  * one output at a time for sequential processing.
  */
-export type Presenter = (
-  agentId: string,
-  output: AgentOutput
-) => void | Promise<void>;
+export type Presenter = (agentId: string, output: AgentOutput) => void | Promise<void>;
 
 // ===== Typed Presenters =====
 
 /**
  * StreamPresenter - Only receives raw stream events
  */
-export type StreamPresenter = (
-  agentId: string,
-  event: StreamEventType
-) => void | Promise<void>;
+export type StreamPresenter = (agentId: string, event: StreamEventType) => void | Promise<void>;
 
 /**
  * StatePresenter - Only receives state transition events
  */
-export type StatePresenter = (
-  agentId: string,
-  event: StateEventType
-) => void | Promise<void>;
+export type StatePresenter = (agentId: string, event: StateEventType) => void | Promise<void>;
 
 /**
  * MessagePresenter - Only receives assembled message events
  */
-export type MessagePresenter = (
-  agentId: string,
-  event: MessageEventType
-) => void | Promise<void>;
+export type MessagePresenter = (agentId: string, event: MessageEventType) => void | Promise<void>;
 
 /**
  * TurnPresenter - Only receives turn analytics events
  */
-export type TurnPresenter = (
-  agentId: string,
-  event: TurnEventType
-) => void | Promise<void>;
+export type TurnPresenter = (agentId: string, event: TurnEventType) => void | Promise<void>;
 
 // ===== Type Guards =====
 

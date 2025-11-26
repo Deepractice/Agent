@@ -194,11 +194,7 @@ function handleMessageDelta(
   // - "tool_use": Tool calling in progress, DON'T complete yet
   // - "max_tokens": Hit token limit, complete turn
   // - "stop_sequence": Hit stop sequence, complete turn
-  if (
-    stopReason === "end_turn" ||
-    stopReason === "max_tokens" ||
-    stopReason === "stop_sequence"
-  ) {
+  if (stopReason === "end_turn" || stopReason === "max_tokens" || stopReason === "stop_sequence") {
     return completeTurn(
       { ...state, pendingTurn: updatedPendingTurn },
       event.agentId,
@@ -232,11 +228,7 @@ function completeTurn(
   const duration = completedAt - requestedAt;
 
   const usage = { input: 0, output: 0 };
-  const cost = calculateCost(
-    usage,
-    state.costPerInputToken,
-    state.costPerOutputToken
-  );
+  const cost = calculateCost(usage, state.costPerInputToken, state.costPerOutputToken);
 
   const turnResponseEvent: TurnResponseEvent = {
     type: "turn_response",

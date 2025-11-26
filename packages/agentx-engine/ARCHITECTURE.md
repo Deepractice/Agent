@@ -43,11 +43,11 @@ AgentX Engine is **completely stateless**. This is a deliberate architectural ch
 
 ### State Classification
 
-| State Type | Lifetime | Storage | Example |
-|------------|----------|---------|---------|
-| **Processing State** | Single `receive()` | Local variable | `pendingContents`, `currentMessageId` |
-| **Business State** | Persistent | Database (via Presenter) | Messages, Statistics |
-| **Configuration** | Application lifetime | Engine fields | Driver, Presenters |
+| State Type           | Lifetime             | Storage                  | Example                               |
+| -------------------- | -------------------- | ------------------------ | ------------------------------------- |
+| **Processing State** | Single `receive()`   | Local variable           | `pendingContents`, `currentMessageId` |
+| **Business State**   | Persistent           | Database (via Presenter) | Messages, Statistics                  |
+| **Configuration**    | Application lifetime | Engine fields            | Driver, Presenters                    |
 
 ## Core Components
 
@@ -315,6 +315,7 @@ class Engine {
 ```
 
 **Issues**:
+
 - Cannot scale horizontally (state not shared)
 - State lost on crash
 - Memory grows with active agents
@@ -325,7 +326,7 @@ class Engine {
 // Stateless (AgentX approach)
 class AgentEngine {
   async receive(agentId, message) {
-    let state = createInitialState();  // Local!
+    let state = createInitialState(); // Local!
     for await (const event of this.driver(message)) {
       state = this.process(state, event);
     }
@@ -360,8 +361,7 @@ StreamEvent ──→ Processor ──→ assistant_message
 ```typescript
 // Without typed presenters
 const presenter = (agentId, event) => {
-  if (event.type === "assistant_message" ||
-      event.type === "tool_use_message") {
+  if (event.type === "assistant_message" || event.type === "tool_use_message") {
     // Handle message
   }
 };
@@ -389,6 +389,7 @@ const presenter = createMessagePresenter((agentId, event) => {
 ```
 
 **Reasons**:
+
 - Simpler Presenter implementation
 - Enables re-injection per event
 - More natural event-driven model

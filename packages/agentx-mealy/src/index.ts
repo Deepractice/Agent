@@ -83,12 +83,7 @@ export { type Store, MemoryStore } from "./Store";
 
 // ===== Mealy Runtime =====
 
-export {
-  Mealy,
-  createMealy,
-  type MealyConfig,
-  type ProcessResult,
-} from "./Mealy";
+export { Mealy, createMealy, type MealyConfig, type ProcessResult } from "./Mealy";
 
 // ===== Combinators =====
 

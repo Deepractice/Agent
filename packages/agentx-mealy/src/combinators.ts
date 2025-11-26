@@ -31,12 +31,10 @@ import type { Processor } from "./Processor";
 export function combineProcessors<
   TState extends Record<string, unknown>,
   TInput,
-  TOutput
->(
-  processors: {
-    [K in keyof TState]: Processor<TState[K], TInput, TOutput>;
-  }
-): Processor<TState, TInput, TOutput> {
+  TOutput,
+>(processors: {
+  [K in keyof TState]: Processor<TState[K], TInput, TOutput>;
+}): Processor<TState, TInput, TOutput> {
   return (state: Readonly<TState>, event: TInput): [TState, TOutput[]] => {
     const newState = {} as TState;
     const allOutputs: TOutput[] = [];
@@ -57,9 +55,9 @@ export function combineProcessors<
 /**
  * combineInitialStates - Helper to create initial state for combined processors
  */
-export function combineInitialStates<TState extends Record<string, unknown>>(
-  initialStates: { [K in keyof TState]: () => TState[K] }
-): () => TState {
+export function combineInitialStates<TState extends Record<string, unknown>>(initialStates: {
+  [K in keyof TState]: () => TState[K];
+}): () => TState {
   return () => {
     const state = {} as TState;
     for (const key in initialStates) {

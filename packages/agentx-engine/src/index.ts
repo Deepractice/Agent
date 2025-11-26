@@ -94,11 +94,7 @@ export {
 } from "./AgentProcessor";
 
 // AgentEngine - Stateless Runtime
-export {
-  AgentEngine,
-  createAgentEngine,
-  type AgentEngineConfig,
-} from "./AgentEngine";
+export { AgentEngine, createAgentEngine, type AgentEngineConfig } from "./AgentEngine";
 
 // ===== Internal exports (for advanced use cases) =====
 

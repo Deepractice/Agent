@@ -1,18 +1,27 @@
 /**
  * AgentX Types
  *
- * Core type definitions for the Deepractice AgentX ecosystem.
+ * Industry-level type definitions for the AI Agent ecosystem.
  *
- * ## Domain Structure
+ * ## Structure
  *
- * - **agent/** - Agent's internal world (messages, tools, llm config)
- * - **environment/** - Agent's external world (sessions, channels, groups)
+ * - **message/** - Message formats (user, assistant, tool, error)
+ * - **llm/** - LLM configuration and responses
+ * - **mcp/** - Model Context Protocol types
+ * - **guards/** - Type guards for runtime checking
  */
 
-// ==================== Agent Domain ====================
-// Re-export everything from agent domain
-export * from "./agent";
+// Agent state
+export type { AgentState } from "./AgentState";
 
-// ==================== Environment Domain ====================
-// Re-export everything from environment domain
-export * from "./environment";
+// Message types
+export * from "./message";
+
+// LLM types
+export * from "./llm";
+
+// MCP types
+export * from "./mcp";
+
+// Type guards
+export * from "./guards";

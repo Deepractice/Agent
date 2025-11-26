@@ -93,7 +93,9 @@ const claudeDriver: Driver = async function* (message) {
 
 const engine = new AgentEngine({
   driver: claudeDriver,
-  presenters: [/* your presenters */],
+  presenters: [
+    /* your presenters */
+  ],
 });
 ```
 
@@ -147,10 +149,10 @@ Type-safe presenters that only receive specific event types:
 
 ```typescript
 import {
-  createStreamPresenter,   // Only stream events
-  createMessagePresenter,  // Only message events
-  createStatePresenter,    // Only state events
-  createTurnPresenter,     // Only turn events
+  createStreamPresenter, // Only stream events
+  createMessagePresenter, // Only message events
+  createStatePresenter, // Only state events
+  createTurnPresenter, // Only turn events
 } from "@deepractice-ai/agentx-engine";
 
 // Stream presenter - for SSE forwarding
@@ -162,7 +164,7 @@ const ssePresenter = createStreamPresenter((agentId, event) => {
 // Message presenter - for UI updates
 const uiPresenter = createMessagePresenter((agentId, event) => {
   // event is MessageEventType (assistant_message, etc.)
-  setMessages(prev => [...prev, event.data]);
+  setMessages((prev) => [...prev, event.data]);
 });
 
 // State presenter - for status updates
@@ -203,35 +205,35 @@ const presenter: Presenter = (agentId, event) => {
 
 ### Stream Events (from Driver)
 
-| Event | Description |
-|-------|-------------|
-| `message_start` | AI response started |
-| `text_delta` | Text chunk received |
-| `message_stop` | AI response completed |
-| `tool_use_content_block_start` | Tool call started |
-| `tool_call` | Tool call ready |
-| `tool_result` | Tool result received |
+| Event                          | Description           |
+| ------------------------------ | --------------------- |
+| `message_start`                | AI response started   |
+| `text_delta`                   | Text chunk received   |
+| `message_stop`                 | AI response completed |
+| `tool_use_content_block_start` | Tool call started     |
+| `tool_call`                    | Tool call ready       |
+| `tool_result`                  | Tool result received  |
 
 ### Message Events (assembled)
 
-| Event | Description |
-|-------|-------------|
+| Event               | Description          |
+| ------------------- | -------------------- |
 | `assistant_message` | Complete AI response |
-| `tool_use_message` | Tool call + result |
+| `tool_use_message`  | Tool call + result   |
 
 ### State Events (transitions)
 
-| Event | Description |
-|-------|-------------|
-| `conversation_start` | Conversation began |
-| `conversation_responding` | AI is responding |
-| `conversation_end` | Conversation ended |
-| `tool_executing` | Tool is running |
+| Event                     | Description        |
+| ------------------------- | ------------------ |
+| `conversation_start`      | Conversation began |
+| `conversation_responding` | AI is responding   |
+| `conversation_end`        | Conversation ended |
+| `tool_executing`          | Tool is running    |
 
 ### Turn Events (analytics)
 
-| Event | Description |
-|-------|-------------|
+| Event           | Description               |
+| --------------- | ------------------------- |
 | `turn_response` | Turn completed with stats |
 
 ## Horizontal Scaling

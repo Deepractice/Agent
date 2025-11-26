@@ -234,17 +234,20 @@ Given("an AgentEngine with multiple presenters", () => {
 
 // ===== When Steps =====
 
-When("the engine receives {string} for agent {string}", async (message: string, agentId: string) => {
-  try {
-    await engine.receive(agentId, {
-      role: "user",
-      content: message,
-      timestamp: Date.now(),
-    });
-  } catch (error) {
-    engineError = error as Error;
+When(
+  "the engine receives {string} for agent {string}",
+  async (message: string, agentId: string) => {
+    try {
+      await engine.receive(agentId, {
+        role: "user",
+        content: message,
+        timestamp: Date.now(),
+      });
+    } catch (error) {
+      engineError = error as Error;
+    }
   }
-});
+);
 
 // ===== Then Steps: Basic =====
 
@@ -272,15 +275,18 @@ Then("the assistant message should contain {string}", (expectedContent: string) 
 
 // ===== Then Steps: Stateless =====
 
-Then("agent {string} events should contain {string}", (agentId: string, expectedContent: string) => {
-  const agentEvents = events.filter((e) => e.agentId === agentId);
-  const textDeltas = agentEvents
-    .filter((e) => e.event.type === "text_delta")
-    .map((e) => (e.event as any).data.text)
-    .join("");
+Then(
+  "agent {string} events should contain {string}",
+  (agentId: string, expectedContent: string) => {
+    const agentEvents = events.filter((e) => e.agentId === agentId);
+    const textDeltas = agentEvents
+      .filter((e) => e.event.type === "text_delta")
+      .map((e) => (e.event as any).data.text)
+      .join("");
 
-  expect(textDeltas).toContain(expectedContent);
-});
+    expect(textDeltas).toContain(expectedContent);
+  }
+);
 
 Then("the engine should have no state field", () => {
   expect((engine as any).state).toBeUndefined();

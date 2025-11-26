@@ -83,10 +83,7 @@ export {
 // Re-export from @deepractice-ai/agentx-event
 
 // Base event types (from agentx-event)
-export type {
-  AgentEvent,
-  AgentEventType,
-} from "@deepractice-ai/agentx-event";
+export type { AgentEvent, AgentEventType } from "@deepractice-ai/agentx-event";
 
 // Event bus interfaces (from agentx-engine)
 export type {

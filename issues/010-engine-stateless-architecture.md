@@ -32,11 +32,13 @@ type Processor<TState, TInput, TOutput> = (
 ### Key Insight: State is Means, Output is Goal
 
 Unlike Redux reducers where state is the goal:
+
 ```
 Redux:  (state, action) => state    // state IS the goal
 ```
 
 In Mealy Machine, state is just a means to produce outputs:
+
 ```
 Mealy:  (state, input) => (state, output)   // output IS the goal, state is accumulator
 ```
@@ -45,12 +47,12 @@ This distinction is crucial for AI agent event processing where we care about em
 
 ### Industry Comparison
 
-| System | Pattern | Signature | State Role |
-|--------|---------|-----------|------------|
-| Redux/Elm | Reducer | `(state, action) => state` | Goal |
-| Kafka Streams | Processor | `(state, event) => state` | Goal |
-| **Mealy Machine** | **Transition** | **`(state, input) => (state, output)`** | **Means** |
-| Our Processor | Transition | `(state, input) => [state, outputs]` | Means |
+| System            | Pattern        | Signature                               | State Role |
+| ----------------- | -------------- | --------------------------------------- | ---------- |
+| Redux/Elm         | Reducer        | `(state, action) => state`              | Goal       |
+| Kafka Streams     | Processor      | `(state, event) => state`               | Goal       |
+| **Mealy Machine** | **Transition** | **`(state, input) => (state, output)`** | **Means**  |
+| Our Processor     | Transition     | `(state, input) => [state, outputs]`    | Means      |
 
 ## Architecture Design
 
@@ -58,12 +60,12 @@ This distinction is crucial for AI agent event processing where we care about em
 
 A standalone functional Mealy Machine framework with these components:
 
-| Component | Role | Side Effects |
-|-----------|------|--------------|
-| **Source** | Input adapter | Yes (I/O) |
-| **Processor** | Pure Mealy transition function | No (pure) |
-| **Sink** | Output adapter | Yes (I/O) |
-| **Store** | State persistence | Yes (storage) |
+| Component     | Role                           | Side Effects  |
+| ------------- | ------------------------------ | ------------- |
+| **Source**    | Input adapter                  | Yes (I/O)     |
+| **Processor** | Pure Mealy transition function | No (pure)     |
+| **Sink**      | Output adapter                 | Yes (I/O)     |
+| **Store**     | State persistence              | Yes (storage) |
 
 ### Complete Architecture
 
@@ -208,7 +210,7 @@ const mealy = createMealy({
 });
 
 // Process input through the Mealy Machine
-mealy.process('agent_123', event);
+mealy.process("agent_123", event);
 ```
 
 ## Detailed Design for agentx-engine
@@ -218,7 +220,7 @@ mealy.process('agent_123', event);
 ```typescript
 // packages/agentx-engine/src/state/MessageAssemblerState.ts
 export interface PendingContent {
-  type: 'text' | 'tool_use';
+  type: "text" | "tool_use";
   index: number;
   textDeltas?: string[];
   toolId?: string;
@@ -258,7 +260,7 @@ export const initialEngineState: EngineState = {
 
 ```typescript
 // packages/agentx-engine/src/processors/messageAssemblerProcessor.ts
-import type { Processor } from '@deepractice-ai/agentx-mealy';
+import type { Processor } from "@deepractice-ai/agentx-mealy";
 
 export const messageAssemblerProcessor: Processor<
   MessageAssemblerState,
@@ -266,31 +268,34 @@ export const messageAssemblerProcessor: Processor<
   MessageEventType
 > = (state, input) => {
   switch (input.type) {
-    case 'message_start': {
-      return [{
-        ...state,
-        currentMessageId: generateId(),
-        messageStartTime: input.timestamp,
-        pendingContents: new Map(),
-      }, []];
+    case "message_start": {
+      return [
+        {
+          ...state,
+          currentMessageId: generateId(),
+          messageStartTime: input.timestamp,
+          pendingContents: new Map(),
+        },
+        [],
+      ];
     }
 
-    case 'text_delta': {
+    case "text_delta": {
       const newContents = new Map(state.pendingContents);
-      const pending = newContents.get(0) || { type: 'text', index: 0, textDeltas: [] };
+      const pending = newContents.get(0) || { type: "text", index: 0, textDeltas: [] };
       pending.textDeltas = [...(pending.textDeltas || []), input.data.text];
       newContents.set(0, pending);
       return [{ ...state, pendingContents: newContents }, []];
     }
 
-    case 'message_stop': {
+    case "message_stop": {
       const content = assembleContent(state.pendingContents);
       if (!content.trim()) {
         return [initialMessageAssemblerState, []];
       }
 
       const assistantMessage: AssistantMessageEvent = {
-        type: 'assistant_message',
+        type: "assistant_message",
         // ...
       };
 
@@ -308,7 +313,7 @@ export const messageAssemblerProcessor: Processor<
 
 ```typescript
 // packages/agentx-engine/src/processors/engineProcessor.ts
-import { combineProcessors } from '@deepractice-ai/agentx-mealy';
+import { combineProcessors } from "@deepractice-ai/agentx-mealy";
 
 export const engineProcessor = combineProcessors({
   messageAssembler: messageAssemblerProcessor,

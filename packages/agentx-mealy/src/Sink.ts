@@ -23,10 +23,7 @@
  * };
  * ```
  */
-export type Sink<TOutput> = (
-  id: string,
-  outputs: TOutput[]
-) => void | Promise<void>;
+export type Sink<TOutput> = (id: string, outputs: TOutput[]) => void | Promise<void>;
 
 /**
  * SinkDefinition - Named Sink with metadata

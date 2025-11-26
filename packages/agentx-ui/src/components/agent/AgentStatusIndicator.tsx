@@ -149,13 +149,9 @@ export function AgentStatusIndicator({
                 <span className="font-medium text-sm">{statusText}...</span>
                 <span className="text-gray-400 text-sm">({elapsedTime}s)</span>
                 <span className="text-gray-400 hidden sm:inline">·</span>
-                <span className="text-gray-300 text-sm hidden sm:inline">
-                  esc to interrupt
-                </span>
+                <span className="text-gray-300 text-sm hidden sm:inline">esc to interrupt</span>
               </div>
-              <div className="text-xs text-gray-400 sm:hidden mt-1">
-                esc to interrupt
-              </div>
+              <div className="text-xs text-gray-400 sm:hidden mt-1">esc to interrupt</div>
             </div>
           </div>
         </div>
@@ -165,12 +161,7 @@ export function AgentStatusIndicator({
             onClick={handleAbort}
             className="ml-3 text-xs bg-red-600 hover:bg-red-700 text-white px-2.5 py-1 sm:px-3 sm:py-1.5 rounded-md transition-colors flex items-center gap-1.5 flex-shrink-0"
           >
-            <svg
-              className="w-3 h-3"
-              fill="none"
-              stroke="currentColor"
-              viewBox="0 0 24 24"
-            >
+            <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

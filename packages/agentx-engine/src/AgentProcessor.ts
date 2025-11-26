@@ -58,10 +58,7 @@ export type AgentProcessorInput = AgentOutput;
  *
  * Note: StreamEventType is NOT in output - it's passed through by AgentEngine
  */
-export type AgentProcessorOutput =
-  | MessageAssemblerOutput
-  | StateMachineOutput
-  | TurnTrackerOutput;
+export type AgentProcessorOutput = MessageAssemblerOutput | StateMachineOutput | TurnTrackerOutput;
 
 /**
  * Combined processor for the full agent engine

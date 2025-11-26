@@ -99,10 +99,7 @@ export type StateMachineInput = StreamEventType;
 /**
  * Helper to create new state with transition
  */
-function transitionTo(
-  state: Readonly<StateMachineState>,
-  newState: AgentState
-): StateMachineState {
+function transitionTo(state: Readonly<StateMachineState>, newState: AgentState): StateMachineState {
   if (state.currentState === newState) {
     return state as StateMachineState;
   }
@@ -183,9 +180,7 @@ function handleMessageStop(
   state: Readonly<StateMachineState>,
   event: MessageStopEvent
 ): [StateMachineState, StateMachineOutput[]] {
-  const duration = state.conversationStartTime
-    ? event.timestamp - state.conversationStartTime
-    : 0;
+  const duration = state.conversationStartTime ? event.timestamp - state.conversationStartTime : 0;
 
   const newState: StateMachineState = {
     ...transitionTo(state, "idle"),

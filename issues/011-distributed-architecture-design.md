@@ -61,7 +61,7 @@ class AgentEngine {
   // NO store field!
 
   async receive(agentId: string, message: UserMessage) {
-    let state = createInitialState();  // LOCAL variable
+    let state = createInitialState(); // LOCAL variable
 
     for await (const event of this.driver(message)) {
       state = this.processEvent(agentId, state, event);
@@ -112,46 +112,47 @@ Agent tools require file system access. In distributed deployment, we use JuiceF
 
 **Why JuiceFS?**
 
-| Requirement | JuiceFS Solution |
-|-------------|------------------|
-| SDK Compatibility | ✅ POSIX-compatible, tools work unchanged |
+| Requirement           | JuiceFS Solution                             |
+| --------------------- | -------------------------------------------- |
+| SDK Compatibility     | ✅ POSIX-compatible, tools work unchanged    |
 | Desktop Compatibility | ✅ Desktop uses local FS, cloud uses JuiceFS |
-| Zero Code Changes | ✅ Only deployment config changes |
-| Performance | ✅ Local caching, near-native speed |
+| Zero Code Changes     | ✅ Only deployment config changes            |
+| Performance           | ✅ Local caching, near-native speed          |
 
 ## Technology Stack
 
 ### Storage Layer
 
-| Component | Technology | Reason |
-|-----------|------------|--------|
-| **Object Storage** | Cloudflare R2 | Zero egress fees! |
-| **Metadata DB** | Upstash Redis | Serverless, low cost |
-| **Session Store** | PostgreSQL (Neon) | Serverless PostgreSQL |
-| **State Store** | PostgreSQL (Neon) | Same DB, different tables |
+| Component          | Technology        | Reason                    |
+| ------------------ | ----------------- | ------------------------- |
+| **Object Storage** | Cloudflare R2     | Zero egress fees!         |
+| **Metadata DB**    | Upstash Redis     | Serverless, low cost      |
+| **Session Store**  | PostgreSQL (Neon) | Serverless PostgreSQL     |
+| **State Store**    | PostgreSQL (Neon) | Same DB, different tables |
 
 ### Cost Analysis
 
 **Scenario**: 10 active agents, each with 1GB project
 
-| Service | Usage | Cost/Month |
-|---------|-------|------------|
-| R2 Storage | 10GB | $0.15 |
-| R2 Egress | Unlimited | $0 (free!) |
-| R2 API Requests | ~1M | $0.36 |
-| Upstash Redis | Pro tier | $10 |
-| Neon PostgreSQL | Free tier | $0 |
-| **Total** | | **~$11/month** |
+| Service         | Usage     | Cost/Month     |
+| --------------- | --------- | -------------- |
+| R2 Storage      | 10GB      | $0.15          |
+| R2 Egress       | Unlimited | $0 (free!)     |
+| R2 API Requests | ~1M       | $0.36          |
+| Upstash Redis   | Pro tier  | $10            |
+| Neon PostgreSQL | Free tier | $0             |
+| **Total**       |           | **~$11/month** |
 
 ### Why Cloudflare R2?
 
-| Provider | Storage | Egress | API Requests |
-|----------|---------|--------|--------------|
-| **Cloudflare R2** | $0.015/GB | **FREE** | $0.36/M |
-| AWS S3 | $0.023/GB | $0.09/GB | $0.40/M |
-| Backblaze B2 | $0.006/GB | $0.01/GB | Free |
+| Provider          | Storage   | Egress   | API Requests |
+| ----------------- | --------- | -------- | ------------ |
+| **Cloudflare R2** | $0.015/GB | **FREE** | $0.36/M      |
+| AWS S3            | $0.023/GB | $0.09/GB | $0.40/M      |
+| Backblaze B2      | $0.006/GB | $0.01/GB | Free         |
 
 **Agent workload characteristics**:
+
 - Frequent file reads (high egress)
 - Moderate storage (code projects are small)
 - Many small requests
@@ -192,13 +193,13 @@ User Request (agentId: "agent_123")
 
 ### What Gets Stored Where
 
-| Data Type | Storage | Example |
-|-----------|---------|---------|
-| **Message History** | PostgreSQL | User/Assistant messages |
-| **Agent State** | PostgreSQL | Current conversation state |
-| **Turn Statistics** | PostgreSQL | Cost, tokens, duration |
-| **Project Files** | R2 (via JuiceFS) | Source code, configs |
-| **JuiceFS Metadata** | Redis | File tree, permissions |
+| Data Type            | Storage          | Example                    |
+| -------------------- | ---------------- | -------------------------- |
+| **Message History**  | PostgreSQL       | User/Assistant messages    |
+| **Agent State**      | PostgreSQL       | Current conversation state |
+| **Turn Statistics**  | PostgreSQL       | Cost, tokens, duration     |
+| **Project Files**    | R2 (via JuiceFS) | Source code, configs       |
+| **JuiceFS Metadata** | Redis            | File tree, permissions     |
 
 ## Constraints
 
@@ -220,6 +221,7 @@ Why: Business data is in DB, Engine B reads from DB
 ```
 
 This is acceptable because:
+
 1. Single requests are short-lived (seconds to minutes)
 2. If Engine crashes, user retries the request
 3. No data loss - messages already persisted by Presenters
@@ -231,13 +233,11 @@ This is acceptable because:
 ```typescript
 const engine = new AgentEngine({
   driver: claudeDriver,
-  presenters: [
-    createMessagePresenter((id, e) => localDB.saveMessage(id, e.data)),
-  ],
+  presenters: [createMessagePresenter((id, e) => localDB.saveMessage(id, e.data))],
 });
 
 // Tools use local filesystem
-const projectPath = '/Users/sean/my-project';
+const projectPath = "/Users/sean/my-project";
 ```
 
 ### Cloud Mode
@@ -252,7 +252,7 @@ const engine = new AgentEngine({
 });
 
 // Tools use JuiceFS (same code!)
-const projectPath = '/mnt/juicefs/agent_123/project';
+const projectPath = "/mnt/juicefs/agent_123/project";
 ```
 
 **Key**: Same Engine code, different configuration.

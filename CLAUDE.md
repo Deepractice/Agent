@@ -122,6 +122,7 @@ const agentC = defineAgent({
 ### Package Layering
 
 **Package Dependency Hierarchy**:
+
 ```
 ┌─────────────────────────────────────────────────────────────────┐
 │  agentx-framework (SSEServer, SSEDriver, defineAgent)           │
@@ -138,6 +139,7 @@ const agentC = defineAgent({
 ```
 
 **Layer Responsibilities**:
+
 - **Engine Layer** (`agentx-engine`): Pure runtime, event processing, NO session management
 - **Core Layer** (`agentx-core`): Session management, AgentRegistry owns sessionId
 - **Framework Layer** (`agentx-framework`): Transport (SSE/HTTP), uses sessionId for routing
@@ -246,6 +248,7 @@ AgentX 使用 **Stream Events 转发 + 客户端重组装** 的架构，实现�
 #### 事件流详解
 
 **Stream Layer Events** (通过 SSE 传输):
+
 - `message_start` - 开始处理消息
 - `text_delta` - 文本增量片段
 - `text_content_block_start/stop` - 文本块生命周期
@@ -257,21 +260,25 @@ AgentX 使用 **Stream Events 转发 + 客户端重组装** 的架构，实现�
 - `message_stop` - 消息处理完成
 
 **Message Layer Events** (浏览器端组装，不通过 SSE):
+
 - `assistant_message` - 完整的 AI 回复消息
 - `tool_use_message` - 完整的工具使用记录（toolCall + toolResult）
 - `error_message` - 错误消息
 
 **State Layer Events** (浏览器端组装，不通过 SSE):
+
 - `conversation_active` - 对话活跃
 - `responding` - AI 正在回复
 - `tool_executing` - 工具正在执行
 
 **Turn Layer Events** (浏览器端组装，不通过 SSE):
+
 - `turn_complete` - 包含 cost, tokens, duration 等分析数据
 
 #### 关键组件
 
 **服务器端**:
+
 - `SSEServer` (`packages/agentx-framework/src/server/SSEServer.ts`) - HTTP + SSE 服务器
 - `SSEReactor` (`packages/agentx-framework/src/server/SSEReactor.ts`) - 只转发 Stream Events
 - `SSERequest` - 原生 SSE 实现，无外部依赖
@@ -279,6 +286,7 @@ AgentX 使用 **Stream Events 转发 + 客户端重组装** 的架构，实现�
 - `SSEConnectionManager` (`packages/agentx-framework/src/server/SSEConnectionManager.ts`) - SSE 连接管理
 
 **浏览器端**:
+
 - `SSEDriver` (`packages/agentx-framework/src/browser/SSEDriver.ts`) - 接收 SSE，使用 EventSource API
 - `SSEAgent` (`packages/agentx-framework/src/browser/SSEAgent.ts`) - 预配置的浏览器端 Agent
 - `AgentEngine` - 自动注册 MessageAssembler、StateMachine、TurnTracker
@@ -310,13 +318,14 @@ SSEServer 使用双 Manager 架构管理生命周期：
 
 #### SSE API 端点
 
-| 端点 | 说明 |
-|------|------|
-| `POST /api/session` | 创建新 Session，返回 `{ sessionId, sseUrl }` |
-| `GET /api/sse/{sessionId}` | 建立 SSE 连接（需要先创建 session） |
-| `POST /api/message` | 发送消息到已存在的 session |
+| 端点                       | 说明                                         |
+| -------------------------- | -------------------------------------------- |
+| `POST /api/session`        | 创建新 Session，返回 `{ sessionId, sseUrl }` |
+| `GET /api/sse/{sessionId}` | 建立 SSE 连接（需要先创建 session）          |
+| `POST /api/message`        | 发送消息到已存在的 session                   |
 
 **正确的调用顺序**:
+
 ```
 1. POST /api/session      → 创建 Agent，获取 sessionId
 2. GET /api/sse/{id}      → 建立 SSE 持久连接
@@ -382,6 +391,7 @@ pnpm dev --filter=@deepractice-ai/agentx-ui
 ```
 
 **Message Components Structure**:
+
 - `/components/chat/messages/` - Message containers (UserMessage, AssistantMessage, etc.)
 - `/components/chat/messages/parts/` - Content parts (TextContent, ImageContent, ToolCallContent, etc.)
 
@@ -396,6 +406,7 @@ pnpm dev --filter=@deepractice-ai/agentx-ui
 **Language**: Use English for all code comments, logs, error messages, and documentation.
 
 **Naming**: Use interface-first naming (not Hungarian notation):
+
 - Good: `User`, `Session`, `Driver`
 - Bad: `IUser`, `strName`, `arrItems`
 
@@ -446,10 +457,12 @@ console.debug("Debug info");
 ```
 
 **Exceptions**:
+
 - ✅ Storybook story files (`.stories.tsx`) - console calls acceptable for demo purposes
 - ✅ Test files - console calls acceptable for test debugging
 
 **Logger Naming Convention**:
+
 - Use hierarchical names: `"core/agent/AgentEngine"`, `"framework/SSEReactor"`, `"ui/Chat"`
 - Use forward slashes `/` to separate hierarchy levels
 - Use PascalCase for component names
@@ -462,7 +475,7 @@ console.debug("Debug info");
 // ✅ Safe to create at module level - logger uses lazy initialization
 import { createLogger } from "@deepractice-ai/agentx-logger";
 
-const logger = createLogger("framework/SSEReactor");  // Safe!
+const logger = createLogger("framework/SSEReactor"); // Safe!
 
 // Later in your app's entry point
 import { configure, LogLevel } from "@deepractice-ai/agentx-framework";
@@ -481,6 +494,7 @@ configure({
 The logger facade delays actual logger creation until the first log call, ensuring it always uses the latest configuration.
 
 **Log Levels**:
+
 - `DEBUG` - Detailed information for debugging (method calls, state changes)
 - `INFO` - Important runtime events (initialization, connections, completions)
 - `WARN` - Potential issues that don't prevent operation
@@ -510,6 +524,7 @@ Frontend (Browser):
 ```
 
 **Related Files**:
+
 - `packages/agentx-logger/` - Logging facade implementation
 - `packages/agentx-ui/dev-tools/WebSocketLogger.ts` - Browser log collector
 - `issues/008-logging-system-cleanup.md` - Logging system cleanup plan
@@ -534,6 +549,7 @@ DATABASE_PATH         # SQLite database path
 **Image**: `deepracticexs/agent:latest`
 
 **Quick Start**:
+
 ```bash
 docker run -d \
   --name agent \
@@ -550,6 +566,7 @@ docker run -d \
 **Changesets**: This project uses `@changesets/cli` for version management.
 
 **Before Creating PR**:
+
 ```bash
 # Create changeset file directly (interactive CLI is not available)
 # Create file in .changeset/ directory with format:
@@ -560,6 +577,7 @@ docker run -d \
 ```
 
 **Publishing** (maintainers only):
+
 ```bash
 pnpm changeset version  # Bump versions
 pnpm build              # Build all packages
@@ -589,6 +607,7 @@ Use `emitError()` utility from `agentx-core` to emit errors to EventBus.
 ### Event Bus (RxJS-based)
 
 `AgentEventBus` is the communication backbone:
+
 - Producers emit events via `EventProducer`
 - Consumers subscribe via `EventConsumer`
 - Type-safe event filtering with `consumeByType()`
@@ -597,6 +616,7 @@ Use `emitError()` utility from `agentx-core` to emit errors to EventBus.
 ### Reactor Lifecycle
 
 All reactors follow managed lifecycle:
+
 1. `initialize(context)` - Called by AgentEngine on agent.initialize()
 2. Event processing - Handle events via EventBus subscriptions
 3. `destroy()` - Called in reverse order on agent.destroy()
@@ -604,11 +624,13 @@ All reactors follow managed lifecycle:
 ### Driver Contract
 
 Drivers must implement `AgentDriver`:
+
 ```typescript
 interface AgentDriver {
-  readonly driverSessionId: string | null;  // Driver's internal session (e.g., Claude SDK session)
-  processMessage(messages: UserMessage | AsyncIterable<UserMessage>):
-    AsyncIterable<StreamEventType>;
+  readonly driverSessionId: string | null; // Driver's internal session (e.g., Claude SDK session)
+  processMessage(
+    messages: UserMessage | AsyncIterable<UserMessage>
+  ): AsyncIterable<StreamEventType>;
   abort(): void;
   destroy(): Promise<void>;
 }
@@ -617,6 +639,7 @@ interface AgentDriver {
 **Note**: `sessionId` is NOT part of Driver interface. Session management is handled at Core layer (AgentRegistry), not Engine layer.
 
 **Built-in Drivers**:
+
 - `ClaudeDriver` (agentx-sdk-claude) - Node.js Claude SDK integration
 - `SSEDriver` (agentx-framework) - Browser SSE client
 
@@ -656,14 +679,14 @@ const MyDriver = defineDriver({
     yield builder.messageStart("msg_1", "model");
     yield builder.textDelta("Hello", 0);
     yield builder.messageStop();
-  }
+  },
 });
 
 const MyReactor = defineReactor({
   name: "MyReactor",
   onTextDelta: (event) => {
     process.stdout.write(event.data.text);
-  }
+  },
 });
 
 const MyAgent = defineAgent({
@@ -671,8 +694,8 @@ const MyAgent = defineAgent({
   driver: MyDriver,
   reactors: [MyReactor],
   config: defineConfig({
-    apiKey: { type: "string", required: true }
-  })
+    apiKey: { type: "string", required: true },
+  }),
 });
 ```
 

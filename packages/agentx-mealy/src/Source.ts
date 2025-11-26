@@ -26,9 +26,7 @@
  * };
  * ```
  */
-export type Source<TInput, TRequest = void> = (
-  request: TRequest
-) => AsyncIterable<TInput>;
+export type Source<TInput, TRequest = void> = (request: TRequest) => AsyncIterable<TInput>;
 
 /**
  * SourceDefinition - Named Source with metadata
