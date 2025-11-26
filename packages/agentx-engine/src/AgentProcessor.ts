@@ -1,0 +1,109 @@
+/**
+ * AgentProcessor
+ *
+ * Combined Mealy processor for the full AgentX engine.
+ * Composes MessageAssembler, StateMachine, and TurnTracker processors.
+ */
+
+import {
+  combineProcessors,
+  combineInitialStates,
+  type Processor,
+} from "@deepractice-ai/agentx-mealy";
+// Note: StreamEventType and MessageEventType are part of AgentOutput (from Presenter)
+// They flow through the system but AgentProcessor doesn't need to import them directly
+import {
+  messageAssemblerProcessor,
+  stateMachineProcessor,
+  turnTrackerProcessor,
+  createInitialMessageAssemblerState,
+  createInitialStateMachineState,
+  createInitialTurnTrackerState,
+  type MessageAssemblerState,
+  type StateMachineState,
+  type TurnTrackerState,
+  type MessageAssemblerOutput,
+  type StateMachineOutput,
+  type TurnTrackerOutput,
+} from "./internal";
+import type { AgentOutput } from "./Presenter";
+
+/**
+ * Combined state type for the full agent engine
+ */
+export type AgentEngineState = {
+  messageAssembler: MessageAssemblerState;
+  stateMachine: StateMachineState;
+  turnTracker: TurnTrackerState;
+};
+
+/**
+ * Input event type for AgentProcessor
+ *
+ * Accepts:
+ * - StreamEventType: Raw stream events from Driver
+ * - MessageEventType: Re-injected message events (for TurnTracker)
+ *
+ * Note: AgentOutput is used because re-injected events can be any output type
+ */
+export type AgentProcessorInput = AgentOutput;
+
+/**
+ * Output event type from AgentProcessor
+ *
+ * Produces:
+ * - MessageAssemblerOutput: Assembled message events
+ * - StateMachineOutput: State transition events
+ * - TurnTrackerOutput: Turn analytics events
+ *
+ * Note: StreamEventType is NOT in output - it's passed through by AgentEngine
+ */
+export type AgentProcessorOutput =
+  | MessageAssemblerOutput
+  | StateMachineOutput
+  | TurnTrackerOutput;
+
+/**
+ * Combined processor for the full agent engine
+ *
+ * This combines:
+ * - MessageAssembler: Stream → Message events
+ * - StateMachine: Stream → State events
+ * - TurnTracker: Message → Turn events
+ *
+ * Pattern: (state, input) => [newState, outputs]
+ * Key insight: State is means, outputs are the goal (Mealy Machine)
+ *
+ * Note: Raw StreamEvents are NOT output by this processor.
+ * The AgentEngine handles pass-through of original events.
+ */
+export const agentProcessor = combineProcessors<
+  AgentEngineState,
+  AgentProcessorInput,
+  AgentProcessorOutput
+>({
+  messageAssembler: messageAssemblerProcessor as Processor<
+    AgentEngineState["messageAssembler"],
+    AgentProcessorInput,
+    AgentProcessorOutput
+  >,
+  stateMachine: stateMachineProcessor as Processor<
+    AgentEngineState["stateMachine"],
+    AgentProcessorInput,
+    AgentProcessorOutput
+  >,
+  turnTracker: turnTrackerProcessor as Processor<
+    AgentEngineState["turnTracker"],
+    AgentProcessorInput,
+    AgentProcessorOutput
+  >,
+});
+
+/**
+ * Initial state factory for the full agent engine
+ */
+export const createInitialAgentEngineState = combineInitialStates<AgentEngineState>({
+  messageAssembler: createInitialMessageAssemblerState,
+  stateMachine: createInitialStateMachineState,
+  turnTracker: createInitialTurnTrackerState,
+});

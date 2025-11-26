@@ -1,583 +1,271 @@
-# @deepractice-ai/agentx-core
+# @deepractice-ai/agentx-engine
 
-**AgentX Core** - Platform-agnostic core engine for building AI agents with event-driven Reactor architecture.
+**AgentX Engine** - Stateless Event Processing Engine for AI Agents.
 
 ## Overview
 
-AgentX Core is the foundational layer of the AgentX ecosystem, providing a **Reactor-based event-driven architecture** for building AI agents. It's completely platform-agnostic and relies on Driver implementations to connect to specific LLM providers.
+AgentX Engine is a **completely stateless** runtime for processing AI agent events. It combines a Driver (AI SDK adapter), Processors (event transformers), and Presenters (output handlers) into a unified pipeline.
 
-### Key Features
+**Key Design**: Engine holds no state. Intermediate processing state lives in local variables during a single `receive()` call. Business data persistence is handled by Presenters.
 
-- 🔌 **Driver Injection** - Bring your own LLM provider (Claude, OpenAI, etc.)
-- ⚡ **Reactor Pattern** - Event-driven architecture with automatic lifecycle management
-- 📊 **4-Layer Events** - Stream, State, Message, and Exchange events for different perspectives
-- 🎯 **Type-Safe** - Full TypeScript support with strict event types
-- 🪶 **Lightweight** - Zero dependencies on specific LLM SDKs
-- 🧩 **Agent-as-Driver** - Agents can be composed as Drivers (nested composition)
+## Features
 
-## Architecture
-
-```
-User Code
-    ↓
-createAgent() [Facade API]
-    ↓
-AgentService (implements AgentService extends AgentDriver)
-    ↓
-AgentEngine (orchestration)
-    ↓
-AgentReactorRegistry
-    ├── AgentDriverBridge (Driver → Stream Events)
-    ├── AgentStateMachine (Stream → State Events)
-    ├── AgentMessageAssembler (Stream → Message Events)
-    ├── AgentExchangeTracker (Message → Exchange Events)
-    └── User Reactors (custom event handlers)
-    ↓
-EventBus (RxJS-based communication backbone)
-```
-
-### Core Components
-
-#### Facade Layer (`facade/`)
-
-- **`createAgent()`** - Primary API for creating agents (uses mixin pattern)
-- Simple, user-friendly interface
-- Combines Agent data (from `agentx-types`) with AgentService methods
-
-#### Interfaces (`interfaces/`)
-
-**Service Provider Interfaces (SPI)**:
-
-- **`AgentService`** - User-facing runtime API (extends AgentDriver)
-- **`AgentDriver`** - Platform-specific LLM driver contract
-- **`AgentReactor`** - Low-level event processor contract
-- **`AgentReactorContext`** - Context provided to reactors
-
-**User-Friendly Reactor Interfaces**:
-
-- **`StreamReactor`** - Stream layer event handlers
-- **`StateReactor`** - State layer event handlers
-- **`MessageReactor`** - Message layer event handlers
-- **`ExchangeReactor`** - Exchange layer event handlers
-
-#### Core Implementation (`core/agent/`)
-
-- **`AgentEngine`** - Orchestrates all reactors via ReactorRegistry
-- **`AgentServiceImpl`** - Default implementation of AgentService
-- **`AgentEventBus`** - RxJS-based event communication
-- **`AgentReactorRegistry`** - Manages reactor lifecycle
-- **`AgentDriverBridge`** - Connects AgentDriver to EventBus
-- **`AgentStateMachine`** - State machine reactor
-- **`AgentMessageAssembler`** - Message assembly reactor
-- **`AgentExchangeTracker`** - Exchange tracking reactor
-
-#### Utilities (`utils/`)
-
-- **`ReactorAdapter`** - Adapts user-friendly reactor interfaces to AgentReactor
-- **`emitError`** - Unified error emission utility
-- **`StreamEventBuilder`** - Helper for building stream events
-
-### 4-Layer Event System
-
-AgentX Core generates events at four semantic layers:
-
-1. **Stream Layer** - Real-time incremental data (text deltas, tool calls)
-2. **State Layer** - State machine transitions (thinking, responding, executing)
-3. **Message Layer** - Complete messages (user/assistant messages)
-4. **Exchange Layer** - Request-response pairs with analytics (cost, duration, tokens)
-
-All layers observe the same interaction from different perspectives.
+- **Stateless** - Engine can be shared across requests, horizontally scalable
+- **Driver Integration** - Connect any AI SDK (Claude, OpenAI, etc.)
+- **Typed Presenters** - Type-safe event filtering for Stream/Message/State/Turn events
+- **Event Layering** - Stream → Message → State → Turn transformations
+- **Re-injection** - Processor outputs are re-injected for event chaining
 
 ## Installation
 
 ```bash
-pnpm add @deepractice-ai/agentx-core
+pnpm add @deepractice-ai/agentx-engine
 ```
-
-**Platform-Specific SDKs:**
-
-For most use cases, use a platform-specific SDK instead:
-
-- **Node.js**: `@deepractice-ai/agentx-framework` (includes ClaudeSDKDriver)
-- **Browser**: `@deepractice-ai/agentx-framework/browser` (includes WebSocketDriver)
 
 ## Quick Start
 
-### Basic Usage with Facade API
+### Basic Usage
 
 ```typescript
-import { createAgent } from "@deepractice-ai/agentx-core";
-import { ClaudeDriver } from "@deepractice-ai/agentx-framework";
-
-// Create driver (platform-specific)
-const driver = new ClaudeDriver({
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  sessionId: "my-session",
-});
-
-// Create agent using facade API
-const agent = createAgent("my-agent", driver, {
-  name: "Code Assistant",
-  description: "Helps with coding tasks",
-});
-
-// Initialize
-await agent.initialize();
-
-// Subscribe to events
-agent.react({
-  onAssistantMessage(event) {
-    console.log("Assistant:", event.data.content);
-  },
-});
-
-// Send message
-await agent.send("Hello, how are you?");
-
-// Cleanup
-await agent.destroy();
-```
-
-### Event Handling
-
-AgentX uses method naming convention for event subscription:
-
-```typescript
-agent.react({
-  // Stream Layer - Real-time deltas
-  onTextDelta(event) {
-    process.stdout.write(event.data.text); // Typewriter effect
-  },
-
-  // State Layer - State transitions
-  onConversationResponding(event) {
-    console.log("Agent is responding...");
-  },
-
-  // Message Layer - Complete messages
-  onAssistantMessage(event) {
-    console.log("Complete response:", event.data.content);
-  },
-
-  // Exchange Layer - Analytics
-  onExchangeResponse(event) {
-    console.log(`Cost: $${event.data.costUsd}`);
-    console.log(`Duration: ${event.data.durationMs}ms`);
-  },
-});
-```
-
-## Core Concepts
-
-### AgentDriver (SPI)
-
-The `AgentDriver` interface is the **Service Provider Interface** for connecting to LLM providers:
-
-```typescript
-interface AgentDriver {
-  readonly sessionId: string;
-  readonly driverSessionId: string | null;
-
-  // Returns async iterable of Stream events
-  sendMessage(messages: UserMessage | AsyncIterable<UserMessage>): AsyncIterable<StreamEventType>;
-
-  abort(): void;
-  destroy(): Promise<void>;
-}
-```
-
-**Driver Implementations:**
-
-- `ClaudeSDKDriver` - Uses `@anthropic-ai/sdk` (Node.js)
-- `WebSocketDriver` - Connects to AgentX server (Browser)
-- `MockDriver` - For testing
-
-### AgentService (User-Facing API)
-
-`AgentService` is the primary interface users interact with. It **extends AgentDriver**, enabling the Agent-as-Driver pattern:
-
-```typescript
-interface AgentService extends AgentDriver {
-  readonly id: string;
-  readonly agent: Readonly<Agent>;
-  readonly messages: ReadonlyArray<Message>;
-
-  initialize(): Promise<void>;
-  send(message: string): Promise<void>;
-  react(handlers: Record<string, any>): () => void;
-  clear(): void;
-  exportToSession(): Omit<Session, "id">;
-
-  // Inherited from AgentDriver:
-  // sendMessage(), abort(), destroy()
-}
-```
-
-**Agent-as-Driver Pattern:**
-Since `AgentService extends AgentDriver`, any agent instance can be used as a Driver for another agent, enabling powerful nested compositions.
-
-```typescript
-// Create inner agent
-const innerAgent = createAgent("inner", innerDriver);
-await innerAgent.initialize();
-
-// Use innerAgent as Driver for outer agent
-const outerAgent = createAgent("outer", innerAgent, {
-  reactors: [new MonitoringReactor()],
-});
-await outerAgent.initialize();
-
-// Request flows through both agents
-await outerAgent.send("Hello!");
-```
-
-### Reactor Pattern
-
-Reactors are event processors with managed lifecycles:
-
-```typescript
-interface AgentReactor {
-  readonly id: string;
-  readonly name: string;
-
-  initialize(context: AgentReactorContext): void | Promise<void>;
-  destroy(): void | Promise<void>;
-}
-
-interface AgentReactorContext {
-  readonly agentId: string;
-  readonly sessionId: string;
-  readonly consumer: EventConsumer;
-  readonly producer: EventProducer;
-}
-```
-
-**Built-in Reactors:**
-
-- `AgentDriverBridge` - Connects Driver to EventBus
-- `AgentStateMachine` - Generates State events from Stream events
-- `AgentMessageAssembler` - Assembles Message events from Stream deltas
-- `AgentExchangeTracker` - Tracks request-response pairs
-
-**User-Friendly Reactor Interfaces:**
-
-Instead of implementing `AgentReactor` directly, you can use the 4-layer interfaces:
-
-```typescript
-import { StreamReactor, MessageReactor, AgentReactorContext } from "@deepractice-ai/agentx-core";
-
-class MyReactor implements MessageReactor {
-  // Lifecycle hooks
-  onInitialize?(context: AgentReactorContext): void | Promise<void>;
-  onDestroy?(): void | Promise<void>;
-
-  // Message layer handlers
-  onUserMessage?(event: UserMessageEvent): void;
-  onAssistantMessage?(event: AssistantMessageEvent): void;
-  onToolUseMessage?(event: ToolUseMessageEvent): void;
-  onErrorMessage?(event: ErrorMessageEvent): void;
-}
-
-// Wrap with ReactorAdapter before passing to createAgent
-import { wrapUserReactor } from "@deepractice-ai/agentx-core";
-
-const agent = createAgent("my-agent", driver, {
-  reactors: [wrapUserReactor(new MyReactor())],
-});
-```
-
-**ReactorAdapter** automatically:
-
-- Detects which layer interface you implemented
-- Subscribes to appropriate events
-- Manages lifecycle (onInitialize/onDestroy)
-
-### AgentEngine
-
-`AgentEngine` orchestrates all Reactors via `AgentReactorRegistry`:
-
-```typescript
-class AgentEngine {
-  readonly agentId: string;
-  readonly sessionId: string;
-  readonly eventBus: AgentEventBus;
-
-  constructor(driver: AgentDriver, config?: EngineConfig);
-
-  async initialize(): Promise<void>; // Initializes all Reactors
-  abort(): void;
-  async destroy(): Promise<void>; // Destroys all Reactors (reverse order)
-}
-```
-
-### Error Handling
-
-AgentX Core uses a **unified error handling architecture** where errors from any layer are converted to `error_message` events and propagated through the EventBus.
-
-#### Architecture
-
-```
-Error Source (any layer)
-    ↓
-emitError() utility
-    ↓
-ErrorMessageEvent → EventBus
-    ↓
-UI/Subscribers
-```
-
-#### Error Categorization
-
-All errors are categorized by:
-
-- **Subtype**: `system` | `agent` | `llm` | `validation` | `unknown`
-  - `system` - Infrastructure errors (WebSocket, network)
-  - `agent` - Agent logic errors (reactor failures, state errors)
-  - `llm` - LLM provider errors (rate limits, API errors)
-  - `validation` - Input validation errors
-  - `unknown` - Uncategorized errors
-
-- **Severity**: `fatal` | `error` | `warning`
-  - `fatal` - Unrecoverable errors
-  - `error` - Recoverable errors (default)
-  - `warning` - Non-critical issues
-
-#### ErrorMessage Structure
-
-```typescript
-interface ErrorMessage {
-  id: string;
-  role: "error";
-  subtype: "system" | "agent" | "llm" | "validation" | "unknown";
-  severity: "fatal" | "error" | "warning";
-  message: string; // Human-readable error
-  code?: string; // Machine-readable code
-  details?: unknown; // Additional context
-  recoverable?: boolean; // Can the agent continue?
-  stack?: string; // Stack trace if available
-  timestamp: number;
-}
-```
-
-#### Subscribing to Errors
-
-```typescript
-agent.react({
-  onErrorMessage(event) {
-    const error = event.data;
-    console.error(`[${error.severity}] ${error.subtype}: ${error.message}`);
-
-    if (error.code === "VALIDATION_ERROR") {
-      // Handle validation errors
-    }
-
-    if (!error.recoverable) {
-      // Handle fatal errors
-      await agent.destroy();
-    }
-  },
-});
-```
-
-## Event Types
-
-### Stream Events
-
-Real-time incremental events during streaming:
-
-- `MessageStartEvent` - Message begins
-- `TextDeltaEvent` - Text chunk arrives
-- `TextContentBlockStartEvent` / `TextContentBlockStopEvent`
-- `ToolUseContentBlockStartEvent` / `ToolUseContentBlockStopEvent`
-- `InputJsonDeltaEvent` - Tool input chunk
-- `MessageDeltaEvent` - Message metadata delta
-- `MessageStopEvent` - Message complete
-- `ToolCallEvent` - Complete tool call assembled
-
-### State Events
-
-State machine transitions:
-
-- `AgentInitializingStateEvent` / `AgentReadyStateEvent`
-- `ConversationStartStateEvent` / `ConversationEndStateEvent`
-- `ConversationThinkingStateEvent` / `ConversationRespondingStateEvent`
-- `ToolPlannedStateEvent` / `ToolExecutingStateEvent` / `ToolCompletedStateEvent`
-- `StreamStartStateEvent` / `StreamCompleteStateEvent`
-
-### Message Events
-
-Complete messages:
-
-- `UserMessageEvent` - User sent a message
-- `AssistantMessageEvent` - Assistant completed response
-- `ToolUseMessageEvent` - Tool call + result (unified view)
-- `ErrorMessageEvent` - Error occurred
-
-### Exchange Events
-
-Request-response analytics:
-
-- `ExchangeRequestEvent` - User initiated request
-- `ExchangeResponseEvent` - Assistant completed response (with cost, duration, tokens)
-
-## Advanced Usage
-
-### Custom Reactors
-
-```typescript
-import { MessageReactor, wrapUserReactor } from "@deepractice-ai/agentx-core";
-
-class AnalyticsReactor implements MessageReactor {
-  onAssistantMessage(event) {
-    // Track analytics
+import {
+  AgentEngine,
+  createStreamPresenter,
+  createMessagePresenter,
+  type Driver,
+} from "@deepractice-ai/agentx-engine";
+
+// 1. Define a Driver (connects to AI SDK)
+const myDriver: Driver = async function* (message) {
+  // Call your AI SDK and yield stream events
+  for await (const chunk of aiSDK.stream(message.content)) {
+    yield {
+      type: "text_delta",
+      data: { text: chunk.text },
+      // ... other fields
+    };
   }
+};
 
-  onErrorMessage(event) {
-    // Track errors
+// 2. Create Presenters (handle outputs)
+const ssePresenter = createStreamPresenter((agentId, event) => {
+  // Forward stream events to SSE connection
+  sseConnection.send(agentId, event);
+});
+
+const dbPresenter = createMessagePresenter((agentId, event) => {
+  // Persist messages to database
+  database.saveMessage(agentId, event.data);
+});
+
+// 3. Create Engine
+const engine = new AgentEngine({
+  driver: myDriver,
+  presenters: [ssePresenter, dbPresenter],
+});
+
+// 4. Process messages
+await engine.receive("agent_123", {
+  role: "user",
+  content: "Hello!",
+  timestamp: Date.now(),
+});
+```
+
+### With Claude SDK
+
+```typescript
+import Anthropic from "@anthropic-ai/sdk";
+import { AgentEngine, type Driver } from "@deepractice-ai/agentx-engine";
+
+const client = new Anthropic();
+
+const claudeDriver: Driver = async function* (message) {
+  const stream = await client.messages.stream({
+    model: "claude-sonnet-4-20250514",
+    max_tokens: 1024,
+    messages: [{ role: "user", content: message.content }],
+  });
+
+  for await (const event of stream) {
+    yield transformToStreamEvent(event); // Transform to AgentX event format
   }
-}
+};
 
-const agent = createAgent("my-agent", driver, {
-  reactors: [wrapUserReactor(new AnalyticsReactor())],
+const engine = new AgentEngine({
+  driver: claudeDriver,
+  presenters: [/* your presenters */],
 });
-```
-
-### Direct EventBus Access
-
-```typescript
-const agent = createAgent("my-agent", driver);
-await agent.initialize();
-
-// Access internal engine (not recommended for normal use)
-const consumer = agent.eventBus?.createConsumer();
-
-consumer?.consumeByType("text_delta", (event) => {
-  console.log(event.data.text);
-});
-```
-
-### Message History
-
-```typescript
-const agent = createAgent("my-agent", driver);
-
-await agent.send("Hello");
-await agent.send("How are you?");
-
-// Access message history
-console.log(agent.messages);
-// [
-//   { role: "user", content: "Hello", ... },
-//   { role: "assistant", content: "Hi there!", ... },
-//   { role: "user", content: "How are you?", ... },
-//   { role: "assistant", content: "I'm doing well!", ... }
-// ]
-
-// Export to session format
-const session = agent.exportToSession();
-
-// Clear history
-agent.clear();
 ```
 
 ## API Reference
 
-### createAgent (Facade API)
-
-```typescript
-function createAgent(id: string, driver: AgentDriver, options?: CreateAgentOptions): AgentInstance;
-
-interface CreateAgentOptions {
-  reactors?: AgentReactor[];
-  name?: string;
-  description?: string;
-  tags?: string[];
-  version?: string;
-  metadata?: Record<string, unknown>;
-}
-
-// AgentInstance = Agent data + AgentService methods (via mixin)
-type AgentInstance = Agent & AgentService;
-```
-
-### AgentService
-
-```typescript
-interface AgentService extends AgentDriver {
-  readonly id: string;
-  readonly agent: Readonly<Agent>;
-  readonly messages: ReadonlyArray<Message>;
-
-  initialize(): Promise<void>;
-  send(message: string): Promise<void>;
-  react(handlers: Record<string, Function>): () => void;
-  clear(): void;
-  exportToSession(): Omit<Session, "id">;
-  destroy(): Promise<void>;
-
-  // Inherited from AgentDriver:
-  readonly sessionId: string;
-  readonly driverSessionId: string | null;
-  sendMessage(messages: UserMessage | AsyncIterable<UserMessage>): AsyncIterable<StreamEventType>;
-  abort(): void;
-}
-```
-
 ### AgentEngine
 
-```typescript
-class AgentEngine {
-  readonly agentId: string;
-  readonly sessionId: string;
-  readonly eventBus: AgentEventBus;
-
-  constructor(driver: AgentDriver, config?: EngineConfig);
-
-  initialize(): Promise<void>;
-  abort(): void;
-  destroy(): Promise<void>;
-}
-```
-
-### EngineConfig
+The main runtime class.
 
 ```typescript
-interface EngineConfig {
-  reactors?: AgentReactor[];
-}
+const engine = new AgentEngine({
+  driver: myDriver,      // Required: AI SDK adapter
+  presenters: [...],     // Optional: Output handlers
+});
+
+// Process a message
+await engine.receive(agentId, userMessage);
 ```
 
-### ReactorAdapter (Utility)
+### Driver
+
+Input adapter that transforms `UserMessage` into `StreamEvent` stream.
 
 ```typescript
-// Wrap user-friendly reactor interfaces
-function wrapUserReactor(userReactor: UserReactor): AgentReactor;
+type Driver = (message: UserMessage) => AsyncIterable<StreamEventType>;
 
-type UserReactor = StreamReactor | StateReactor | MessageReactor | ExchangeReactor;
-
-// Or use specific adapters
-class StreamReactorAdapter extends BaseReactorAdapter {}
-class StateReactorAdapter extends BaseReactorAdapter {}
-class MessageReactorAdapter extends BaseReactorAdapter {}
-class ExchangeReactorAdapter extends BaseReactorAdapter {}
+// Example
+const driver: Driver = async function* (message) {
+  yield { type: "message_start", ... };
+  yield { type: "text_delta", data: { text: "Hello" } };
+  yield { type: "message_stop", ... };
+};
 ```
 
-## Design Principles
+### Presenter
 
-1. **Platform Agnostic** - Core has no dependencies on specific LLM SDKs
-2. **Driver Injection** - Platform-specific logic lives in Drivers
-3. **Event-Driven** - Everything flows through EventBus
-4. **Reactor Pattern** - Managed lifecycle for all event processors
-5. **Layered Events** - Multiple perspectives on the same interaction
-6. **Type Safety** - Strict TypeScript types throughout
-7. **Separation of Concerns** - Core only handles business logic, no logging
-8. **Agent-as-Driver** - Agents can be composed as nested Drivers
+Output adapter that receives processed events.
+
+```typescript
+type Presenter = (agentId: string, event: AgentOutput) => void;
+
+// Example
+const presenter: Presenter = (agentId, event) => {
+  console.log(`[${agentId}] ${event.type}`);
+};
+```
+
+### Typed Presenters
+
+Type-safe presenters that only receive specific event types:
+
+```typescript
+import {
+  createStreamPresenter,   // Only stream events
+  createMessagePresenter,  // Only message events
+  createStatePresenter,    // Only state events
+  createTurnPresenter,     // Only turn events
+} from "@deepractice-ai/agentx-engine";
+
+// Stream presenter - for SSE forwarding
+const ssePresenter = createStreamPresenter((agentId, event) => {
+  // event is StreamEventType (message_start, text_delta, etc.)
+  sseConnection.send(agentId, event);
+});
+
+// Message presenter - for UI updates
+const uiPresenter = createMessagePresenter((agentId, event) => {
+  // event is MessageEventType (assistant_message, etc.)
+  setMessages(prev => [...prev, event.data]);
+});
+
+// State presenter - for status updates
+const statusPresenter = createStatePresenter((agentId, event) => {
+  // event is StateEventType (conversation_start, etc.)
+  setStatus(event.type);
+});
+
+// Turn presenter - for analytics
+const analyticsPresenter = createTurnPresenter((agentId, event) => {
+  // event is TurnEventType (turn_response with cost, tokens, etc.)
+  trackAnalytics(event.data);
+});
+```
+
+### Type Guards
+
+Check event types manually:
+
+```typescript
+import {
+  isStreamEvent,
+  isMessageEvent,
+  isStateEvent,
+  isTurnEvent,
+} from "@deepractice-ai/agentx-engine";
+
+const presenter: Presenter = (agentId, event) => {
+  if (isStreamEvent(event)) {
+    // Handle stream event
+  } else if (isMessageEvent(event)) {
+    // Handle message event
+  }
+};
+```
+
+## Event Types
+
+### Stream Events (from Driver)
+
+| Event | Description |
+|-------|-------------|
+| `message_start` | AI response started |
+| `text_delta` | Text chunk received |
+| `message_stop` | AI response completed |
+| `tool_use_content_block_start` | Tool call started |
+| `tool_call` | Tool call ready |
+| `tool_result` | Tool result received |
+
+### Message Events (assembled)
+
+| Event | Description |
+|-------|-------------|
+| `assistant_message` | Complete AI response |
+| `tool_use_message` | Tool call + result |
+
+### State Events (transitions)
+
+| Event | Description |
+|-------|-------------|
+| `conversation_start` | Conversation began |
+| `conversation_responding` | AI is responding |
+| `conversation_end` | Conversation ended |
+| `tool_executing` | Tool is running |
+
+### Turn Events (analytics)
+
+| Event | Description |
+|-------|-------------|
+| `turn_response` | Turn completed with stats |
+
+## Horizontal Scaling
+
+Engine is stateless, enabling horizontal scaling:
+
+```
+┌─────────────────────────────────────────────────────────────┐
+│                      Load Balancer                          │
+└─────────────────────────────────────────────────────────────┘
+         │                    │                    │
+         ▼                    ▼                    ▼
+┌─────────────────┐ ┌─────────────────┐ ┌─────────────────┐
+│   Engine A      │ │   Engine B      │ │   Engine C      │
+│   (stateless)   │ │   (stateless)   │ │   (stateless)   │
+└─────────────────┘ └─────────────────┘ └─────────────────┘
+         │                    │                    │
+         └────────────────────┼────────────────────┘
+                              ▼
+                    ┌─────────────────┐
+                    │    Database     │
+                    │   (via Presenters)  │
+                    └─────────────────┘
+```
+
+- Any Engine instance can handle any `agentId`
+- Presenters persist data to shared database
+- Same Engine instance can process multiple agents concurrently
 
 ## Related Packages
 
-- **[@deepractice-ai/agentx-types](../agentx-types)** - Message, content, and agent types
+- **[@deepractice-ai/agentx-mealy](../agentx-mealy)** - Mealy Machine framework
 - **[@deepractice-ai/agentx-event](../agentx-event)** - Event type definitions
-- **[@deepractice-ai/agentx-framework](../agentx-framework)** - Full-featured framework with drivers and reactors
+- **[@deepractice-ai/agentx-types](../agentx-types)** - Message type definitions
 
 ## License
 

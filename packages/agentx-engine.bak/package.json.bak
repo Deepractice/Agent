@@ -47,8 +47,9 @@
   "homepage": "https://github.com/Deepractice/Agent#readme",
   "dependencies": {
     "@deepractice-ai/agentx-event": "workspace:*",
-    "@deepractice-ai/agentx-mealy": "workspace:*",
-    "@deepractice-ai/agentx-types": "workspace:*"
+    "@deepractice-ai/agentx-logger": "workspace:*",
+    "@deepractice-ai/agentx-types": "workspace:*",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@deepracticex/vitest-cucumber": "^1.4.3",

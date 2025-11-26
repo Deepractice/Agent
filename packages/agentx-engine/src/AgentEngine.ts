@@ -1,239 +1,246 @@
 /**
- * AgentEngine
+ * AgentEngine - Stateless Runtime for AgentX Engine Layer
  *
- * Runtime orchestration layer that manages all Reactors using ReactorRegistry.
+ * AgentEngine combines Driver, Processor, and Presenters into a complete
+ * event processing pipeline. It is completely STATELESS - all intermediate
+ * processing state is kept in local variables during a single send() call.
  *
- * Responsibilities:
- * 1. Create and manage EventBus
- * 2. Register and initialize all Reactors:
- *    - AgentDriverBridge → Stream Events
- *    - StateMachineReactor → State Events
- *    - MessageAssemblerReactor → Message Events
- *    - TurnTrackerReactor → Turn Events
- *    - User-provided Reactors
- * 3. Lifecycle management (initialize, destroy)
+ * Components:
+ * - Driver: Input adapter (UserMessage → StreamEvents)
+ * - Processor: Event transformer (built-in agentProcessor)
+ * - Presenters: Output adapters (events → external systems)
  *
- * Architecture (NEW - Reactor-based):
+ * State Management:
+ * - Engine has NO persistent state
+ * - Processor intermediate state (pendingContents, etc.) is local variables
+ * - Business data (messages, statistics) is persisted via Presenters
+ *
+ * Architecture:
  * ```
- * AgentEngine
- *   ├── EventBus (communication backbone)
- *   └── ReactorRegistry
- *         ├── AgentDriverBridge
- *         ├── StateMachineReactor
- *         ├── MessageAssemblerReactor
- *         ├── TurnTrackerReactor
- *         └── User Reactors
+ * engine.receive(agentId, message)  // Agent receives user message
+ *    │
+ *    ▼
+ * Driver(message) yields StreamEvents
+ *    │
+ *    ▼
+ * For each StreamEvent:
+ *    │
+ *    ├──→ 1. Present to Presenters (pass-through)
+ *    │
+ *    ├──→ 2. Processor(state, event) → outputs[]
+ *    │       (state is LOCAL variable, not stored!)
+ *    │
+ *    └──→ 3. For each output:
+ *             - Present to Presenters
+ *             - Re-inject for event chaining
+ *    │
+ *    ▼
+ * Presenters persist business data:
+ *    - MessagePresenter → SessionStore (message history)
+ *    - StatePresenter → StateStore (agent state)
+ *    - TurnPresenter → StatisticsStore (cost, tokens)
  * ```
  *
- * Example:
+ * @example
  * ```typescript
- * const driver = new ClaudeDriver(config);
- * const engine = new AgentEngine(driver, logger, {
- *   reactors: [new MyCustomReactor()]
+ * import {
+ *   AgentEngine,
+ *   createStreamPresenter,
+ *   createMessagePresenter,
+ *   createTurnPresenter,
+ * } from '@deepractice-ai/agentx-engine';
+ *
+ * // Presenters persist to external stores
+ * const engine = new AgentEngine({
+ *   driver: claudeDriver,
+ *   presenters: [
+ *     // Forward stream events to SSE
+ *     createStreamPresenter((id, event) => sseConnection.send(id, event)),
+ *     // Persist messages to session store
+ *     createMessagePresenter((id, event) => sessionStore.addMessage(id, event.data)),
+ *     // Persist statistics
+ *     createTurnPresenter((id, event) => statsStore.addTurn(id, event.data)),
+ *   ],
  * });
  *
- * await engine.initialize();
- *
- * // All Reactors are now active and processing events
- * const consumer = engine.eventBus.createConsumer();
- * consumer.consumeByType("assistant_message", handleMessage);
- *
- * await engine.destroy();
+ * await engine.receive('agent_123', { role: 'user', content: 'Hello!' });
  * ```
  */
 
-import type { EventBus } from "./bus/EventBus";
-import { AgentStateMachine } from "./AgentStateMachine";
-import { AgentMessageAssembler } from "./AgentMessageAssembler";
-import { AgentTurnTracker } from "./AgentTurnTracker";
-import { AgentDriverBridge } from "./AgentDriverBridge";
-import { AgentReactorRegistry } from "./AgentReactorRegistry";
-import type { AgentDriver } from "./AgentDriver";
-import type { AgentReactor } from "./AgentReactor";
-import { createLogger, type LoggerProvider } from "@deepractice-ai/agentx-logger";
+import type { AgentOutput, Presenter, PresenterDefinition } from "./Presenter";
+import type { Driver } from "./Driver";
+import {
+  agentProcessor,
+  createInitialAgentEngineState,
+  type AgentEngineState,
+} from "./AgentProcessor";
+import type { UserMessage } from "@deepractice-ai/agentx-types";
 
 /**
- * Runtime configuration
+ * Configuration for AgentEngine
  */
-export interface EngineConfig {
+export interface AgentEngineConfig {
   /**
-   * User-provided AgentReactors to register
+   * Driver - Input adapter that transforms UserMessage into StreamEvents
    */
-  reactors?: AgentReactor[];
+  driver: Driver;
 
   /**
-   * EventBus implementation (injected from agentx-core)
+   * Presenters to receive outputs
+   * Can be Presenter functions or PresenterDefinitions
+   *
+   * Presenters are responsible for persisting business data:
+   * - MessagePresenter → persist to SessionStore
+   * - StatePresenter → persist to StateStore
+   * - TurnPresenter → persist to StatisticsStore
    */
-  eventBus?: EventBus;
+  presenters?: (Presenter | PresenterDefinition)[];
 }
 
 /**
- * AgentEngine
+ * AgentEngine - Stateless event processing pipeline
  *
- * Orchestrates all Reactors using ReactorRegistry.
+ * Key Design:
+ * - Engine is STATELESS - can be shared across requests
+ * - Processor intermediate state is LOCAL variables in send()
+ * - Business data persistence is handled by Presenters
+ * - Multiple Engine instances can share the same database
  */
 export class AgentEngine {
-  readonly agentId: string;
+  private readonly driver: Driver;
+  private readonly presenters: Presenter[];
 
-  // Core components
-  readonly eventBus: EventBus;
-  private readonly registry: AgentReactorRegistry;
-  private readonly driver: AgentDriver;
-  private readonly logger: LoggerProvider;
-  private readonly stateMachine: AgentStateMachine;
+  constructor(config: AgentEngineConfig) {
+    this.driver = config.driver;
 
-  private isInitialized = false;
+    // Normalize presenters to functions
+    this.presenters = (config.presenters ?? []).map((p) =>
+      typeof p === "function" ? p : p.presenter
+    );
+  }
 
-  constructor(driver: AgentDriver, config?: EngineConfig) {
-    this.driver = driver;
-    this.agentId = this.generateId();
-    this.logger = createLogger(`core/agent/AgentEngine/${this.agentId}`);
+  /**
+   * Receive a message and process the response
+   *
+   * This is the main entry point for using AgentEngine.
+   * From the agent's perspective, it "receives" a message from the user.
+   *
+   * All intermediate state is kept in LOCAL variables - nothing is stored
+   * in the Engine itself.
+   *
+   * @param agentId - The agent identifier
+   * @param message - The user message received
+   */
+  async receive(agentId: string, message: UserMessage): Promise<void> {
+    // Processor state - LOCAL variable, not persisted!
+    // This is the intermediate state for assembling messages, tracking turns, etc.
+    // It only lives for the duration of this receive() call.
+    let state = createInitialAgentEngineState();
 
-    this.logger.info("Creating AgentEngine", {
-      agentId: this.agentId,
-      driverType: driver.constructor.name,
-    });
-
-    // Use injected EventBus or throw error (EventBus must be provided by agentx-core)
-    if (!config?.eventBus) {
-      throw new Error("[AgentEngine] EventBus must be provided via config.eventBus");
-    }
-    this.eventBus = config.eventBus;
-    this.logger.debug("EventBus injected");
-
-    // Create AgentReactorRegistry
-    this.registry = new AgentReactorRegistry(this.eventBus, {
-      agentId: this.agentId,
-    });
-    this.logger.debug("ReactorRegistry created");
-
-    // Register core Reactors (order matters!)
-    this.logger.debug("Registering core reactors");
-    this.registry.register(new AgentDriverBridge(driver));
-    this.stateMachine = new AgentStateMachine();
-    this.registry.register(this.stateMachine);
-    this.registry.register(new AgentMessageAssembler());
-    this.registry.register(new AgentTurnTracker());
-
-    // Register user-provided Reactors
-    if (config?.reactors) {
-      this.logger.info("Registering user reactors", {
-        count: config.reactors.length,
-      });
-      this.registry.registerAll(config.reactors);
+    for await (const event of this.driver(message)) {
+      // Process event and update local state
+      state = this.processEvent(agentId, state, event);
     }
 
-    this.logger.info("AgentEngine created successfully");
+    // state is discarded here - intermediate state is not persisted
+    // Business data (messages, stats) was already persisted by Presenters
   }
 
   /**
-   * Initialize engine and start all Reactors
+   * Process a single event with given state
    *
-   * Steps:
-   * 1. Initialize ReactorRegistry (which initializes all Reactors)
-   * 2. Mark as initialized
+   * @param agentId - The agent identifier
+   * @param state - Current processor state (local variable from send())
+   * @param event - The event to process
+   * @returns Updated state
    */
-  async initialize(): Promise<void> {
-    if (this.isInitialized) {
-      this.logger.debug("Engine already initialized");
-      return;
+  private processEvent(
+    agentId: string,
+    state: AgentEngineState,
+    event: AgentOutput
+  ): AgentEngineState {
+    // 1. Pass-through: Present original event to all presenters
+    this.present(agentId, event);
+
+    // 2. Process the event
+    const [newState, outputs] = agentProcessor(state, event);
+
+    // 3. Handle each output: present and re-inject
+    let currentState = newState;
+    for (const output of outputs) {
+      // Present to all presenters (they handle persistence)
+      this.present(agentId, output);
+
+      // Re-inject for event chaining
+      // This allows TurnTracker to receive MessageEvents from MessageAssembler
+      currentState = this.processReinjected(agentId, currentState, output);
     }
 
-    this.logger.info("Initializing AgentEngine");
-
-    // Initialize all Reactors via ReactorRegistry
-    await this.registry.initialize();
-
-    this.isInitialized = true;
-    this.logger.info("AgentEngine initialized successfully");
+    return currentState;
   }
 
   /**
-   * Get current agent state
-   */
-  get state() {
-    return this.stateMachine.state;
-  }
-
-  /**
-   * Subscribe to state changes
-   */
-  onStateChange(callback: (state: any, previousState: any) => void): () => void {
-    return this.stateMachine.onStateChange(callback);
-  }
-
-  /**
-   * Manually set agent state
-   */
-  setState(state: any): void {
-    this.stateMachine.setState(state);
-  }
-
-  /**
-   * Register and initialize a reactor at runtime
+   * Process a re-injected event
    *
-   * This is used for dynamic reactor registration (e.g., ChatReactor, SSEReactor with session).
-   * The reactor will be registered in the ReactorRegistry and initialized immediately
-   * if the engine is already initialized.
-   *
-   * @param reactor - AgentReactor to register
-   * @returns Unsubscribe function that destroys the reactor
+   * Re-injected events go through the processor to enable event chaining
+   * (e.g., TurnTracker needs MessageEvents from MessageAssembler)
    */
-  async registerReactor(reactor: AgentReactor): Promise<() => void> {
-    this.logger.info("Registering reactor", { reactorName: reactor.name });
+  private processReinjected(
+    agentId: string,
+    state: AgentEngineState,
+    event: AgentOutput
+  ): AgentEngineState {
+    // Process the event
+    const [newState, outputs] = agentProcessor(state, event);
 
-    // Register in registry
-    this.registry.register(reactor);
-
-    // Initialize immediately if engine is already initialized
-    if (this.isInitialized) {
-      const context = {
-        consumer: this.eventBus.createConsumer(),
-        producer: this.eventBus.createProducer(),
-        agentId: this.agentId,
-      };
-      await reactor.initialize(context);
-      this.logger.info("Reactor initialized", { reactorName: reactor.name });
+    // Handle outputs recursively
+    let currentState = newState;
+    for (const output of outputs) {
+      this.present(agentId, output);
+      currentState = this.processReinjected(agentId, currentState, output);
     }
 
-    // Return unsubscribe function
-    return async () => {
-      this.logger.debug("Unregistering reactor", { reactorName: reactor.name });
-      await reactor.destroy();
-    };
+    return currentState;
   }
 
   /**
-   * Abort current operation
-   */
-  abort(): void {
-    this.logger.debug("Aborting current operation");
-    this.driver.abort();
-  }
-
-  /**
-   * Destroy engine and clean up all resources
+   * Present an event to all presenters
    *
-   * Steps:
-   * 1. Destroy ReactorRegistry (which destroys all Reactors in reverse order)
-   * 2. Close EventBus
+   * Presenters are responsible for:
+   * - Forwarding events (SSE, WebSocket)
+   * - Persisting business data (messages, stats)
+   * - Updating UI state
    */
-  async destroy(): Promise<void> {
-    this.logger.info("Destroying AgentEngine");
-
-    // Destroy all Reactors via ReactorRegistry (reverse order)
-    await this.registry.destroy();
-    this.logger.debug("All reactors destroyed");
-
-    // Close EventBus
-    this.eventBus.close();
-    this.logger.debug("EventBus closed");
-
-    this.isInitialized = false;
-    this.logger.info("AgentEngine destroyed successfully");
+  private present(agentId: string, event: AgentOutput): void {
+    for (const presenter of this.presenters) {
+      try {
+        presenter(agentId, event);
+      } catch (error) {
+        // Log but don't throw - one presenter failing shouldn't stop others
+        console.error(`[AgentEngine] Presenter error:`, error);
+      }
+    }
   }
 
-  private generateId(): string {
-    return `agent_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+  /**
+   * Add a presenter dynamically
+   */
+  addPresenter(presenter: Presenter | PresenterDefinition): void {
+    const fn = typeof presenter === "function" ? presenter : presenter.presenter;
+    this.presenters.push(fn);
   }
+
+  /**
+   * Remove all presenters
+   */
+  clearPresenters(): void {
+    this.presenters.length = 0;
+  }
+}
+
+/**
+ * Factory function to create AgentEngine
+ */
+export function createAgentEngine(config: AgentEngineConfig): AgentEngine {
+  return new AgentEngine(config);
 }

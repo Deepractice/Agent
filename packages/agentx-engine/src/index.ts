@@ -1,52 +1,152 @@
 /**
  * @deepractice-ai/agentx-engine
  *
- * Runtime engine for AgentX ecosystem - Core event processing and state management
+ * Stateless Event Processing Engine for AgentX
+ *
+ * This package provides a completely STATELESS event processing engine.
+ * All intermediate state is kept in local variables during processing.
+ * Business data persistence is handled by Presenters.
+ *
+ * Architecture:
+ * - Driver: Input adapter (UserMessage → StreamEvents)
+ * - Processor: Pure Mealy transition function (state, input) => [state, outputs]
+ * - Presenter: Output adapter (events → external systems / persistence)
+ * - AgentEngine: Stateless runtime that orchestrates the above
+ *
+ * State Management:
+ * - Engine has NO persistent state - can be shared across requests
+ * - Processor intermediate state (pendingContents, etc.) is local variables
+ * - Business data (messages, statistics) is persisted via Presenters
+ * - Multiple Engine instances can share the same database
+ *
+ * @example
+ * ```typescript
+ * import {
+ *   AgentEngine,
+ *   createStreamPresenter,
+ *   createMessagePresenter,
+ *   createTurnPresenter,
+ *   type Driver,
+ * } from '@deepractice-ai/agentx-engine';
+ *
+ * // Define driver (connects to AI SDK)
+ * const claudeDriver: Driver = async function* (message) {
+ *   for await (const chunk of claudeSDK.stream(message)) {
+ *     yield transformToStreamEvent(chunk);
+ *   }
+ * };
+ *
+ * // Create STATELESS engine
+ * const engine = new AgentEngine({
+ *   driver: claudeDriver,
+ *   presenters: [
+ *     // Forward stream events to SSE
+ *     createStreamPresenter((id, event) => sseConnection.send(id, event)),
+ *     // Persist messages to session store (database)
+ *     createMessagePresenter((id, event) => sessionStore.addMessage(id, event.data)),
+ *     // Persist statistics (cost, tokens, duration)
+ *     createTurnPresenter((id, event) => statsStore.addTurn(id, event.data)),
+ *   ],
+ * });
+ *
+ * // Engine can handle any agentId - state is external
+ * await engine.receive('agent_123', { role: 'user', content: 'Hello!' });
+ * await engine.receive('agent_456', { role: 'user', content: 'Hi there!' });
+ * ```
+ *
+ * @packageDocumentation
  */
 
-// ==================== Core Agent Runtime ====================
-// AgentService - Stateless runtime manager (singleton)
-export { AgentService, agentService } from "./AgentService";
+// ===== Public API (External) =====
 
-// AgentEngine - Per-agent runtime orchestrator
-export type { EngineConfig } from "./AgentEngine";
-export { AgentEngine } from "./AgentEngine";
+// Driver - Input adapter
+export { type Driver, type DriverDefinition } from "./Driver";
 
-// ==================== Interfaces (SPI Contracts) ====================
-// EventBus interfaces (moved from agentx-event)
-export type { EventBus } from "./bus/EventBus";
-export type { EventProducer } from "./bus/EventProducer";
-export type { EventConsumer, Unsubscribe } from "./bus/EventConsumer";
-
-// EventBus implementation (RxJS-based)
-export { RxJSEventBus, globalEventBus } from "./RxJSEventBus";
-
-// Driver interface
-export type { AgentDriver } from "./AgentDriver";
-
-// Agent reactor and context
-export type { AgentReactor, AgentReactorContext } from "./AgentReactor";
-export type { AgentContext } from "./AgentContext";
-
-// 4-Layer Reactor interfaces (user-friendly)
-export type { StreamReactor } from "./StreamReactor";
-export type { StateReactor } from "./StateReactor";
-export type { MessageReactor } from "./MessageReactor";
-export type { TurnReactor } from "./TurnReactor";
-
-// ==================== Utilities ====================
-// Stream event building utility
-export { StreamEventBuilder } from "./StreamEventBuilder";
-
-// Error emission utility
-export { emitError } from "./emitError";
-
-// Reactor adapters - convert layer interfaces to AgentReactor
+// Presenter - Output adapter
 export {
-  StreamReactorAdapter,
-  StateReactorAdapter,
-  MessageReactorAdapter,
-  TurnReactorAdapter,
-  createReactorAdapter,
-  type ReactorAdapter,
-} from "./ReactorAdapter";
+  type Presenter,
+  type PresenterDefinition,
+  type AgentOutput,
+  // Typed presenters
+  type StreamPresenter,
+  type StatePresenter,
+  type MessagePresenter,
+  type TurnPresenter,
+  // Type guards
+  isStreamEvent,
+  isStateEvent,
+  isMessageEvent,
+  isTurnEvent,
+  // Helper functions
+  createStreamPresenter,
+  createStatePresenter,
+  createMessagePresenter,
+  createTurnPresenter,
+} from "./Presenter";
+
+// AgentProcessor - Combined processor (internal use)
+export {
+  agentProcessor,
+  createInitialAgentEngineState,
+  type AgentEngineState,
+  type AgentProcessorInput,
+  type AgentProcessorOutput,
+} from "./AgentProcessor";
+
+// AgentEngine - Stateless Runtime
+export {
+  AgentEngine,
+  createAgentEngine,
+  type AgentEngineConfig,
+} from "./AgentEngine";
+
+// ===== Internal exports (for advanced use cases) =====
+
+export {
+  // MessageAssembler
+  messageAssemblerProcessor,
+  messageAssemblerProcessorDef,
+  type MessageAssemblerInput,
+  type MessageAssemblerOutput,
+  type MessageAssemblerState,
+  type PendingContent,
+  createInitialMessageAssemblerState,
+  // StateMachine
+  stateMachineProcessor,
+  stateMachineProcessorDef,
+  type StateMachineInput,
+  type StateMachineOutput,
+  type StateMachineState,
+  createInitialStateMachineState,
+  // TurnTracker
+  turnTrackerProcessor,
+  turnTrackerProcessorDef,
+  type TurnTrackerInput,
+  type TurnTrackerOutput,
+  type TurnTrackerState,
+  type PendingTurn,
+  createInitialTurnTrackerState,
+} from "./internal";
+
+// ===== Re-export Mealy types for advanced use cases =====
+// Note: Store/MemoryStore not exported - Engine is stateless
+// Business data persistence is handled by Presenters, not Engine
+
+export {
+  // Core types
+  type Source,
+  type SourceDefinition,
+  type Processor,
+  type ProcessorResult,
+  type ProcessorDefinition,
+  type Sink,
+  type SinkDefinition,
+  // Combinators (for building custom processors)
+  combineProcessors,
+  combineInitialStates,
+  chainProcessors,
+  filterProcessor,
+  mapOutput,
+  withLogging,
+  identityProcessor,
+} from "@deepractice-ai/agentx-mealy";
