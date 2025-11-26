@@ -1,246 +1,149 @@
 /**
- * AgentEngine - Stateless Runtime for AgentX Engine Layer
+ * AgentEngine - Pure Mealy Machine Event Processor
  *
- * AgentEngine combines Driver, Processor, and Presenters into a complete
- * event processing pipeline. It is completely STATELESS - all intermediate
- * processing state is kept in local variables during a single send() call.
+ * AgentEngine is a stateless event processor that transforms stream events
+ * into higher-level events (state, message, turn events).
  *
- * Components:
- * - Driver: Input adapter (UserMessage → StreamEvents)
- * - Processor: Event transformer (built-in agentProcessor)
- * - Presenters: Output adapters (events → external systems)
+ * Key Design:
+ * - Engine is a pure Mealy Machine: process(agentId, event) → outputs
+ * - Engine does NOT hold driver or presenters (those belong to Agent layer)
+ * - Engine manages intermediate processing state per agentId
+ * - Multiple agents can share the same Engine instance
  *
  * State Management:
- * - Engine has NO persistent state
- * - Processor intermediate state (pendingContents, etc.) is local variables
- * - Business data (messages, statistics) is persisted via Presenters
+ * - Processing state (pendingContents, etc.) is managed internally per agentId
+ * - Business data persistence is NOT handled here - that's Agent layer's job
  *
- * Architecture:
- * ```
- * engine.receive(agentId, message)  // Agent receives user message
- *    │
- *    ▼
- * Driver(message) yields StreamEvents
- *    │
- *    ▼
- * For each StreamEvent:
- *    │
- *    ├──→ 1. Present to Presenters (pass-through)
- *    │
- *    ├──→ 2. Processor(state, event) → outputs[]
- *    │       (state is LOCAL variable, not stored!)
- *    │
- *    └──→ 3. For each output:
- *             - Present to Presenters
- *             - Re-inject for event chaining
- *    │
- *    ▼
- * Presenters persist business data:
- *    - MessagePresenter → SessionStore (message history)
- *    - StatePresenter → StateStore (agent state)
- *    - TurnPresenter → StatisticsStore (cost, tokens)
- * ```
- *
- * @example
+ * Usage:
  * ```typescript
- * import {
- *   AgentEngine,
- *   createStreamPresenter,
- *   createMessagePresenter,
- *   createTurnPresenter,
- * } from '@deepractice-ai/agentx-engine';
+ * const engine = new AgentEngine();
  *
- * // Presenters persist to external stores
- * const engine = new AgentEngine({
- *   driver: claudeDriver,
- *   presenters: [
- *     // Forward stream events to SSE
- *     createStreamPresenter((id, event) => sseConnection.send(id, event)),
- *     // Persist messages to session store
- *     createMessagePresenter((id, event) => sessionStore.addMessage(id, event.data)),
- *     // Persist statistics
- *     createTurnPresenter((id, event) => statsStore.addTurn(id, event.data)),
- *   ],
- * });
+ * // Agent layer coordinates:
+ * // 1. Driver produces stream events
+ * // 2. Engine processes events
+ * // 3. Presenters handle outputs
  *
- * await engine.receive('agent_123', { role: 'user', content: 'Hello!' });
+ * for await (const streamEvent of driver.receive(message, context)) {
+ *   const outputs = engine.process(agentId, streamEvent);
+ *   for (const output of outputs) {
+ *     presenters.forEach(p => p.present(agentId, output));
+ *   }
+ * }
  * ```
  */
 
-import type { AgentOutput, Presenter, PresenterDefinition } from "./Presenter";
-import type { Driver } from "./Driver";
 import {
   agentProcessor,
   createInitialAgentEngineState,
   type AgentEngineState,
 } from "./AgentProcessor";
-import type { UserMessage } from "@deepractice-ai/agentx-types";
+import { MemoryStore } from "~/mealy";
+import type { AgentOutput, StreamEventType } from "@deepractice-ai/agentx-types";
 
 /**
- * Configuration for AgentEngine
- */
-export interface AgentEngineConfig {
-  /**
-   * Driver - Input adapter that transforms UserMessage into StreamEvents
-   */
-  driver: Driver;
-
-  /**
-   * Presenters to receive outputs
-   * Can be Presenter functions or PresenterDefinitions
-   *
-   * Presenters are responsible for persisting business data:
-   * - MessagePresenter → persist to SessionStore
-   * - StatePresenter → persist to StateStore
-   * - TurnPresenter → persist to StatisticsStore
-   */
-  presenters?: (Presenter | PresenterDefinition)[];
-}
-
-/**
- * AgentEngine - Stateless event processing pipeline
+ * AgentEngine - Pure Mealy Machine for event processing
  *
- * Key Design:
- * - Engine is STATELESS - can be shared across requests
- * - Processor intermediate state is LOCAL variables in send()
- * - Business data persistence is handled by Presenters
- * - Multiple Engine instances can share the same database
+ * - Input: StreamEventType (from Driver)
+ * - Output: AgentOutput[] (state, message, turn events)
+ * - State: Managed internally per agentId
  */
 export class AgentEngine {
-  private readonly driver: Driver;
-  private readonly presenters: Presenter[];
+  private readonly store: MemoryStore<AgentEngineState>;
 
-  constructor(config: AgentEngineConfig) {
-    this.driver = config.driver;
-
-    // Normalize presenters to functions
-    this.presenters = (config.presenters ?? []).map((p) =>
-      typeof p === "function" ? p : p.presenter
-    );
+  constructor() {
+    this.store = new MemoryStore<AgentEngineState>();
   }
 
   /**
-   * Receive a message and process the response
+   * Process a single stream event and return output events
    *
-   * This is the main entry point for using AgentEngine.
-   * From the agent's perspective, it "receives" a message from the user.
+   * This is the core Mealy Machine operation:
+   * process(agentId, event) → outputs[]
    *
-   * All intermediate state is kept in LOCAL variables - nothing is stored
-   * in the Engine itself.
-   *
-   * @param agentId - The agent identifier
-   * @param message - The user message received
+   * @param agentId - The agent identifier (for state isolation)
+   * @param event - Stream event to process
+   * @returns Array of output events (state, message, turn events)
    */
-  async receive(agentId: string, message: UserMessage): Promise<void> {
-    // Processor state - LOCAL variable, not persisted!
-    // This is the intermediate state for assembling messages, tracking turns, etc.
-    // It only lives for the duration of this receive() call.
-    let state = createInitialAgentEngineState();
+  process(agentId: string, event: StreamEventType): AgentOutput[] {
+    // Get current state or create initial state
+    let state = this.store.get(agentId) ?? createInitialAgentEngineState();
 
-    for await (const event of this.driver(message)) {
-      // Process event and update local state
-      state = this.processEvent(agentId, state, event);
+    // Collect all outputs
+    const allOutputs: AgentOutput[] = [];
+
+    // Pass-through: original stream event is also an output
+    allOutputs.push(event);
+
+    // Process through Mealy Machine
+    const [newState, outputs] = agentProcessor(state, event);
+    state = newState;
+
+    // Collect processor outputs
+    for (const output of outputs) {
+      allOutputs.push(output);
+
+      // Re-inject for event chaining (e.g., TurnTracker needs MessageEvents)
+      const [chainedState, chainedOutputs] = this.processChained(state, output);
+      state = chainedState;
+      allOutputs.push(...chainedOutputs);
     }
 
-    // state is discarded here - intermediate state is not persisted
-    // Business data (messages, stats) was already persisted by Presenters
+    // Store updated state
+    this.store.set(agentId, state);
+
+    return allOutputs;
   }
 
   /**
-   * Process a single event with given state
+   * Process chained events recursively
    *
-   * @param agentId - The agent identifier
-   * @param state - Current processor state (local variable from send())
-   * @param event - The event to process
-   * @returns Updated state
+   * Some processors produce events that trigger other processors:
+   * - MessageAssembler produces MessageEvents
+   * - TurnTracker consumes MessageEvents to produce TurnEvents
    */
-  private processEvent(
-    agentId: string,
+  private processChained(
     state: AgentEngineState,
     event: AgentOutput
-  ): AgentEngineState {
-    // 1. Pass-through: Present original event to all presenters
-    this.present(agentId, event);
-
-    // 2. Process the event
+  ): [AgentEngineState, AgentOutput[]] {
     const [newState, outputs] = agentProcessor(state, event);
 
-    // 3. Handle each output: present and re-inject
+    if (outputs.length === 0) {
+      return [newState, []];
+    }
+
+    // Process outputs recursively
+    const allOutputs: AgentOutput[] = [...outputs];
     let currentState = newState;
+
     for (const output of outputs) {
-      // Present to all presenters (they handle persistence)
-      this.present(agentId, output);
-
-      // Re-inject for event chaining
-      // This allows TurnTracker to receive MessageEvents from MessageAssembler
-      currentState = this.processReinjected(agentId, currentState, output);
+      const [chainedState, chainedOutputs] = this.processChained(currentState, output);
+      currentState = chainedState;
+      allOutputs.push(...chainedOutputs);
     }
 
-    return currentState;
+    return [currentState, allOutputs];
   }
 
   /**
-   * Process a re-injected event
+   * Clear state for an agent
    *
-   * Re-injected events go through the processor to enable event chaining
-   * (e.g., TurnTracker needs MessageEvents from MessageAssembler)
+   * Call this when an agent is destroyed to free memory.
    */
-  private processReinjected(
-    agentId: string,
-    state: AgentEngineState,
-    event: AgentOutput
-  ): AgentEngineState {
-    // Process the event
-    const [newState, outputs] = agentProcessor(state, event);
-
-    // Handle outputs recursively
-    let currentState = newState;
-    for (const output of outputs) {
-      this.present(agentId, output);
-      currentState = this.processReinjected(agentId, currentState, output);
-    }
-
-    return currentState;
+  clearState(agentId: string): void {
+    this.store.delete(agentId);
   }
 
   /**
-   * Present an event to all presenters
-   *
-   * Presenters are responsible for:
-   * - Forwarding events (SSE, WebSocket)
-   * - Persisting business data (messages, stats)
-   * - Updating UI state
+   * Check if state exists for an agent
    */
-  private present(agentId: string, event: AgentOutput): void {
-    for (const presenter of this.presenters) {
-      try {
-        presenter(agentId, event);
-      } catch (error) {
-        // Log but don't throw - one presenter failing shouldn't stop others
-        console.error(`[AgentEngine] Presenter error:`, error);
-      }
-    }
-  }
-
-  /**
-   * Add a presenter dynamically
-   */
-  addPresenter(presenter: Presenter | PresenterDefinition): void {
-    const fn = typeof presenter === "function" ? presenter : presenter.presenter;
-    this.presenters.push(fn);
-  }
-
-  /**
-   * Remove all presenters
-   */
-  clearPresenters(): void {
-    this.presenters.length = 0;
+  hasState(agentId: string): boolean {
+    return this.store.has(agentId);
   }
 }
 
 /**
  * Factory function to create AgentEngine
  */
-export function createAgentEngine(config: AgentEngineConfig): AgentEngine {
-  return new AgentEngine(config);
+export function createAgentEngine(): AgentEngine {
+  return new AgentEngine();
 }

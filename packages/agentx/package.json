@@ -19,8 +19,11 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "clean": "rm -rf dist",
-    "typecheck": "tsc --noEmit"
+    "clean": "rm -rf dist test-results",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
   },
   "dependencies": {
     "@deepractice-ai/agentx-core": "workspace:*",
@@ -28,8 +31,12 @@
     "@deepractice-ai/agentx-types": "workspace:*"
   },
   "devDependencies": {
+    "@deepracticex/vitest-cucumber": "^1.4.3",
+    "@types/node": "^24.9.2",
+    "@vitest/ui": "^3.2.4",
     "tsup": "^8.3.5",
-    "typescript": "^5.7.2"
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4"
   },
   "publishConfig": {
     "access": "public"

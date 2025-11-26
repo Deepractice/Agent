@@ -4,6 +4,12 @@
  * Implements the Agent interface from @deepractice-ai/agentx-types.
  * Created from AgentDefinition + AgentContext.
  *
+ * Coordinates the flow:
+ * 1. Driver receives message → produces StreamEvents
+ * 2. Engine processes events → produces outputs
+ * 3. Presenters handle outputs (external systems)
+ * 4. Handlers receive outputs (user subscriptions)
+ *
  * Lifecycle:
  * - running: Active, can receive messages
  * - destroyed: Removed from memory, cannot be used
@@ -15,12 +21,11 @@ import type {
   AgentContext,
   AgentLifecycle,
   AgentEventHandler,
-  AgentEventType,
   Unsubscribe,
   AgentOutput,
 } from "@deepractice-ai/agentx-types";
 import type { UserMessage, AgentState } from "@deepractice-ai/agentx-types";
-import type { AgentEngine, Presenter } from "@deepractice-ai/agentx-engine";
+import type { AgentEngine } from "@deepractice-ai/agentx-engine";
 
 /**
  * AgentInstance - Implementation of Agent interface
@@ -34,7 +39,6 @@ export class AgentInstance implements Agent {
   private _lifecycle: AgentLifecycle = "running";
   private _state: AgentState = "idle";
   private readonly engine: AgentEngine;
-  private readonly presenter: Presenter;
 
   /**
    * Type-based handlers: Map<EventType, Set<Handler>>
@@ -54,17 +58,6 @@ export class AgentInstance implements Agent {
     this.context = context;
     this.engine = engine;
     this.createdAt = context.createdAt;
-
-    // Create presenter to forward events to handlers
-    this.presenter = (id: string, event: AgentOutput) => {
-      if (id === this.agentId) {
-        this.notifyHandlers(event);
-        this.updateStateFromEvent(event);
-      }
-    };
-
-    // Register presenter to engine
-    this.engine.addPresenter(this.presenter);
   }
 
   /**
@@ -83,6 +76,12 @@ export class AgentInstance implements Agent {
 
   /**
    * Receive a message from user
+   *
+   * Coordinates the flow:
+   * 1. Driver receives message → produces StreamEvents
+   * 2. Engine processes events → produces outputs
+   * 3. Presenters handle outputs
+   * 4. Handlers receive outputs
    */
   async receive(message: string | UserMessage): Promise<void> {
     if (this._lifecycle === "destroyed") {
@@ -102,7 +101,24 @@ export class AgentInstance implements Agent {
     this._state = "responding";
 
     try {
-      await this.engine.receive(this.agentId, userMessage);
+      // 1. Get stream events from driver
+      const streamEvents = this.definition.driver.receive(userMessage, this.context);
+
+      // 2. Process each stream event through engine
+      for await (const streamEvent of streamEvents) {
+        const outputs = this.engine.process(this.agentId, streamEvent);
+
+        // 3. Send outputs to presenters
+        for (const output of outputs) {
+          this.presentOutput(output);
+        }
+
+        // 4. Notify handlers and update state
+        for (const output of outputs) {
+          this.notifyHandlers(output);
+          this.updateStateFromEvent(output);
+        }
+      }
     } finally {
       // Check lifecycle again - might have been destroyed during receive
       if ((this._lifecycle as AgentLifecycle) !== "destroyed") {
@@ -112,13 +128,27 @@ export class AgentInstance implements Agent {
   }
 
   /**
+   * Send output to all presenters in definition
+   */
+  private presentOutput(output: AgentOutput): void {
+    const presenters = this.definition.presenters ?? [];
+    for (const presenter of presenters) {
+      try {
+        presenter.present(this.agentId, output);
+      } catch (error) {
+        console.error("[Agent] Presenter error:", error);
+      }
+    }
+  }
+
+  /**
    * Subscribe to events
    */
   on(handler: AgentEventHandler): Unsubscribe;
-  on(type: AgentEventType, handler: AgentEventHandler): Unsubscribe;
-  on(types: AgentEventType[], handler: AgentEventHandler): Unsubscribe;
+  on(type: string, handler: AgentEventHandler): Unsubscribe;
+  on(types: string[], handler: AgentEventHandler): Unsubscribe;
   on(
-    typeOrHandler: AgentEventType | AgentEventType[] | AgentEventHandler,
+    typeOrHandler: string | string[] | AgentEventHandler,
     handler?: AgentEventHandler
   ): Unsubscribe {
     // Overload 1: on(handler) - global subscription
@@ -171,8 +201,8 @@ export class AgentInstance implements Agent {
     this._state = "idle";
     this.typedHandlers.clear();
     this.globalHandlers.clear();
-    // Note: Engine doesn't support removePresenter yet
-    // The presenter filters by agentId, so it's safe to leave it
+    // Clear engine state for this agent
+    this.engine.clearState(this.agentId);
   }
 
   /**

@@ -1,90 +1,57 @@
 /**
  * @deepractice-ai/agentx-engine
  *
- * Stateless Event Processing Engine for AgentX
+ * Pure Mealy Machine Event Processing Engine for AgentX
  *
- * This package provides a completely STATELESS event processing engine.
- * All intermediate state is kept in local variables during processing.
- * Business data persistence is handled by Presenters.
+ * This package provides a stateless event processor that transforms
+ * stream events into higher-level events (state, message, turn events).
+ *
+ * Key Design:
+ * - Engine is a pure Mealy Machine: process(agentId, event) → outputs
+ * - Engine does NOT hold driver or presenters (those belong to Agent layer)
+ * - Engine manages intermediate processing state per agentId
+ * - Multiple agents can share the same Engine instance
  *
  * Architecture:
- * - Driver: Input adapter (UserMessage → StreamEvents)
- * - Processor: Pure Mealy transition function (state, input) => [state, outputs]
- * - Presenter: Output adapter (events → external systems / persistence)
- * - AgentEngine: Stateless runtime that orchestrates the above
- *
- * State Management:
- * - Engine has NO persistent state - can be shared across requests
- * - Processor intermediate state (pendingContents, etc.) is local variables
- * - Business data (messages, statistics) is persisted via Presenters
- * - Multiple Engine instances can share the same database
+ * ```
+ * Agent Layer (agentx-core)
+ *     │
+ *     │ driver.receive(message, context)
+ *     ▼
+ * StreamEvents
+ *     │
+ *     │ engine.process(agentId, event)
+ *     ▼
+ * AgentEngine (this package)
+ *     │
+ *     │ outputs (state, message, turn events)
+ *     ▼
+ * Agent Layer (presenters)
+ * ```
  *
  * @example
  * ```typescript
- * import {
- *   AgentEngine,
- *   createStreamPresenter,
- *   createMessagePresenter,
- *   createTurnPresenter,
- *   type Driver,
- * } from '@deepractice-ai/agentx-engine';
+ * import { AgentEngine } from '@deepractice-ai/agentx-engine';
  *
- * // Define driver (connects to AI SDK)
- * const claudeDriver: Driver = async function* (message) {
- *   for await (const chunk of claudeSDK.stream(message)) {
- *     yield transformToStreamEvent(chunk);
+ * const engine = new AgentEngine();
+ *
+ * // Agent layer coordinates the flow:
+ * for await (const streamEvent of driver.receive(message, context)) {
+ *   const outputs = engine.process(agentId, streamEvent);
+ *   for (const output of outputs) {
+ *     presenters.forEach(p => p.present(agentId, output));
+ *     handlers.forEach(h => h(output));
  *   }
- * };
- *
- * // Create STATELESS engine
- * const engine = new AgentEngine({
- *   driver: claudeDriver,
- *   presenters: [
- *     // Forward stream events to SSE
- *     createStreamPresenter((id, event) => sseConnection.send(id, event)),
- *     // Persist messages to session store (database)
- *     createMessagePresenter((id, event) => sessionStore.addMessage(id, event.data)),
- *     // Persist statistics (cost, tokens, duration)
- *     createTurnPresenter((id, event) => statsStore.addTurn(id, event.data)),
- *   ],
- * });
- *
- * // Engine can handle any agentId - state is external
- * await engine.receive('agent_123', { role: 'user', content: 'Hello!' });
- * await engine.receive('agent_456', { role: 'user', content: 'Hi there!' });
+ * }
  * ```
  *
  * @packageDocumentation
  */
 
-// ===== Public API (External) =====
+// ===== AgentEngine =====
+export { AgentEngine, createAgentEngine } from "./AgentEngine";
 
-// Driver - Input adapter
-export { type Driver, type DriverDefinition } from "./Driver";
-
-// Presenter - Output adapter
-export {
-  type Presenter,
-  type PresenterDefinition,
-  type AgentOutput,
-  // Typed presenters
-  type StreamPresenter,
-  type StatePresenter,
-  type MessagePresenter,
-  type TurnPresenter,
-  // Type guards
-  isStreamEvent,
-  isStateEvent,
-  isMessageEvent,
-  isTurnEvent,
-  // Helper functions
-  createStreamPresenter,
-  createStatePresenter,
-  createMessagePresenter,
-  createTurnPresenter,
-} from "./Presenter";
-
-// AgentProcessor - Combined processor (internal use)
+// ===== AgentProcessor (for advanced use cases) =====
 export {
   agentProcessor,
   createInitialAgentEngineState,
@@ -93,11 +60,7 @@ export {
   type AgentProcessorOutput,
 } from "./AgentProcessor";
 
-// AgentEngine - Stateless Runtime
-export { AgentEngine, createAgentEngine, type AgentEngineConfig } from "./AgentEngine";
-
-// ===== Internal exports (for advanced use cases) =====
-
+// ===== Internal Processors (for advanced use cases) =====
 export {
   // MessageAssembler
   messageAssemblerProcessor,
@@ -124,10 +87,7 @@ export {
   createInitialTurnTrackerState,
 } from "./internal";
 
-// ===== Re-export Mealy types for advanced use cases =====
-// Note: Store/MemoryStore not exported - Engine is stateless
-// Business data persistence is handled by Presenters, not Engine
-
+// ===== Mealy Machine Core (for building custom processors) =====
 export {
   // Core types
   type Source,
@@ -137,7 +97,9 @@ export {
   type ProcessorDefinition,
   type Sink,
   type SinkDefinition,
-  // Combinators (for building custom processors)
+  type Store,
+  MemoryStore,
+  // Combinators
   combineProcessors,
   combineInitialStates,
   chainProcessors,

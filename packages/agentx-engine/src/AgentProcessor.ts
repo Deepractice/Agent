@@ -26,7 +26,7 @@ import {
   type StateMachineOutput,
   type TurnTrackerOutput,
 } from "./internal";
-import type { AgentOutput } from "./Presenter";
+import type { AgentOutput } from "@deepractice-ai/agentx-types";
 
 /**
  * Combined state type for the full agent engine

@@ -29,7 +29,7 @@ export class AgentXImpl implements AgentX {
 
   constructor(options: AgentXOptions = {}) {
     this._container = options.container ?? new MemoryAgentContainer();
-    this._engine = new AgentEngine();
+    this._engine = new AgentEngine();  // Global singleton engine
   }
 
   /**
@@ -49,7 +49,7 @@ export class AgentXImpl implements AgentX {
     // Create context by merging internal fields with config
     const agentContext: AgentContext<TConfig> = createAgentContext(config);
 
-    // Create agent instance
+    // Create agent instance with shared engine
     const agent = new AgentInstance(definition, agentContext, this._engine);
 
     // Register in container

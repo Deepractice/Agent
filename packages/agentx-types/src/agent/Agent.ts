@@ -24,13 +24,6 @@ import type { AgentDefinition } from "./AgentDefinition";
 import type { AgentContext } from "./AgentContext";
 import type { AgentLifecycle } from "./AgentLifecycle";
 import type { AgentEventHandler, Unsubscribe } from "./AgentEventHandler";
-import type { AgentEventType } from "~/event/base";
-
-/**
- * Event type name (string literal union)
- * e.g., "message_start" | "text_delta" | ...
- */
-type EventTypeName = AgentEventType["type"];
 
 /**
  * Agent interface - Runtime instance contract
@@ -80,13 +73,15 @@ export interface Agent {
 
   /**
    * Subscribe to specific event type by name
+   * @param type - Event type string (e.g., "message_start", "text_delta")
    */
-  on(type: EventTypeName, handler: AgentEventHandler): Unsubscribe;
+  on(type: string, handler: AgentEventHandler): Unsubscribe;
 
   /**
    * Subscribe to multiple event types by name
+   * @param types - Array of event type strings
    */
-  on(types: EventTypeName[], handler: AgentEventHandler): Unsubscribe;
+  on(types: string[], handler: AgentEventHandler): Unsubscribe;
 
   /**
    * Abort - System/error forced stop
