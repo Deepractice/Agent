@@ -145,4 +145,4 @@ export {
   mapOutput,
   withLogging,
   identityProcessor,
-} from "@deepractice-ai/agentx-mealy";
+} from "~/mealy";

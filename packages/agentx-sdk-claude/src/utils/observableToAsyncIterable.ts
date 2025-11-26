@@ -6,7 +6,7 @@
  *
  * @example
  * ```typescript
- * import { observableToAsyncIterable } from "@deepractice-ai/agentx-framework/utils";
+ * import { observableToAsyncIterable } from "@deepractice-ai/agentx/utils";
  *
  * const subject = new Subject<string>();
  * for await (const value of observableToAsyncIterable(subject)) {

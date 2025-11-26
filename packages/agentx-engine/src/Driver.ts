@@ -31,8 +31,8 @@
  * ```
  */
 
-import type { Source } from "@deepractice-ai/agentx-mealy";
-import type { StreamEventType } from "@deepractice-ai/agentx-event";
+import type { Source } from "~/mealy";
+import type { StreamEventType } from "@deepractice-ai/agentx-types";
 import type { UserMessage } from "@deepractice-ai/agentx-types";
 
 /**

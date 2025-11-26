@@ -21,7 +21,7 @@
  * - tool_executing
  */
 
-import type { Processor, ProcessorDefinition } from "@deepractice-ai/agentx-mealy";
+import type { Processor, ProcessorDefinition } from "~/mealy";
 import type {
   StreamEventType,
   MessageStartEvent,
@@ -34,8 +34,8 @@ import type {
   ConversationEndStateEvent,
   ToolPlannedStateEvent,
   ToolExecutingStateEvent,
-} from "@deepractice-ai/agentx-event";
-import type { AgentState } from "@deepractice-ai/agentx-types";
+  AgentState,
+} from "@deepractice-ai/agentx-types";
 
 // ===== State Types =====
 

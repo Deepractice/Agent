@@ -46,8 +46,6 @@
   },
   "homepage": "https://github.com/Deepractice/Agent#readme",
   "dependencies": {
-    "@deepractice-ai/agentx-event": "workspace:*",
-    "@deepractice-ai/agentx-mealy": "workspace:*",
     "@deepractice-ai/agentx-types": "workspace:*"
   },
   "devDependencies": {

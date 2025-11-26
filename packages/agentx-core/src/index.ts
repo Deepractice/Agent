@@ -1,69 +1,35 @@
 /**
  * @deepractice-ai/agentx-core
  *
- * Core package for AgentX - Agent and Session management.
+ * Core implementations for AgentX.
  *
- * Architecture (like Spring):
- * - AgentDefinition: Bean definition (static config)
- * - AgentConfig: Runtime configuration
- * - Agent: Bean instance (runtime object)
- * - AgentContainer: ApplicationContext (instance management)
- *
- * @example
- * ```typescript
- * import {
- *   initializeCore,
- *   createAgent,
- *   getAgent,
- *   destroyAgent,
- * } from '@deepractice-ai/agentx-core';
- *
- * // Initialize with engine (once per process)
- * initializeCore(engine);
- *
- * // Create agent
- * const agent = createAgent(
- *   { name: "Claude", driver: claudeDriver },
- *   { model: "claude-3-5-sonnet" }
- * );
- *
- * // Use agent
- * agent.on((event) => console.log(event));
- * await agent.receive("Hello!");
- *
- * // Get existing agent
- * const agent2 = getAgent(agent.agentId);
- *
- * // Clean up
- * await destroyAgent(agent.agentId);
- * ```
+ * This package provides internal implementations.
+ * For public API, use @deepractice-ai/agentx instead.
  *
  * @packageDocumentation
  */
 
-// ===== Context (Process-level singleton) =====
+// ===== Agent Implementations =====
 export {
-  initializeCore,
-  getContext,
-  isInitialized,
-  resetContext,
-  type CoreContext,
-} from "./context";
-
-// ===== Agent =====
-export {
-  // Types
+  // Types (re-exported from @deepractice-ai/agentx-types)
+  type Agent,
+  type AgentContext,
+  type AgentContextBase,
+  type AgentDriver,
+  type AgentPresenter,
   type AgentDefinition,
-  type AgentConfig,
   type AgentLifecycle,
   type AgentEventHandler,
+  type AgentEventType,
   type Unsubscribe,
   type AgentContainer,
-  // Classes
-  Agent,
+  type AgentOutput,
+  // Classes (implementations)
+  AgentInstance,
   MemoryAgentContainer,
   // Functions
   generateAgentId,
+  createAgentContext,
 } from "./agent";
 
 // ===== Session =====
@@ -87,8 +53,3 @@ export {
   getMessagesByAgent,
   clearMessages,
 } from "./session";
-
-// ===== Functional API =====
-export { createAgent } from "./createAgent";
-export { getAgent, hasAgent, getAllAgentIds, getAgentCount } from "./getAgent";
-export { destroyAgent, destroyAllAgents } from "./destroyAgent";

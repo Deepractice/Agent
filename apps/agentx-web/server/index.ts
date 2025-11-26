@@ -1,7 +1,7 @@
 /**
  * AgentX Web Server
  *
- * Uses createSSEServer from agentx-framework with static file serving fallback
+ * Uses createSSEServer from agentx with static file serving fallback
  */
 
 import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
@@ -10,7 +10,7 @@ import { fileURLToPath } from "url";
 import { readFile, stat } from "fs/promises";
 import type { IncomingMessage, ServerResponse } from "http";
 import { mcpServers } from "./mcp.js";
-import { createAgentServer } from "@deepractice-ai/agentx-framework/server";
+import { createAgentServer } from "@deepractice-ai/agentx/server";
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);

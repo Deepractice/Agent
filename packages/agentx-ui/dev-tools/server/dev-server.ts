@@ -11,7 +11,7 @@ import {
   LogLevel,
   type LoggerProvider,
   type LogContext,
-} from "@deepractice-ai/agentx-framework";
+} from "@deepractice-ai/agentx";
 import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
@@ -146,7 +146,7 @@ configure({
 
 // ==================== STEP 3: Import AgentX modules AFTER configure() ====================
 // This ensures all loggers created during module loading use FileLogger
-import { createAgentServer } from "@deepractice-ai/agentx-framework/server";
+import { createAgentServer } from "@deepractice-ai/agentx/server";
 import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
 
 // Global references for cleanup on hot reload

@@ -27,7 +27,7 @@
  * ```
  */
 
-import { defineReactor } from "@deepractice-ai/agentx-framework";
+import { defineReactor } from "@deepractice-ai/agentx";
 import type {
   TextDeltaEvent,
   AssistantMessageEvent,
@@ -36,7 +36,7 @@ import type {
   ErrorMessageEvent,
   Message,
   ErrorMessage as ErrorMessageType,
-} from "@deepractice-ai/agentx-framework";
+} from "@deepractice-ai/agentx";
 
 export interface UIReactorConfig {
   /**

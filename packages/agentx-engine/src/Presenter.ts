@@ -42,7 +42,7 @@ import type {
   StateEventType,
   MessageEventType,
   TurnEventType,
-} from "@deepractice-ai/agentx-event";
+} from "@deepractice-ai/agentx-types";
 
 // ===== Output Type =====
 

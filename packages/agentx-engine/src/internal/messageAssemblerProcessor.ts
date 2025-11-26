@@ -19,7 +19,7 @@
  * - assistant_message (complete assistant response)
  */
 
-import type { Processor, ProcessorDefinition } from "@deepractice-ai/agentx-mealy";
+import type { Processor, ProcessorDefinition } from "~/mealy";
 import type {
   StreamEventType,
   MessageStartEvent,
@@ -31,8 +31,6 @@ import type {
   ToolCallEvent,
   AssistantMessageEvent,
   ToolUseMessageEvent,
-} from "@deepractice-ai/agentx-event";
-import type {
   AssistantMessage,
   ToolUseMessage,
   ToolCallPart,

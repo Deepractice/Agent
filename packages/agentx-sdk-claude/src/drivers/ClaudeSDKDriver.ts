@@ -12,7 +12,7 @@
  *
  * @example
  * ```typescript
- * import { ClaudeSDKDriver } from "@deepractice-ai/agentx-framework/drivers";
+ * import { ClaudeSDKDriver } from "@deepractice-ai/agentx/drivers";
  *
  * const agent = defineAgent({
  *   name: "Claude",
@@ -39,10 +39,9 @@ import {
   type Query,
 } from "@anthropic-ai/claude-agent-sdk";
 import { StreamEventBuilder } from "@deepractice-ai/agentx-engine";
-import type { UserMessage } from "@deepractice-ai/agentx-types";
-import type { StreamEventType } from "@deepractice-ai/agentx-event";
+import type { UserMessage, StreamEventType } from "@deepractice-ai/agentx-types";
 import { LoggerFactory } from "@deepractice-ai/agentx-logger";
-import { defineDriver } from "@deepractice-ai/agentx-framework";
+import { defineDriver } from "@deepractice-ai/agentx";
 import { observableToAsyncIterable } from "~/utils/observableToAsyncIterable";
 import { Subject } from "rxjs";
 

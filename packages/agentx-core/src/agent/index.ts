@@ -1,14 +1,31 @@
 /**
  * Agent module exports
+ *
+ * Types/interfaces are re-exported from @deepractice-ai/agentx-types.
+ * Implementations and utilities are defined here.
  */
 
-export type { AgentDefinition } from "./AgentDefinition";
+// Re-export types from @deepractice-ai/agentx-types
+export type {
+  Agent,
+  AgentDriver,
+  AgentPresenter,
+  AgentDefinition,
+  AgentContainer,
+  AgentContext,
+  AgentContextBase,
+  AgentOutput,
+  AgentLifecycle,
+  AgentEventHandler,
+  AgentEventType,
+  Unsubscribe,
+} from "@deepractice-ai/agentx-types";
 
-export type { AgentConfig } from "./AgentConfig";
-export { generateAgentId } from "./AgentConfig";
+// Implementation
+export { AgentInstance } from "./AgentInstance";
 
-export { Agent } from "./Agent";
-export type { AgentLifecycle, AgentEventHandler, Unsubscribe } from "./Agent";
+// Container implementation
+export { MemoryAgentContainer } from "./MemoryAgentContainer";
 
-export type { AgentContainer } from "./AgentContainer";
-export { MemoryAgentContainer } from "./AgentContainer";
+// Context utilities
+export { generateAgentId, createAgentContext } from "./AgentContext";

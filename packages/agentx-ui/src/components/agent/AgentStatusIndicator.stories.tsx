@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { AgentStatusIndicator } from "./AgentStatusIndicator";
-import type { AgentState } from "@deepractice-ai/agentx-framework";
+import type { AgentState } from "@deepractice-ai/agentx";
 
 /**
  * Mock AgentInstance for Storybook

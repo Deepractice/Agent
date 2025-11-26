@@ -9,7 +9,7 @@ import {
   combineProcessors,
   combineInitialStates,
   type Processor,
-} from "@deepractice-ai/agentx-mealy";
+} from "~/mealy";
 // Note: StreamEventType and MessageEventType are part of AgentOutput (from Presenter)
 // They flow through the system but AgentProcessor doesn't need to import them directly
 import {

@@ -11,7 +11,7 @@
  */
 
 import { useState, useEffect } from "react";
-import type { AgentInstance, AgentState } from "@deepractice-ai/agentx-framework";
+import type { AgentInstance, AgentState } from "@deepractice-ai/agentx";
 
 export interface AgentStatusIndicatorProps {
   /**

@@ -1,8 +1,8 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState, useEffect, type ReactNode } from "react";
 import { Chat } from "./Chat";
-import { SSEAgent } from "@deepractice-ai/agentx-framework/browser";
-import type { AgentInstance } from "@deepractice-ai/agentx-framework";
+import { SSEAgent } from "@deepractice-ai/agentx/browser";
+import type { AgentInstance } from "@deepractice-ai/agentx";
 
 const SERVER_URL = "http://localhost:5200";
 

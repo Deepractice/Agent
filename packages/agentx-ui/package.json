@@ -34,7 +34,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@deepractice-ai/agentx-framework": "workspace:*",
+    "@deepractice-ai/agentx": "workspace:*",
     "@deepractice-ai/agentx-types": "workspace:*",
     "allotment": "^1.20.4",
     "class-variance-authority": "^0.7.1",

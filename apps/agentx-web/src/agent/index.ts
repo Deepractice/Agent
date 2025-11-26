@@ -3,11 +3,11 @@
  *
  * SSE-based Agent for browser-side usage
  *
- * Re-exports from @deepractice-ai/agentx-framework/browser
+ * Re-exports from @deepractice-ai/agentx/browser
  */
 
 export {
   SSEDriver,
   type SSEDriverConfig,
   SSEAgent,
-} from "@deepractice-ai/agentx-framework/browser";
+} from "@deepractice-ai/agentx/browser";

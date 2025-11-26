@@ -13,8 +13,7 @@ import {
   type Presenter,
   type AgentOutput,
 } from "~/index";
-import type { StreamEventType } from "@deepractice-ai/agentx-event";
-import type { UserMessage } from "@deepractice-ai/agentx-types";
+import type { StreamEventType, UserMessage } from "@deepractice-ai/agentx-types";
 
 // ===== Test Context =====
 

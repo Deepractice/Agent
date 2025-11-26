@@ -1,0 +1,37 @@
+{
+  "name": "@deepractice-ai/agentx",
+  "version": "0.1.0",
+  "description": "Define, Run, Scale AI Agents - The Open Source Agent Platform",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@deepractice-ai/agentx-core": "workspace:*",
+    "@deepractice-ai/agentx-engine": "workspace:*",
+    "@deepractice-ai/agentx-types": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

@@ -5,7 +5,7 @@
  *
  * @example
  * ```typescript
- * import { ClaudeAgent } from "@deepractice-ai/agentx-framework/agents";
+ * import { ClaudeAgent } from "@deepractice-ai/agentx/agents";
  *
  * const agent = ClaudeAgent.create({
  *   apiKey: process.env.ANTHROPIC_API_KEY,
@@ -17,7 +17,7 @@
  * ```
  */
 
-import { defineAgent, defineConfig } from "@deepractice-ai/agentx-framework";
+import { defineAgent, defineConfig } from "@deepractice-ai/agentx";
 import { ClaudeSDKDriver } from "../drivers/ClaudeSDKDriver";
 
 /**

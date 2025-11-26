@@ -11,7 +11,7 @@
  *
  * @example
  * ```tsx
- * import { SSEAgent } from '@deepractice-ai/agentx-framework/browser';
+ * import { SSEAgent } from '@deepractice-ai/agentx/browser';
  *
  * const agent = SSEAgent.create({
  *   serverUrl: 'http://localhost:5200',
@@ -24,9 +24,9 @@
  */
 
 import { useState, useEffect } from "react";
-import type { AgentInstance } from "@deepractice-ai/agentx-framework";
-import type { Message } from "@deepractice-ai/agentx-framework";
-import type { ErrorMessage as ErrorMessageType } from "@deepractice-ai/agentx-framework";
+import type { AgentInstance } from "@deepractice-ai/agentx";
+import type { Message } from "@deepractice-ai/agentx";
+import type { ErrorMessage as ErrorMessageType } from "@deepractice-ai/agentx";
 import { ChatMessageList } from "./ChatMessageList";
 import { ChatInput } from "./ChatInput";
 import { ErrorMessage } from "./messages/ErrorMessage";
@@ -38,7 +38,7 @@ const logger = LoggerFactory.getLogger("Chat");
 
 export interface ChatProps {
   /**
-   * Agent instance from agentx-framework
+   * Agent instance from agentx
    */
   agent: AgentInstance;
 

@@ -6,7 +6,7 @@ import { Command } from "commander";
 import { config as loadEnv } from "dotenv";
 import { resolve, join, extname, dirname } from "path";
 import { fileURLToPath } from "url";
-import { createWebSocketServer, ClaudeAgent } from "@deepractice-ai/agentx-framework";
+import { createWebSocketServer, ClaudeAgent } from "@deepractice-ai/agentx";
 import { readFile, stat, open } from "fs/promises";
 import type { IncomingMessage, ServerResponse } from "http";
 import { execaNode } from "execa";

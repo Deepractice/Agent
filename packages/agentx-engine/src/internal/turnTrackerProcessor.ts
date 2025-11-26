@@ -13,7 +13,7 @@
  * - turn_response
  */
 
-import type { Processor, ProcessorDefinition } from "@deepractice-ai/agentx-mealy";
+import type { Processor, ProcessorDefinition } from "~/mealy";
 import type {
   StreamEventType,
   MessageDeltaEvent,
@@ -21,8 +21,9 @@ import type {
   TurnRequestEvent,
   TurnResponseEvent,
   MessageEventType,
-} from "@deepractice-ai/agentx-event";
-import type { TokenUsage, UserMessage } from "@deepractice-ai/agentx-types";
+  TokenUsage,
+  UserMessage,
+} from "@deepractice-ai/agentx-types";
 
 // ===== State Types =====
 

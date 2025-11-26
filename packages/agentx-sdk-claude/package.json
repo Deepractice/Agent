@@ -26,8 +26,7 @@
     "@anthropic-ai/claude-agent-sdk": "^0.1.30",
     "@deepractice-ai/agentx-core": "workspace:*",
     "@deepractice-ai/agentx-engine": "workspace:*",
-    "@deepractice-ai/agentx-event": "workspace:*",
-    "@deepractice-ai/agentx-framework": "workspace:*",
+    "@deepractice-ai/agentx": "workspace:*",
     "@deepractice-ai/agentx-logger": "workspace:*",
     "@deepractice-ai/agentx-types": "workspace:*",
     "rxjs": "^7.8.2"
