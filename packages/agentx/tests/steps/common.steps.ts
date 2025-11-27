@@ -1,146 +1,61 @@
 /**
- * Common step definitions and shared context
+ * Common step definitions shared across all feature files
  *
- * All shared steps are defined here ONLY ONCE.
- * Other step files import ctx and add their own unique steps.
+ * These steps are used by multiple features and need to be defined only once.
  */
 
-import { Before, After, Given } from "@deepracticex/vitest-cucumber";
-import {
-  destroyAll,
-  defineAgent,
-  createAgent,
-  type Agent,
-  type AgentDriver,
-  type AgentEventType,
-  type Unsubscribe,
-} from "~/index";
-import type { StreamEventType, UserMessage, AgentContext } from "@deepractice-ai/agentx-types";
-import type { DefinedAgent } from "~/defineAgent";
+import { Given, When, Then } from "@deepracticex/vitest-cucumber";
+import { expect } from "vitest";
+import { createAgentX } from "../../src";
+import type { AgentXLocal, AgentXRemote } from "@deepractice-ai/agentx-types";
+import type { TestWorld } from "../support/world";
+import { createMockDriver } from "../support/MockDriver";
 
-// ===== Shared Test Context =====
+// ===== AgentX Instance Creation =====
 
-export interface TestContext {
-  definedAgent: DefinedAgent | null;
-  agent: Agent | null | undefined;
-  agents: Agent[];
-  receivedEvents: AgentEventType[];
-  caughtError: Error | null;
-  unsubscribeFn: Unsubscribe | null;
-  knownAgentId: string | null;
-  messagesProcessed: number;
-}
-
-export const ctx: TestContext = {
-  definedAgent: null,
-  agent: null,
-  agents: [],
-  receivedEvents: [],
-  caughtError: null,
-  unsubscribeFn: null,
-  knownAgentId: null,
-  messagesProcessed: 0,
-};
-
-// ===== Hooks =====
-
-Before(() => {
-  ctx.definedAgent = null;
-  ctx.agent = null;
-  ctx.agents = [];
-  ctx.receivedEvents = [];
-  ctx.caughtError = null;
-  ctx.unsubscribeFn = null;
-  ctx.knownAgentId = null;
-  ctx.messagesProcessed = 0;
+Given("a local AgentX instance", function (this: TestWorld) {
+  this.agentx = createAgentX();
 });
 
-After(async () => {
-  await destroyAll();
+Given("a remote AgentX instance", function (this: TestWorld) {
+  this.agentx = createAgentX({ serverUrl: "http://localhost:5200/agentx" });
 });
 
-// ===== Mock Driver Factory =====
+// ===== Agent Creation =====
 
-export function createMockEchoDriver(): AgentDriver {
-  return {
-    name: "MockEchoDriver",
-    async *receive(
-      message: UserMessage,
-      _context: AgentContext
-    ): AsyncIterable<StreamEventType> {
-      const content =
-        typeof message.content === "string"
-          ? message.content
-          : message.content.map((p) => ("text" in p ? p.text : "")).join("");
+Given("a created agent", function (this: TestWorld) {
+  const local = this.agentx as AgentXLocal;
 
-      yield {
-        type: "message_start",
-        uuid: `uuid_1`,
-        agentId: "test",
-        timestamp: Date.now(),
-        data: { messageId: "msg_1", model: "mock" },
-      } as StreamEventType;
-
-      yield {
-        type: "text_content_block_start",
-        uuid: `uuid_2`,
-        agentId: "test",
-        timestamp: Date.now(),
-        data: { index: 0 },
-      } as StreamEventType;
-
-      for (const char of content) {
-        yield {
-          type: "text_delta",
-          uuid: `uuid_${Math.random()}`,
-          agentId: "test",
-          timestamp: Date.now(),
-          data: { text: char },
-        } as StreamEventType;
-      }
-
-      yield {
-        type: "text_content_block_stop",
-        uuid: `uuid_3`,
-        agentId: "test",
-        timestamp: Date.now(),
-        data: { index: 0 },
-      } as StreamEventType;
-
-      yield {
-        type: "message_stop",
-        uuid: `uuid_4`,
-        agentId: "test",
-        timestamp: Date.now(),
-        data: {
-          stopReason: "end_turn",
-          usage: { inputTokens: 10, outputTokens: content.length },
-        },
-      } as StreamEventType;
-    },
-  };
-}
-
-// ===== Common Given Steps (ONLY defined here) =====
-
-Given("a defined agent {string} with echo driver", (name: string) => {
-  ctx.definedAgent = defineAgent({
-    name,
-    driver: createMockEchoDriver(),
-    configSchema: {
-      apiKey: { type: "string", required: true },
-    },
+  const definition = local.agents.define({
+    name: "TestAgent",
+    driver: createMockDriver(),
   });
+
+  this.agent = local.agents.create(definition, {});
+  this.agents.push(this.agent);
 });
 
-Given("an agent instance is created", () => {
-  ctx.agent = createAgent(ctx.definedAgent!, { apiKey: "test-key" });
-});
+Given("{int} created agents", function (this: TestWorld, count: number) {
+  const local = this.agentx as AgentXLocal;
 
-Given("I subscribe to all events", () => {
-  if (ctx.agent) {
-    ctx.agent.on((event) => {
-      ctx.receivedEvents.push(event);
-    });
+  const definition = local.agents.define({
+    name: "TestAgent",
+    driver: createMockDriver(),
+  });
+
+  for (let i = 0; i < count; i++) {
+    const agent = local.agents.create(definition, {});
+    this.agents.push(agent);
   }
+});
+
+// ===== Common Assertions =====
+
+Then("I should get undefined", function (this: TestWorld) {
+  expect(this.result).toBeUndefined();
+});
+
+Then("I should get an empty array", function (this: TestWorld) {
+  expect(Array.isArray(this.result)).toBe(true);
+  expect(this.result.length).toBe(0);
 });

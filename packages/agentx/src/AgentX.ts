@@ -16,7 +16,7 @@
  *
  * // Remote mode
  * const remote = createAgentX({ serverUrl: "http://localhost:5200/agentx" });
- * const agent = await remote.agents.get("agent_123");
+ * const info = await remote.platform.getInfo();
  * ```
  */
 
@@ -30,7 +30,14 @@ import type {
 } from "@deepractice-ai/agentx-types";
 import { MemoryAgentContainer } from "@deepractice-ai/agentx-core";
 import { AgentEngine } from "@deepractice-ai/agentx-engine";
-import { LocalAgentManager, LocalSessionManager, ErrorManager } from "./managers";
+import {
+  LocalAgentManager,
+  LocalSessionManager,
+  RemoteSessionManager,
+  ErrorManager,
+  PlatformManager,
+  createHttpClient,
+} from "./managers";
 
 /**
  * Create a Local AgentX instance
@@ -63,11 +70,32 @@ function createLocalAgentX(options: AgentXLocalOptions = {}): AgentXLocal {
 /**
  * Create a Remote AgentX instance
  *
- * TODO: Implement remote mode
+ * Remote mode connects to a remote AgentX server via HTTP.
+ * Agent definitions use drivers that connect to the server (e.g., SSEDriver).
  */
-function createRemoteAgentX(_options: AgentXRemoteOptions): AgentXRemote {
-  // TODO: Implement remote managers
-  throw new Error("Remote mode not yet implemented");
+function createRemoteAgentX(options: AgentXRemoteOptions): AgentXRemote {
+  // Create HTTP client
+  const http = createHttpClient({
+    baseUrl: options.serverUrl,
+    headers: options.headers,
+  });
+
+  // Create shared infrastructure (same as local)
+  const container = new MemoryAgentContainer();
+  const engine = new AgentEngine();
+  const errorManager = new ErrorManager();
+
+  // Create managers
+  const agentManager = new LocalAgentManager(container, engine, errorManager);
+  const sessionManager = new RemoteSessionManager(http);
+  const platformManager = new PlatformManager(http);
+
+  return {
+    mode: "remote",
+    agents: agentManager,
+    sessions: sessionManager,
+    platform: platformManager,
+  };
 }
 
 /**

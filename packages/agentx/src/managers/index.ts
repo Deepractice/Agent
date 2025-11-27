@@ -4,22 +4,22 @@
  * Provides manager implementations for AgentX platform.
  *
  * Directory structure indicates Local/Remote variants:
- * - agent/     - LocalAgentManager, RemoteAgentManager
+ * - agent/     - LocalAgentManager (Remote reuses with different driver)
  * - session/   - LocalSessionManager, RemoteSessionManager
  * - error/     - ErrorManager (Local only)
- * - platform/  - PlatformManager (Remote only)
+ * - remote/    - PlatformManager, HttpClient (Remote only)
  */
 
 // Agent managers
 export { LocalAgentManager } from "./agent";
-// export { RemoteAgentManager } from "./agent";  // TODO
 
 // Session managers
-export { LocalSessionManager } from "./session";
-// export { RemoteSessionManager } from "./session";  // TODO
+export { LocalSessionManager, RemoteSessionManager } from "./session";
 
 // Error manager (Local only)
 export { ErrorManager } from "./error";
 
-// Platform manager (Remote only)
-// export { PlatformManager } from "./platform";  // TODO
+// Remote utilities
+export { PlatformManager } from "./remote/PlatformManager";
+export { createHttpClient, ApiError } from "./remote/HttpClient";
+export type { HttpClientOptions, KyInstance } from "./remote/HttpClient";

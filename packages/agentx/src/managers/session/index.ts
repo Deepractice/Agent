@@ -5,4 +5,4 @@
  */
 
 export { LocalSessionManager } from "./LocalSessionManager";
-// export { RemoteSessionManager } from "./RemoteSessionManager";  // TODO
+export { RemoteSessionManager } from "./RemoteSessionManager";

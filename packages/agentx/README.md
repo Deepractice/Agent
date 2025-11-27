@@ -4,12 +4,12 @@
 
 ## Overview
 
-`@deepractice-ai/agentx` is the main entry point for the AgentX platform, providing:
+`@deepractice-ai/agentx` is the unified entry point for the AgentX platform, providing a complete API for building and managing AI agents:
 
-- **Core** - `defineAgent()`, `createAgent()`, `agentx` singleton
-- **Server** - HTTP handlers for exposing agents over SSE/WebSocket
-- **Client** - SDK for connecting to remote agents
-- **Adapters** - Framework integrations (Express, Hono, Next.js)
+- **Local Mode** - Run agents in-process with full control
+- **Remote Mode** - Connect to remote AgentX servers via HTTP/SSE
+- **Server** - HTTP handlers for exposing agents (Express, Hono, Next.js)
+- **Client** - SDK for browser/Node.js clients
 
 ## Installation
 
@@ -19,29 +19,19 @@ pnpm add @deepractice-ai/agentx
 
 ## Quick Start
 
-### 1. Define an Agent
+### Local Mode (Default)
 
 ```typescript
-import { defineAgent } from "@deepractice-ai/agentx";
+import { agentx, createAgentX } from "@deepractice-ai/agentx";
+import { ClaudeDriver } from "@deepractice-ai/agentx-sdk-claude";
 
-const MyAgent = defineAgent({
+// Use the default singleton
+const definition = agentx.agents.define({
   name: "Assistant",
-  driver: claudeDriver,
-  configSchema: {
-    apiKey: { type: "string", required: true },
-    model: { type: "string", default: "claude-sonnet-4-20250514" },
-  },
+  driver: new ClaudeDriver({ apiKey: process.env.ANTHROPIC_API_KEY }),
 });
-```
 
-### 2. Create and Use
-
-```typescript
-import { createAgent } from "@deepractice-ai/agentx";
-
-const agent = createAgent(MyAgent, {
-  apiKey: process.env.ANTHROPIC_API_KEY,
-});
+const agent = agentx.agents.create(definition, {});
 
 // Subscribe to events
 agent.on((event) => console.log(event));
@@ -53,7 +43,187 @@ await agent.receive("Hello!");
 await agent.destroy();
 ```
 
-### 3. Expose via HTTP (Server)
+### Remote Mode
+
+```typescript
+import { createAgentX } from "@deepractice-ai/agentx";
+
+// Connect to remote AgentX server
+const remote = createAgentX({
+  serverUrl: "http://localhost:5200/agentx",
+});
+
+// Get platform info
+const info = await remote.platform.getInfo();
+console.log(`Connected to ${info.platform} v${info.version}`);
+
+// Create session and interact
+const session = await remote.sessions.create("agent_123");
+```
+
+## Core API
+
+### `createAgentX(options?)`
+
+Create an AgentX instance. Returns `AgentXLocal` or `AgentXRemote` based on options:
+
+```typescript
+// Local mode (default)
+const local = createAgentX();
+const localWithHandler = createAgentX({
+  onError: (agentId, error) => console.error(error),
+});
+
+// Remote mode
+const remote = createAgentX({
+  serverUrl: "http://localhost:5200/agentx",
+  headers: { Authorization: "Bearer xxx" },
+});
+```
+
+### `agentx` (Default Singleton)
+
+Pre-configured local AgentX instance:
+
+```typescript
+import { agentx } from "@deepractice-ai/agentx";
+
+// Same as createAgentX() but shared globally
+const agent = agentx.agents.create(definition, config);
+```
+
+## AgentX API Reference
+
+### Agents Manager (`agentx.agents`)
+
+| Method | Description |
+|--------|-------------|
+| `define(input)` | Create an agent definition |
+| `create(definition, config)` | Create an agent instance |
+| `get(agentId)` | Get agent by ID |
+| `has(agentId)` | Check if agent exists |
+| `list()` | List all agents |
+| `destroy(agentId)` | Destroy an agent |
+| `destroyAll()` | Destroy all agents |
+
+```typescript
+// Define agent
+const MyAgent = agentx.agents.define({
+  name: "MyAssistant",
+  driver: myDriver,
+});
+
+// Create instance
+const agent = agentx.agents.create(MyAgent, { apiKey: "xxx" });
+
+// Manage
+const exists = agentx.agents.has(agent.agentId);
+const all = agentx.agents.list();
+await agentx.agents.destroy(agent.agentId);
+```
+
+### Sessions Manager (`agentx.sessions`)
+
+| Method | Description |
+|--------|-------------|
+| `create(agentId)` | Create a session for an agent |
+| `get(sessionId)` | Get session by ID |
+| `listByAgent(agentId)` | List sessions for an agent |
+| `destroy(sessionId)` | Destroy a session |
+
+```typescript
+// Create session
+const session = agentx.sessions.create(agent.agentId);
+console.log(session.sessionId, session.agentId);
+
+// List sessions
+const sessions = await agentx.sessions.listByAgent(agent.agentId);
+
+// Cleanup
+await agentx.sessions.destroy(session.sessionId);
+```
+
+### Errors Manager (`agentx.errors`) - Local Only
+
+| Method | Description |
+|--------|-------------|
+| `addHandler(handler)` | Add error handler (returns unsubscribe) |
+| `removeHandler(handler)` | Remove error handler |
+
+```typescript
+// Add global error handler
+const unsubscribe = agentx.errors.addHandler({
+  handle: (agentId, error, event) => {
+    console.error(`[${agentId}] ${error.category}/${error.code}: ${error.message}`);
+    // Send to Sentry, alerting, etc.
+  },
+});
+
+// Remove when done
+unsubscribe();
+```
+
+### Platform Manager (`remote.platform`) - Remote Only
+
+| Method | Description |
+|--------|-------------|
+| `getInfo()` | Get platform information |
+| `getHealth()` | Get health status |
+
+```typescript
+const remote = createAgentX({ serverUrl: "http://localhost:5200/agentx" });
+
+const info = await remote.platform.getInfo();
+// { platform: "AgentX", version: "1.0.0", agentCount: 5 }
+
+const health = await remote.platform.getHealth();
+// { status: "healthy", timestamp: 1234567890 }
+```
+
+## Define API
+
+### `defineAgent(options)`
+
+Create a reusable agent definition with config schema validation:
+
+```typescript
+import { defineAgent } from "@deepractice-ai/agentx";
+
+const MyAgent = defineAgent({
+  name: "Assistant",
+  description: "A helpful AI assistant",
+  driver: claudeDriver,
+  configSchema: {
+    apiKey: { type: "string", required: true },
+    model: { type: "string", default: "claude-sonnet-4-20250514" },
+    temperature: { type: "number" },
+    debug: { type: "boolean", default: false },
+  },
+});
+
+// Type-safe config
+const agent = agentx.agents.create(MyAgent, {
+  apiKey: "sk-xxx",  // Required
+  model: "claude-opus-4-20250514",  // Optional, has default
+});
+```
+
+### Config Schema Types
+
+```typescript
+type FieldType = "string" | "number" | "boolean";
+
+interface FieldDefinition {
+  type: FieldType;
+  required?: boolean;
+  default?: any;
+  description?: string;
+}
+```
+
+## Server Integration
+
+### HTTP Handler
 
 ```typescript
 import { agentx } from "@deepractice-ai/agentx";
@@ -69,153 +239,35 @@ app.use("/agentx", toExpressHandler(handler));
 app.listen(3000);
 ```
 
-### 4. Connect from Client
+### Framework Adapters
 
 ```typescript
-import { AgentXClient } from "@deepractice-ai/agentx/client";
+// Express
+import { toExpressHandler } from "@deepractice-ai/agentx/server/adapters/express";
+app.use("/agentx", toExpressHandler(handler));
 
-const client = new AgentXClient({ baseUrl: "http://localhost:3000/agentx" });
-const agent = await client.connect("agent_123");
+// Hono
+import { toHonoHandler } from "@deepractice-ai/agentx/server/adapters/hono";
+app.all("/agentx/*", toHonoHandler(handler));
 
-agent.on((event) => console.log(event));
-await agent.receive("Hello from client!");
+// Next.js App Router
+import { createNextHandler } from "@deepractice-ai/agentx/server/adapters/next";
+export const { GET, POST, DELETE } = createNextHandler(handler);
 ```
 
-## Package Structure
-
-```
-@deepractice-ai/agentx
-├── /              # Core: defineAgent, createAgent, agentx
-├── /server        # Server handlers and SSE transport
-├── /server/adapters
-│   ├── /express   # Express adapter
-│   ├── /hono      # Hono adapter
-│   └── /next      # Next.js App Router adapter
-└── /client        # Client SDK
-```
-
-## API Reference
-
-### Core (`@deepractice-ai/agentx`)
-
-#### `defineAgent(options)`
-
-Create an agent definition:
-
-```typescript
-const MyAgent = defineAgent({
-  name: "MyAgent",
-  description: "Optional description",
-  driver: myDriver,
-  configSchema: {
-    apiKey: { type: "string", required: true },
-    model: { type: "string", default: "claude-sonnet-4-20250514" },
-    temperature: { type: "number" },
-    debug: { type: "boolean", default: false },
-  },
-});
-```
-
-#### `createAgent(definition, config)`
-
-Create an agent instance:
-
-```typescript
-const agent = createAgent(MyAgent, {
-  apiKey: "sk-xxx",
-  model: "claude-sonnet-4-20250514",
-});
-```
-
-#### `agentx` (Default Singleton)
-
-Global AgentX instance for convenience:
-
-```typescript
-import { agentx, createAgent, getAgent, destroyAgent } from "@deepractice-ai/agentx";
-
-const agent = createAgent(MyAgent, config);  // Uses default agentx
-const found = getAgent(agent.agentId);
-await destroyAgent(agent.agentId);
-```
-
-### Server (`@deepractice-ai/agentx/server`)
-
-#### `createAgentXHandler(agentx, options?)`
-
-Create a framework-agnostic HTTP handler:
-
-```typescript
-import { createAgentXHandler } from "@deepractice-ai/agentx/server";
-
-const handler = createAgentXHandler(agentx, {
-  basePath: "/agentx",
-  allowDynamicCreation: false,
-  hooks: {
-    onConnect: (agentId, connectionId) => console.log("Connected:", agentId),
-    onDisconnect: (agentId, connectionId) => console.log("Disconnected:", agentId),
-    onMessage: (agentId, message) => console.log("Message:", message),
-    onError: (agentId, error) => console.error("Error:", error),
-  },
-});
-```
-
-#### API Endpoints
+### API Endpoints
 
 | Endpoint | Method | Description |
 |----------|--------|-------------|
 | `/info` | GET | Platform info |
 | `/health` | GET | Health check |
 | `/agents` | GET | List agents |
-| `/agents` | POST | Create agent (if enabled) |
 | `/agents/:agentId` | GET | Get agent info |
 | `/agents/:agentId` | DELETE | Destroy agent |
 | `/agents/:agentId/sse` | GET | SSE connection |
 | `/agents/:agentId/messages` | POST | Send message |
-| `/agents/:agentId/interrupt` | POST | Interrupt response |
 
-### Framework Adapters
-
-#### Express
-
-```typescript
-import { toExpressHandler } from "@deepractice-ai/agentx/server/adapters/express";
-
-app.use("/agentx", toExpressHandler(handler));
-```
-
-#### Hono
-
-```typescript
-import { toHonoHandler } from "@deepractice-ai/agentx/server/adapters/hono";
-
-// Simple catch-all
-app.all("/agentx/*", toHonoHandler(handler));
-
-// Or with explicit routes
-import { createHonoRoutes } from "@deepractice-ai/agentx/server/adapters/hono";
-app.route("/agentx", createHonoRoutes(handler, Hono));
-```
-
-#### Next.js App Router
-
-```typescript
-// app/api/agentx/[...path]/route.ts
-import { createNextHandler } from "@deepractice-ai/agentx/server/adapters/next";
-
-const handler = createAgentXHandler(agentx, {
-  basePath: "/api/agentx",
-});
-
-export const { GET, POST, DELETE } = createNextHandler(handler);
-export const dynamic = "force-dynamic";
-```
-
-### Client (`@deepractice-ai/agentx/client`)
-
-#### `AgentXClient`
-
-Full-featured client:
+## Client SDK
 
 ```typescript
 import { AgentXClient } from "@deepractice-ai/agentx/client";
@@ -227,27 +279,10 @@ const client = new AgentXClient({
 // List available agents
 const agents = await client.listAgents();
 
-// Connect to an agent
+// Connect to an agent via SSE
 const agent = await client.connect("agent_123");
 
 // Use like a local agent
-agent.on((event) => console.log(event));
-await agent.receive("Hello!");
-await agent.interrupt();
-```
-
-#### `connectAgent(options)`
-
-Quick connect helper:
-
-```typescript
-import { connectAgent } from "@deepractice-ai/agentx/client";
-
-const agent = await connectAgent({
-  baseUrl: "http://localhost:3000/agentx",
-  agentId: "agent_123",
-});
-
 agent.on((event) => console.log(event));
 await agent.receive("Hello!");
 ```
@@ -256,41 +291,35 @@ await agent.receive("Hello!");
 
 ```
 ┌─────────────────────────────────────────────────────────────┐
-│                    Your Application                          │
-├─────────────────────────────────────────────────────────────┤
-│                                                              │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │ defineAgent │    │ createAgent │    │   agentx    │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-│         │                  │                  │              │
-│         └──────────────────┼──────────────────┘              │
-│                            ▼                                 │
-│                    ┌─────────────┐                          │
-│                    │    Agent    │                          │
-│                    └─────────────┘                          │
-│                            │                                 │
-│         ┌──────────────────┼──────────────────┐             │
-│         ▼                  ▼                  ▼             │
-│  ┌─────────────┐    ┌─────────────┐    ┌─────────────┐     │
-│  │   Server    │    │   Events    │    │   Client    │     │
-│  │  (HTTP/SSE) │    │  (Stream)   │    │   (SDK)     │     │
-│  └─────────────┘    └─────────────┘    └─────────────┘     │
-│         │                                    ▲              │
-│         └────────────────────────────────────┘              │
-│                     Network (SSE)                           │
-└─────────────────────────────────────────────────────────────┘
+│                      createAgentX()                          │
+├──────────────────────────┬──────────────────────────────────┤
+│                          │                                   │
+│    AgentXLocal           │         AgentXRemote             │
+│    ┌──────────────┐      │         ┌──────────────┐         │
+│    │ agents       │      │         │ agents       │         │
+│    │ sessions     │      │         │ sessions     │         │
+│    │ errors       │      │         │ platform     │         │
+│    └──────────────┘      │         └──────────────┘         │
+│           │              │                │                  │
+│    In-Process            │          HTTP/SSE                 │
+│                          │                │                  │
+└──────────────────────────┴────────────────┼──────────────────┘
+                                            │
+                                            ▼
+                                   ┌────────────────┐
+                                   │  AgentX Server │
+                                   └────────────────┘
 ```
 
 ## Event Flow
 
-Server only forwards **Stream Events** (efficient). Client reconstructs higher-level events:
+Server forwards **Stream Events** efficiently. Client reconstructs higher-level events:
 
 ```
 Server → SSE → Client
          │
          ├── message_start
          ├── text_delta
-         ├── text_content_block_stop
          ├── tool_use_content_block_start
          ├── tool_result
          └── message_stop
@@ -303,12 +332,28 @@ Server → SSE → Client
                 └── Tracks   → turn_complete
 ```
 
+## Package Structure
+
+```
+@deepractice-ai/agentx
+├── /              # Core: createAgentX, agentx, defineAgent
+├── /server        # Server handlers and SSE transport
+├── /server/adapters
+│   ├── /express   # Express adapter
+│   ├── /hono      # Hono adapter
+│   └── /next      # Next.js App Router adapter
+└── /client        # Client SDK
+```
+
 ## Related Packages
 
-- **[@deepractice-ai/agentx-core](../agentx-core)** - Agent lifecycle and container
-- **[@deepractice-ai/agentx-engine](../agentx-engine)** - Event processing engine
-- **[@deepractice-ai/agentx-types](../agentx-types)** - Type definitions
-- **[@deepractice-ai/agentx-sdk-claude](../agentx-sdk-claude)** - Claude driver
+| Package | Description |
+|---------|-------------|
+| [@deepractice-ai/agentx-core](../agentx-core) | Agent lifecycle and container |
+| [@deepractice-ai/agentx-engine](../agentx-engine) | Event processing engine |
+| [@deepractice-ai/agentx-types](../agentx-types) | Type definitions |
+| [@deepractice-ai/agentx-sdk-claude](../agentx-sdk-claude) | Claude driver |
+| [@deepractice-ai/agentx-logger](../agentx-logger) | Logging facade |
 
 ## License
 

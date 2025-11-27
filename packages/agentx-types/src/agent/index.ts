@@ -6,7 +6,7 @@
  */
 
 // Core interface
-export type { Agent } from "./Agent";
+export type { Agent, StateChange, StateChangeHandler } from "./Agent";
 
 // Driver & Presenter
 export type { AgentDriver } from "./AgentDriver";

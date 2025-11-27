@@ -19,10 +19,16 @@ export type {
   AgentEventHandler,
   AgentEventType,
   Unsubscribe,
+  StateChange,
+  StateChangeHandler,
 } from "@deepractice-ai/agentx-types";
 
 // Implementation
 export { AgentInstance } from "./AgentInstance";
+
+// State Machine
+export { AgentStateMachine } from "./AgentStateMachine";
+export type { StateChangeHandler as StateMachineHandler } from "./AgentStateMachine";
 
 // Container implementation
 export { MemoryAgentContainer } from "./MemoryAgentContainer";

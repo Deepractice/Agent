@@ -25,9 +25,31 @@ import type {
   AgentOutput,
   AgentError,
   ErrorMessageEvent,
+  StateChangeHandler,
+  // Stream Layer Events
+  MessageStartEvent,
+  MessageDeltaEvent,
+  MessageStopEvent,
+  TextContentBlockStartEvent,
+  TextDeltaEvent,
+  TextContentBlockStopEvent,
+  ToolUseContentBlockStartEvent,
+  InputJsonDeltaEvent,
+  ToolUseContentBlockStopEvent,
+  ToolCallEvent,
+  ToolResultEvent,
+  // Message Layer Events
+  UserMessageEvent,
+  AssistantMessageEvent,
+  ToolUseMessageEvent,
+  // Turn Layer Events
+  TurnRequestEvent,
+  TurnResponseEvent,
 } from "@deepractice-ai/agentx-types";
 import type { UserMessage, AgentState } from "@deepractice-ai/agentx-types";
+import { isStateEvent } from "@deepractice-ai/agentx-types";
 import type { AgentEngine } from "@deepractice-ai/agentx-engine";
+import { AgentStateMachine } from "./AgentStateMachine";
 
 /**
  * AgentInstance - Implementation of Agent interface
@@ -39,8 +61,12 @@ export class AgentInstance implements Agent {
   readonly createdAt: number;
 
   private _lifecycle: AgentLifecycle = "running";
-  private _state: AgentState = "idle";
   private readonly engine: AgentEngine;
+
+  /**
+   * State machine - manages state transitions driven by StateEvents
+   */
+  private readonly stateMachine = new AgentStateMachine();
 
   /**
    * Type-based handlers: Map<EventType, Set<Handler>>
@@ -70,10 +96,10 @@ export class AgentInstance implements Agent {
   }
 
   /**
-   * Current conversation state
+   * Current conversation state (delegated to StateMachine)
    */
   get state(): AgentState {
-    return this._state;
+    return this.stateMachine.state;
   }
 
   /**
@@ -108,7 +134,7 @@ export class AgentInstance implements Agent {
           }
         : message;
 
-    this._state = "responding";
+    // State transitions are driven by StateEvents from Engine, not direct assignment
 
     try {
       // 1. Get stream events from driver
@@ -123,10 +149,9 @@ export class AgentInstance implements Agent {
           this.presentOutput(output);
         }
 
-        // 4. Notify handlers and update state
+        // 4. Notify handlers (StateEvents will update StateMachine)
         for (const output of outputs) {
           this.notifyHandlers(output);
-          this.updateStateFromEvent(output);
         }
       }
     } catch (error) {
@@ -136,16 +161,11 @@ export class AgentInstance implements Agent {
 
       // Notify handlers so UI can display the error
       this.notifyHandlers(errorEvent);
-      this.updateStateFromEvent(errorEvent);
 
       // Re-throw so caller is aware of the failure
       throw error;
-    } finally {
-      // Check lifecycle again - might have been destroyed during receive
-      if ((this._lifecycle as AgentLifecycle) !== "destroyed") {
-        this._state = "idle";
-      }
     }
+    // State will be set to "idle" by ConversationEndStateEvent from Engine
   }
 
   /**
@@ -246,23 +266,49 @@ export class AgentInstance implements Agent {
    * Subscribe to events
    */
   on(handler: AgentEventHandler): Unsubscribe;
+
+  // Type-safe overloads for Stream Layer Events
+  on(type: "message_start", handler: (event: MessageStartEvent) => void): Unsubscribe;
+  on(type: "message_delta", handler: (event: MessageDeltaEvent) => void): Unsubscribe;
+  on(type: "message_stop", handler: (event: MessageStopEvent) => void): Unsubscribe;
+  on(type: "text_content_block_start", handler: (event: TextContentBlockStartEvent) => void): Unsubscribe;
+  on(type: "text_delta", handler: (event: TextDeltaEvent) => void): Unsubscribe;
+  on(type: "text_content_block_stop", handler: (event: TextContentBlockStopEvent) => void): Unsubscribe;
+  on(type: "tool_use_content_block_start", handler: (event: ToolUseContentBlockStartEvent) => void): Unsubscribe;
+  on(type: "input_json_delta", handler: (event: InputJsonDeltaEvent) => void): Unsubscribe;
+  on(type: "tool_use_content_block_stop", handler: (event: ToolUseContentBlockStopEvent) => void): Unsubscribe;
+  on(type: "tool_call", handler: (event: ToolCallEvent) => void): Unsubscribe;
+  on(type: "tool_result", handler: (event: ToolResultEvent) => void): Unsubscribe;
+
+  // Type-safe overloads for Message Layer Events
+  on(type: "user_message", handler: (event: UserMessageEvent) => void): Unsubscribe;
+  on(type: "assistant_message", handler: (event: AssistantMessageEvent) => void): Unsubscribe;
+  on(type: "tool_use_message", handler: (event: ToolUseMessageEvent) => void): Unsubscribe;
+  on(type: "error_message", handler: (event: ErrorMessageEvent) => void): Unsubscribe;
+
+  // Type-safe overloads for Turn Layer Events
+  on(type: "turn_request", handler: (event: TurnRequestEvent) => void): Unsubscribe;
+  on(type: "turn_response", handler: (event: TurnResponseEvent) => void): Unsubscribe;
+
+  // Fallback for custom/unknown types
   on(type: string, handler: AgentEventHandler): Unsubscribe;
   on(types: string[], handler: AgentEventHandler): Unsubscribe;
+
   on(
-    typeOrHandler: string | string[] | AgentEventHandler,
-    handler?: AgentEventHandler
+    typeOrHandler: string | string[] | ((event: any) => void),
+    handler?: (event: any) => void
   ): Unsubscribe {
     // Overload 1: on(handler) - global subscription
     if (typeof typeOrHandler === "function") {
-      this.globalHandlers.add(typeOrHandler);
+      this.globalHandlers.add(typeOrHandler as AgentEventHandler);
       return () => {
-        this.globalHandlers.delete(typeOrHandler);
+        this.globalHandlers.delete(typeOrHandler as AgentEventHandler);
       };
     }
 
     // Overload 2 & 3: on(type, handler) or on(types, handler)
     const types = Array.isArray(typeOrHandler) ? typeOrHandler : [typeOrHandler];
-    const h = handler!;
+    const h = handler! as AgentEventHandler;
 
     for (const type of types) {
       if (!this.typedHandlers.has(type)) {
@@ -279,10 +325,20 @@ export class AgentInstance implements Agent {
   }
 
   /**
+   * Subscribe to state changes (delegated to StateMachine)
+   *
+   * @param handler - Callback receiving { prev, current } state change
+   * @returns Unsubscribe function
+   */
+  onStateChange(handler: StateChangeHandler): Unsubscribe {
+    return this.stateMachine.onStateChange(handler);
+  }
+
+  /**
    * Abort - System/error forced stop
    */
   abort(): void {
-    this._state = "idle";
+    this.stateMachine.reset();
     // TODO: Signal driver to stop
   }
 
@@ -290,7 +346,7 @@ export class AgentInstance implements Agent {
    * Interrupt - User-initiated stop
    */
   interrupt(): void {
-    this._state = "idle";
+    this.stateMachine.reset();
     // TODO: Signal driver to stop gracefully
   }
 
@@ -299,7 +355,7 @@ export class AgentInstance implements Agent {
    */
   async destroy(): Promise<void> {
     this._lifecycle = "destroyed";
-    this._state = "idle";
+    this.stateMachine.reset();
     this.typedHandlers.clear();
     this.globalHandlers.clear();
     // Clear engine state for this agent
@@ -309,10 +365,18 @@ export class AgentInstance implements Agent {
   /**
    * Notify all registered handlers
    *
-   * Order: typed handlers first (O(1) lookup), then global handlers
+   * Order:
+   * 1. Process StateEvents through StateMachine (updates state)
+   * 2. Notify type-specific handlers
+   * 3. Notify global handlers
    */
   private notifyHandlers(event: AgentOutput): void {
-    // 1. Notify type-specific handlers (O(1) lookup by event.type)
+    // 1. If StateEvent, let StateMachine process it first
+    if (isStateEvent(event)) {
+      this.stateMachine.process(event);
+    }
+
+    // 2. Notify type-specific handlers (O(1) lookup by event.type)
     const typeHandlers = this.typedHandlers.get(event.type);
     if (typeHandlers) {
       for (const handler of typeHandlers) {
@@ -324,37 +388,12 @@ export class AgentInstance implements Agent {
       }
     }
 
-    // 2. Notify global handlers (receive all events)
+    // 3. Notify global handlers (receive all events)
     for (const handler of this.globalHandlers) {
       try {
         handler(event);
       } catch (error) {
         console.error("[Agent] Handler error:", error);
-      }
-    }
-  }
-
-  /**
-   * Update state from event
-   */
-  private updateStateFromEvent(event: AgentOutput): void {
-    if ("type" in event) {
-      switch (event.type) {
-        case "message_start":
-          this._state = "responding";
-          break;
-        case "message_stop":
-          this._state = "idle";
-          break;
-        case "tool_call":
-          this._state = "awaiting_tool_result";
-          break;
-        case "tool_result":
-          this._state = "responding";
-          break;
-        case "error_message":
-          this._state = "idle";
-          break;
       }
     }
   }

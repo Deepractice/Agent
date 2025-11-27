@@ -25,6 +25,45 @@ import type { AgentContext } from "./AgentContext";
 import type { AgentLifecycle } from "./AgentLifecycle";
 import type { AgentEventHandler, Unsubscribe } from "./AgentEventHandler";
 
+// Stream Layer Events
+import type {
+  MessageStartEvent,
+  MessageDeltaEvent,
+  MessageStopEvent,
+  TextContentBlockStartEvent,
+  TextDeltaEvent,
+  TextContentBlockStopEvent,
+  ToolUseContentBlockStartEvent,
+  InputJsonDeltaEvent,
+  ToolUseContentBlockStopEvent,
+  ToolCallEvent,
+  ToolResultEvent,
+} from "~/event/stream";
+
+// Message Layer Events
+import type {
+  UserMessageEvent,
+  AssistantMessageEvent,
+  ToolUseMessageEvent,
+  ErrorMessageEvent,
+} from "~/event/message";
+
+// Turn Layer Events
+import type { TurnRequestEvent, TurnResponseEvent } from "~/event/turn";
+
+/**
+ * State change event payload
+ */
+export interface StateChange {
+  prev: AgentState;
+  current: AgentState;
+}
+
+/**
+ * State change handler type
+ */
+export type StateChangeHandler = (change: StateChange) => void;
+
 /**
  * Agent interface - Runtime instance contract
  */
@@ -71,9 +110,32 @@ export interface Agent {
    */
   on(handler: AgentEventHandler): Unsubscribe;
 
+  // ===== Type-safe overloads for Stream Layer Events =====
+  on(type: "message_start", handler: (event: MessageStartEvent) => void): Unsubscribe;
+  on(type: "message_delta", handler: (event: MessageDeltaEvent) => void): Unsubscribe;
+  on(type: "message_stop", handler: (event: MessageStopEvent) => void): Unsubscribe;
+  on(type: "text_content_block_start", handler: (event: TextContentBlockStartEvent) => void): Unsubscribe;
+  on(type: "text_delta", handler: (event: TextDeltaEvent) => void): Unsubscribe;
+  on(type: "text_content_block_stop", handler: (event: TextContentBlockStopEvent) => void): Unsubscribe;
+  on(type: "tool_use_content_block_start", handler: (event: ToolUseContentBlockStartEvent) => void): Unsubscribe;
+  on(type: "input_json_delta", handler: (event: InputJsonDeltaEvent) => void): Unsubscribe;
+  on(type: "tool_use_content_block_stop", handler: (event: ToolUseContentBlockStopEvent) => void): Unsubscribe;
+  on(type: "tool_call", handler: (event: ToolCallEvent) => void): Unsubscribe;
+  on(type: "tool_result", handler: (event: ToolResultEvent) => void): Unsubscribe;
+
+  // ===== Type-safe overloads for Message Layer Events =====
+  on(type: "user_message", handler: (event: UserMessageEvent) => void): Unsubscribe;
+  on(type: "assistant_message", handler: (event: AssistantMessageEvent) => void): Unsubscribe;
+  on(type: "tool_use_message", handler: (event: ToolUseMessageEvent) => void): Unsubscribe;
+  on(type: "error_message", handler: (event: ErrorMessageEvent) => void): Unsubscribe;
+
+  // ===== Type-safe overloads for Turn Layer Events =====
+  on(type: "turn_request", handler: (event: TurnRequestEvent) => void): Unsubscribe;
+  on(type: "turn_response", handler: (event: TurnResponseEvent) => void): Unsubscribe;
+
   /**
-   * Subscribe to specific event type by name
-   * @param type - Event type string (e.g., "message_start", "text_delta")
+   * Subscribe to specific event type by name (fallback for custom/unknown types)
+   * @param type - Event type string
    */
   on(type: string, handler: AgentEventHandler): Unsubscribe;
 
@@ -82,6 +144,14 @@ export interface Agent {
    * @param types - Array of event type strings
    */
   on(types: string[], handler: AgentEventHandler): Unsubscribe;
+
+  /**
+   * Subscribe to state changes
+   *
+   * @param handler - Callback receiving { prev, current } state change
+   * @returns Unsubscribe function
+   */
+  onStateChange(handler: StateChangeHandler): Unsubscribe;
 
   /**
    * Abort - System/error forced stop

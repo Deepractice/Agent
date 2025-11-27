@@ -22,3 +22,6 @@ export {
   isToolCallPart,
   isToolResultPart,
 } from "./ContentPartGuards";
+
+// Event guards
+export { isStateEvent, isMessageEvent, isTurnEvent, isStreamEvent } from "./EventGuards";
