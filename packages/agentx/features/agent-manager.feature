@@ -170,3 +170,27 @@ Feature: Agent Manager
     Given a created agent
     When I subscribe to onDestroy
     Then I should receive the unsubscribe function
+
+  # ===== Middleware & Interceptor =====
+
+  Scenario: use() returns unsubscribe function
+    Given a created agent
+    When I add a middleware
+    Then I should receive the unsubscribe function
+
+  Scenario: Middleware can be removed
+    Given a created agent
+    And I add a middleware
+    When I remove the middleware
+    Then it should not throw
+
+  Scenario: intercept() returns unsubscribe function
+    Given a created agent
+    When I add an interceptor
+    Then I should receive the unsubscribe function
+
+  Scenario: Interceptor can be removed
+    Given a created agent
+    And I add an interceptor
+    When I remove the interceptor
+    Then it should not throw

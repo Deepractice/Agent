@@ -73,6 +73,10 @@ export interface TestWorld {
   onReadyCalled: boolean;
   onDestroyCalled: boolean;
 
+  // Middleware & Interceptor
+  middlewareUnsubscribe?: Unsubscribe;
+  interceptorUnsubscribe?: Unsubscribe;
+
   // Generic result holder
   result?: unknown;
 }
@@ -130,5 +134,9 @@ export function resetWorld(world: TestWorld): void {
   world.lifecycleUnsubscribe = undefined;
   world.onReadyCalled = false;
   world.onDestroyCalled = false;
+  world.middlewareUnsubscribe?.();
+  world.middlewareUnsubscribe = undefined;
+  world.interceptorUnsubscribe?.();
+  world.interceptorUnsubscribe = undefined;
   world.result = undefined;
 }

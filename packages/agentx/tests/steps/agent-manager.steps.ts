@@ -264,8 +264,12 @@ Then("I should receive a single unsubscribe function", function (this: TestWorld
 });
 
 Then("I should receive the unsubscribe function", function (this: TestWorld) {
-  // Check either stateChangeUnsubscribe or lifecycleUnsubscribe
-  const unsub = this.stateChangeUnsubscribe ?? this.lifecycleUnsubscribe;
+  // Check stateChangeUnsubscribe, lifecycleUnsubscribe, middlewareUnsubscribe, or interceptorUnsubscribe
+  const unsub =
+    this.stateChangeUnsubscribe ??
+    this.lifecycleUnsubscribe ??
+    this.middlewareUnsubscribe ??
+    this.interceptorUnsubscribe;
   expect(unsub).toBeDefined();
   expect(typeof unsub).toBe("function");
 });
@@ -343,4 +347,46 @@ Then("the onReady handler should have been called", function (this: TestWorld) {
 
 Then("the onDestroy handler should have been called", function (this: TestWorld) {
   expect(this.onDestroyCalled).toBe(true);
+});
+
+// ===== Middleware & Interceptor =====
+
+When("I add a middleware", function (this: TestWorld) {
+  this.middlewareUnsubscribe = this.agent!.use(async (message, next) => {
+    await next(message);
+  });
+});
+
+Given("I add a middleware", function (this: TestWorld) {
+  this.middlewareUnsubscribe = this.agent!.use(async (message, next) => {
+    await next(message);
+  });
+});
+
+When("I remove the middleware", function (this: TestWorld) {
+  try {
+    this.middlewareUnsubscribe?.();
+  } catch (error) {
+    this.thrownError = error as Error;
+  }
+});
+
+When("I add an interceptor", function (this: TestWorld) {
+  this.interceptorUnsubscribe = this.agent!.intercept((event, next) => {
+    next(event);
+  });
+});
+
+Given("I add an interceptor", function (this: TestWorld) {
+  this.interceptorUnsubscribe = this.agent!.intercept((event, next) => {
+    next(event);
+  });
+});
+
+When("I remove the interceptor", function (this: TestWorld) {
+  try {
+    this.interceptorUnsubscribe?.();
+  } catch (error) {
+    this.thrownError = error as Error;
+  }
 });

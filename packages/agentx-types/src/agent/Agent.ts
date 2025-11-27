@@ -24,6 +24,8 @@ import type { AgentDefinition } from "./AgentDefinition";
 import type { AgentContext } from "./AgentContext";
 import type { AgentLifecycle } from "./AgentLifecycle";
 import type { AgentEventHandler, Unsubscribe } from "./AgentEventHandler";
+import type { AgentMiddleware } from "./AgentMiddleware";
+import type { AgentInterceptor } from "./AgentInterceptor";
 
 // Stream Layer Events
 import type {
@@ -279,6 +281,37 @@ export interface Agent {
    * @returns Unsubscribe function
    */
   onDestroy(handler: () => void): Unsubscribe;
+
+  /**
+   * Add middleware to intercept incoming messages (receive side)
+   *
+   * @example
+   * ```typescript
+   * agent.use(async (message, next) => {
+   *   console.log('[Before]', message.content);
+   *   await next(message);
+   *   console.log('[After]');
+   * });
+   * ```
+   *
+   * @returns Unsubscribe function to remove the middleware
+   */
+  use(middleware: AgentMiddleware): Unsubscribe;
+
+  /**
+   * Add interceptor to intercept outgoing events (event side)
+   *
+   * @example
+   * ```typescript
+   * agent.intercept((event, next) => {
+   *   console.log('Event:', event.type);
+   *   next(event);
+   * });
+   * ```
+   *
+   * @returns Unsubscribe function to remove the interceptor
+   */
+  intercept(interceptor: AgentInterceptor): Unsubscribe;
 
   /**
    * Abort - System/error forced stop

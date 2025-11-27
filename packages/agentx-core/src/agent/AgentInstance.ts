@@ -28,6 +28,8 @@ import type {
   StateChangeHandler,
   EventHandlerMap,
   ReactHandlerMap,
+  AgentMiddleware,
+  AgentInterceptor,
   // Stream Layer Events
   MessageStartEvent,
   MessageDeltaEvent,
@@ -92,6 +94,16 @@ export class AgentInstance implements Agent {
    */
   private readonly destroyHandlers: Set<() => void> = new Set();
 
+  /**
+   * Middleware chain for receive() interception
+   */
+  private readonly middlewares: AgentMiddleware[] = [];
+
+  /**
+   * Interceptor chain for event dispatch interception
+   */
+  private readonly interceptors: AgentInterceptor[] = [];
+
   constructor(definition: AgentDefinition, context: AgentContext, engine: AgentEngine) {
     this.agentId = context.agentId;
     this.definition = definition;
@@ -117,11 +129,7 @@ export class AgentInstance implements Agent {
   /**
    * Receive a message from user
    *
-   * Coordinates the flow:
-   * 1. Driver receives message → produces StreamEvents
-   * 2. Engine processes events → produces outputs
-   * 3. Presenters handle outputs
-   * 4. Handlers receive outputs
+   * Runs through middleware chain before actual processing.
    *
    * Error Handling:
    * - Errors are caught and converted to ErrorMessageEvent
@@ -146,8 +154,39 @@ export class AgentInstance implements Agent {
           }
         : message;
 
-    // State transitions are driven by StateEvents from Engine, not direct assignment
+    // Run through middleware chain
+    await this.executeMiddlewareChain(userMessage);
+  }
 
+  /**
+   * Execute middleware chain and then process the message
+   */
+  private async executeMiddlewareChain(message: UserMessage): Promise<void> {
+    let index = 0;
+
+    const next = async (msg: UserMessage): Promise<void> => {
+      if (index < this.middlewares.length) {
+        const middleware = this.middlewares[index++];
+        await middleware(msg, next);
+      } else {
+        // End of chain - do actual processing
+        await this.doReceive(msg);
+      }
+    };
+
+    await next(message);
+  }
+
+  /**
+   * Actual message processing logic
+   *
+   * Coordinates the flow:
+   * 1. Driver receives message → produces StreamEvents
+   * 2. Engine processes events → produces outputs
+   * 3. Presenters handle outputs
+   * 4. Handlers receive outputs
+   */
+  private async doReceive(userMessage: UserMessage): Promise<void> {
     try {
       // 1. Get stream events from driver
       const streamEvents = this.definition.driver.receive(userMessage, this.context);
@@ -473,6 +512,34 @@ export class AgentInstance implements Agent {
   }
 
   /**
+   * Add middleware to intercept incoming messages
+   */
+  use(middleware: AgentMiddleware): Unsubscribe {
+    this.middlewares.push(middleware);
+
+    return () => {
+      const index = this.middlewares.indexOf(middleware);
+      if (index !== -1) {
+        this.middlewares.splice(index, 1);
+      }
+    };
+  }
+
+  /**
+   * Add interceptor to intercept outgoing events
+   */
+  intercept(interceptor: AgentInterceptor): Unsubscribe {
+    this.interceptors.push(interceptor);
+
+    return () => {
+      const index = this.interceptors.indexOf(interceptor);
+      if (index !== -1) {
+        this.interceptors.splice(index, 1);
+      }
+    };
+  }
+
+  /**
    * Abort - System/error forced stop
    */
   abort(): void {
@@ -507,6 +574,8 @@ export class AgentInstance implements Agent {
     this.globalHandlers.clear();
     this.readyHandlers.clear();
     this.destroyHandlers.clear();
+    this.middlewares.length = 0;
+    this.interceptors.length = 0;
     // Clear engine state for this agent
     this.engine.clearState(this.agentId);
   }
@@ -514,18 +583,48 @@ export class AgentInstance implements Agent {
   /**
    * Notify all registered handlers
    *
-   * Order:
-   * 1. Process StateEvents through StateMachine (updates state)
-   * 2. Notify type-specific handlers
-   * 3. Notify global handlers
+   * Runs through interceptor chain before dispatching to handlers.
    */
   private notifyHandlers(event: AgentOutput): void {
-    // 1. If StateEvent, let StateMachine process it first
+    // 1. If StateEvent, let StateMachine process it first (before interceptors)
     if (isStateEvent(event)) {
       this.stateMachine.process(event);
     }
 
-    // 2. Notify type-specific handlers (O(1) lookup by event.type)
+    // 2. Run through interceptor chain
+    this.executeInterceptorChain(event);
+  }
+
+  /**
+   * Execute interceptor chain and then dispatch to handlers
+   */
+  private executeInterceptorChain(event: AgentOutput): void {
+    let index = 0;
+
+    const next = (e: AgentOutput): void => {
+      if (index < this.interceptors.length) {
+        const interceptor = this.interceptors[index++];
+        try {
+          interceptor(e, next);
+        } catch (error) {
+          console.error("[Agent] Interceptor error:", error);
+          // Continue to next interceptor even if one fails
+          next(e);
+        }
+      } else {
+        // End of chain - dispatch to handlers
+        this.dispatchToHandlers(e);
+      }
+    };
+
+    next(event);
+  }
+
+  /**
+   * Dispatch event to type-specific and global handlers
+   */
+  private dispatchToHandlers(event: AgentOutput): void {
+    // 1. Notify type-specific handlers (O(1) lookup by event.type)
     const typeHandlers = this.typedHandlers.get(event.type);
     if (typeHandlers) {
       for (const handler of typeHandlers) {
@@ -537,7 +636,7 @@ export class AgentInstance implements Agent {
       }
     }
 
-    // 3. Notify global handlers (receive all events)
+    // 2. Notify global handlers (receive all events)
     for (const handler of this.globalHandlers) {
       try {
         handler(event);

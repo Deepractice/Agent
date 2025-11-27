@@ -27,3 +27,7 @@ export type { AgentLifecycle } from "./AgentLifecycle";
 
 // Event handling
 export type { AgentEventHandler, Unsubscribe } from "./AgentEventHandler";
+
+// Middleware & Interceptor
+export type { AgentMiddleware, AgentMiddlewareNext } from "./AgentMiddleware";
+export type { AgentInterceptor, AgentInterceptorNext } from "./AgentInterceptor";
