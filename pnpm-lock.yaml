@@ -84,9 +84,9 @@ importers:
       '@deepractice-ai/agentx':
         specifier: workspace:*
         version: link:../../packages/agentx
-      '@deepractice-ai/agentx-sdk-claude':
+      '@deepractice-ai/agentx-claude':
         specifier: workspace:*
-        version: link:../../packages/agentx-sdk-claude
+        version: link:../../packages/agentx-claude
       '@deepractice-ai/agentx-ui':
         specifier: workspace:*
         version: link:../../packages/agentx-ui
@@ -151,9 +151,15 @@ importers:
       '@deepractice-ai/agentx-engine':
         specifier: workspace:*
         version: link:../agentx-engine
+      '@deepractice-ai/agentx-logger':
+        specifier: workspace:*
+        version: link:../agentx-logger
       '@deepractice-ai/agentx-types':
         specifier: workspace:*
         version: link:../agentx-types
+      ky:
+        specifier: ^1.14.0
+        version: 1.14.0
     devDependencies:
       '@deepracticex/vitest-cucumber':
         specifier: ^1.4.3
@@ -173,6 +179,40 @@ importers:
       vitest:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.2)(@vitest/ui@3.2.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)
+
+  packages/agentx-claude:
+    dependencies:
+      '@anthropic-ai/claude-agent-sdk':
+        specifier: ^0.1.30
+        version: 0.1.30(zod@4.1.12)
+      '@deepractice-ai/agentx':
+        specifier: workspace:*
+        version: link:../agentx
+      '@deepractice-ai/agentx-core':
+        specifier: workspace:*
+        version: link:../agentx-core
+      '@deepractice-ai/agentx-engine':
+        specifier: workspace:*
+        version: link:../agentx-engine
+      '@deepractice-ai/agentx-logger':
+        specifier: workspace:*
+        version: link:../agentx-logger
+      '@deepractice-ai/agentx-types':
+        specifier: workspace:*
+        version: link:../agentx-types
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
+    devDependencies:
+      '@types/node':
+        specifier: ^22.10.2
+        version: 22.19.1
+      tsup:
+        specifier: ^8.3.5
+        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
+      typescript:
+        specifier: ^5.7.2
+        version: 5.9.3
 
   packages/agentx-core:
     dependencies:
@@ -242,40 +282,6 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/agentx-sdk-claude:
-    dependencies:
-      '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.1.30
-        version: 0.1.30(zod@4.1.12)
-      '@deepractice-ai/agentx':
-        specifier: workspace:*
-        version: link:../agentx
-      '@deepractice-ai/agentx-core':
-        specifier: workspace:*
-        version: link:../agentx-core
-      '@deepractice-ai/agentx-engine':
-        specifier: workspace:*
-        version: link:../agentx-engine
-      '@deepractice-ai/agentx-logger':
-        specifier: workspace:*
-        version: link:../agentx-logger
-      '@deepractice-ai/agentx-types':
-        specifier: workspace:*
-        version: link:../agentx-types
-      rxjs:
-        specifier: ^7.8.2
-        version: 7.8.2
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.2
-        version: 22.19.1
-      tsup:
-        specifier: ^8.3.5
-        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
-
   packages/agentx-types:
     devDependencies:
       tsup:
@@ -327,9 +333,9 @@ importers:
         specifier: ^5.0.2
         version: 5.0.8(@types/react@18.3.26)(react@18.3.1)
     devDependencies:
-      '@deepractice-ai/agentx-sdk-claude':
+      '@deepractice-ai/agentx-claude':
         specifier: workspace:*
-        version: link:../agentx-sdk-claude
+        version: link:../agentx-claude
       '@storybook/addon-a11y':
         specifier: ^8.4.7
         version: 8.6.14(storybook@8.6.14(prettier@3.6.2))
@@ -2955,6 +2961,10 @@ packages:
 
   kolorist@1.8.0:
     resolution: {integrity: sha512-Y+60/zizpJ3HRH8DCss+q95yr6145JXZo46OTpFvDZWLfRCE4qChOyk1b26nMaNpfHHgxagk9dXT5OP0Tfe+dQ==}
+
+  ky@1.14.0:
+    resolution: {integrity: sha512-Rczb6FMM6JT0lvrOlP5WUOCB7s9XKxzwgErzhKlKde1bEV90FXplV1o87fpt4PU/asJFiqjYJxAJyzJhcrxOsQ==}
+    engines: {node: '>=18'}
 
   lefthook-darwin-arm64@1.13.6:
     resolution: {integrity: sha512-m6Lb77VGc84/Qo21Lhq576pEvcgFCnvloEiP02HbAHcIXD0RTLy9u2yAInrixqZeaz13HYtdDaI7OBYAAdVt8A==}
@@ -7152,6 +7162,8 @@ snapshots:
       json-buffer: 3.0.1
 
   kolorist@1.8.0: {}
+
+  ky@1.14.0: {}
 
   lefthook-darwin-arm64@1.13.6:
     optional: true

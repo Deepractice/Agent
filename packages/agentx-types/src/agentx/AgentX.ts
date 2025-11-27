@@ -1,93 +1,92 @@
 /**
- * AgentX - Application context interface
+ * AgentX - Platform API
  *
- * Like Express app or Vue app, AgentX is the central context
- * for managing agents in your application.
+ * The central entry point for all agent operations.
+ * Like Express app or Vue app, AgentX provides a unified
+ * interface for managing agents, errors, and sessions.
+ *
+ * Two modes:
+ * - Local: Direct in-memory operations
+ * - Remote: Operations via network to remote AgentX server
  *
  * @example
  * ```typescript
- * // Simple: use default instance
- * import { agentx } from "@deepractice-ai/agentx";
- * agentx.createAgent(MyAgent, { apiKey: "..." });
- *
- * // Advanced: create custom instance
  * import { createAgentX } from "@deepractice-ai/agentx";
- * const custom = createAgentX({ container: myContainer });
- * custom.createAgent(MyAgent, { apiKey: "..." });
+ *
+ * // Local mode
+ * const local = createAgentX();
+ * const agent = local.agents.create(definition, config);
+ *
+ * // Remote mode
+ * const remote = createAgentX({ serverUrl: "http://..." });
+ * const agent = await remote.agents.get("agent_123");
+ * const info = await remote.platform.getInfo();
  * ```
  */
 
-import type { Agent } from "~/agent/Agent";
-import type { AgentDefinition } from "~/agent/AgentDefinition";
-import type { AgentContainer } from "~/agent/AgentContainer";
+import type { AgentManager } from "./agent";
+import type { ErrorManager } from "./error";
+import type { LocalSessionManager, RemoteSessionManager } from "./session";
+import type { PlatformManager } from "./platform";
 
 /**
- * AgentX configuration options
+ * Base AgentX interface (shared by Local and Remote)
  */
-export interface AgentXOptions {
+interface AgentXBase {
   /**
-   * Custom container for agent management
-   * Default: MemoryAgentContainer
+   * Agent lifecycle management
    */
-  container?: AgentContainer;
+  readonly agents: AgentManager;
 }
 
 /**
- * AgentX - Application context for agent management
+ * Local mode AgentX
  *
- * Provides:
- * - createAgent(): Create new agent instance
- * - getAgent(): Get existing agent by ID
- * - hasAgent(): Check if agent exists
- * - destroyAgent(): Destroy agent by ID
- * - destroyAll(): Destroy all agents
+ * Direct in-memory operations, no network required.
  */
-export interface AgentX {
+export interface AgentXLocal extends AgentXBase {
   /**
-   * The container managing agent instances
+   * Mode identifier
    */
-  readonly container: AgentContainer;
+  readonly mode: "local";
 
   /**
-   * Create a new agent instance
-   *
-   * @param definition - Agent definition (from defineAgent)
-   * @param config - Configuration matching definition's configSchema
-   * @returns Created agent instance
+   * Session management (local variant)
    */
-  createAgent<TConfig extends Record<string, unknown>>(
-    definition: AgentDefinition<TConfig>,
-    config: TConfig
-  ): Agent;
+  readonly sessions: LocalSessionManager;
 
   /**
-   * Get an existing agent by ID
+   * Platform-level error management (Local only)
    *
-   * @param agentId - The agent ID
-   * @returns Agent instance or undefined
+   * Remote clients handle errors themselves due to
+   * environment-specific differences (network, CORS, etc.)
    */
-  getAgent(agentId: string): Agent | undefined;
-
-  /**
-   * Check if an agent exists
-   *
-   * @param agentId - The agent ID
-   * @returns true if agent exists
-   */
-  hasAgent(agentId: string): boolean;
-
-  /**
-   * Destroy an agent by ID
-   *
-   * @param agentId - The agent ID
-   * @returns Promise that resolves when destroyed
-   */
-  destroyAgent(agentId: string): Promise<void>;
-
-  /**
-   * Destroy all agents
-   *
-   * @returns Promise that resolves when all destroyed
-   */
-  destroyAll(): Promise<void>;
+  readonly errors: ErrorManager;
 }
+
+/**
+ * Remote mode AgentX
+ *
+ * Operations via network to remote AgentX server.
+ */
+export interface AgentXRemote extends AgentXBase {
+  /**
+   * Mode identifier
+   */
+  readonly mode: "remote";
+
+  /**
+   * Session management (remote variant)
+   */
+  readonly sessions: RemoteSessionManager;
+
+  /**
+   * Platform information (remote only)
+   */
+  readonly platform: PlatformManager;
+}
+
+/**
+ * AgentX - Union type of Local and Remote modes
+ */
+export type AgentX = AgentXLocal | AgentXRemote;

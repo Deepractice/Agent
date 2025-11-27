@@ -7,6 +7,7 @@
  *
  * - **agentx/** - Platform context (AgentX - the central API)
  * - **agent/** - Agent system contracts (Agent, Driver, Presenter, Container)
+ * - **error/** - Error type system (AgentError, categories, codes)
  * - **message/** - Message formats (user, assistant, tool, error)
  * - **event/** - Event types (stream, state, message, turn layers)
  * - **llm/** - LLM configuration and responses
@@ -23,6 +24,9 @@ export * from "./agentx";
 // Agent contracts
 export * from "./agent";
 
+// Error types
+export * from "./error";
+
 // Message types
 export * from "./message";
 
@@ -34,6 +38,9 @@ export * from "./llm";
 
 // MCP types
 export * from "./mcp";
+
+// Session types
+export * from "./session";
 
 // Type guards
 export * from "./guards";

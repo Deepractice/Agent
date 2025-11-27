@@ -23,6 +23,8 @@ import type {
   AgentEventHandler,
   Unsubscribe,
   AgentOutput,
+  AgentError,
+  ErrorMessageEvent,
 } from "@deepractice-ai/agentx-types";
 import type { UserMessage, AgentState } from "@deepractice-ai/agentx-types";
 import type { AgentEngine } from "@deepractice-ai/agentx-engine";
@@ -82,9 +84,17 @@ export class AgentInstance implements Agent {
    * 2. Engine processes events → produces outputs
    * 3. Presenters handle outputs
    * 4. Handlers receive outputs
+   *
+   * Error Handling:
+   * - Errors are caught and converted to ErrorMessageEvent
+   * - Handlers receive the error event before re-throwing
+   * - This ensures UI can display errors
    */
   async receive(message: string | UserMessage): Promise<void> {
     if (this._lifecycle === "destroyed") {
+      const error = this.createAgentError("system", "AGENT_DESTROYED", "Agent has been destroyed", false);
+      const errorEvent = this.createErrorMessageEvent(error);
+      this.notifyHandlers(errorEvent);
       throw new Error("[Agent] Agent has been destroyed");
     }
 
@@ -119,12 +129,103 @@ export class AgentInstance implements Agent {
           this.updateStateFromEvent(output);
         }
       }
+    } catch (error) {
+      // Convert error to AgentError and emit as ErrorMessageEvent
+      const agentError = this.classifyError(error);
+      const errorEvent = this.createErrorMessageEvent(agentError);
+
+      // Notify handlers so UI can display the error
+      this.notifyHandlers(errorEvent);
+      this.updateStateFromEvent(errorEvent);
+
+      // Re-throw so caller is aware of the failure
+      throw error;
     } finally {
       // Check lifecycle again - might have been destroyed during receive
       if ((this._lifecycle as AgentLifecycle) !== "destroyed") {
         this._state = "idle";
       }
     }
+  }
+
+  /**
+   * Create an AgentError with the specified category and code
+   */
+  private createAgentError(
+    category: AgentError["category"],
+    code: string,
+    message: string,
+    recoverable: boolean,
+    cause?: Error
+  ): AgentError {
+    return {
+      category,
+      code,
+      message,
+      severity: recoverable ? "error" : "fatal",
+      recoverable,
+      cause,
+    } as AgentError;
+  }
+
+  /**
+   * Classify an unknown error into an AgentError
+   */
+  private classifyError(error: unknown): AgentError {
+    const err = error instanceof Error ? error : new Error(String(error));
+    const message = err.message;
+
+    // Try to classify based on error message patterns
+    // LLM errors
+    if (message.includes("rate limit") || message.includes("429")) {
+      return this.createAgentError("llm", "RATE_LIMITED", message, true, err);
+    }
+    if (message.includes("api key") || message.includes("401") || message.includes("unauthorized")) {
+      return this.createAgentError("llm", "INVALID_API_KEY", message, false, err);
+    }
+    if (message.includes("context") && message.includes("long")) {
+      return this.createAgentError("llm", "CONTEXT_TOO_LONG", message, true, err);
+    }
+    if (message.includes("overloaded") || message.includes("503")) {
+      return this.createAgentError("llm", "OVERLOADED", message, true, err);
+    }
+
+    // Network errors
+    if (message.includes("timeout") || message.includes("ETIMEDOUT")) {
+      return this.createAgentError("network", "TIMEOUT", message, true, err);
+    }
+    if (message.includes("ECONNREFUSED") || message.includes("connection")) {
+      return this.createAgentError("network", "CONNECTION_FAILED", message, true, err);
+    }
+    if (message.includes("network") || message.includes("fetch")) {
+      return this.createAgentError("network", "CONNECTION_FAILED", message, true, err);
+    }
+
+    // Driver errors
+    if (message.includes("driver")) {
+      return this.createAgentError("driver", "RECEIVE_FAILED", message, true, err);
+    }
+
+    // Default to system error
+    return this.createAgentError("system", "UNKNOWN", message, true, err);
+  }
+
+  /**
+   * Create an ErrorMessageEvent from an AgentError
+   */
+  private createErrorMessageEvent(error: AgentError): ErrorMessageEvent {
+    return {
+      type: "error_message",
+      uuid: `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+      agentId: this.agentId,
+      timestamp: Date.now(),
+      data: {
+        id: `err_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        role: "error",
+        error,
+        timestamp: Date.now(),
+      },
+    };
   }
 
   /**

@@ -91,7 +91,7 @@ export function fromTypesMessage(msg: TypesMessage, agentId: string): Message {
   if (msg.role === "tool-use") {
     content = [msg.toolCall, msg.toolResult];
   } else if (msg.role === "error") {
-    content = msg.message;
+    content = msg.error.message;
   } else {
     content = msg.content;
   }

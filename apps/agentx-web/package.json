@@ -15,7 +15,7 @@
   },
   "dependencies": {
     "@deepractice-ai/agentx": "workspace:*",
-    "@deepractice-ai/agentx-sdk-claude": "workspace:*",
+    "@deepractice-ai/agentx-claude": "workspace:*",
     "@deepractice-ai/agentx-ui": "workspace:*",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"

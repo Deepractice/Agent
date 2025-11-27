@@ -1,9 +1,8 @@
 /**
  * defineAgent - Create an AgentDefinition with config schema
  *
- * This is the main entry point for defining agents in the framework.
- * Only provides essential fields - any additional config (systemPrompt,
- * version, apiKey, etc.) should be defined in configSchema.
+ * Convenience function that delegates to agentx.agents.define()
+ * with additional ConfigSchema support for compile-time type inference.
  *
  * @example
  * ```typescript
@@ -13,17 +12,23 @@
  *   configSchema: {
  *     apiKey: { type: "string", required: true },
  *     model: { type: "string", default: "claude-sonnet-4-20250514" },
- *     systemPrompt: { type: "string" },  // Developer decides what config to have
+ *     systemPrompt: { type: "string" },
  *   },
+ * });
+ *
+ * // Or use agentx.agents.define() directly (simpler, no ConfigSchema):
+ * const MyAgent = agentx.agents.define({
+ *   name: "MyAssistant",
+ *   driver: myDriver,
  * });
  * ```
  */
 
-import type { AgentDefinition, AgentDriver, AgentPresenter } from "@deepractice-ai/agentx-core";
+import type { AgentDefinition, AgentDriver, AgentPresenter } from "@deepractice-ai/agentx-types";
 import type { ConfigSchema, InferConfig } from "./ConfigSchema";
 
 /**
- * Options for defineAgent
+ * Options for defineAgent (with ConfigSchema support)
  */
 export interface DefineAgentOptions<TConfigSchema extends ConfigSchema> {
   /**
@@ -64,7 +69,10 @@ export interface DefinedAgent<TConfigSchema extends ConfigSchema = ConfigSchema>
 }
 
 /**
- * Define an agent with config schema
+ * Define an agent with config schema (convenience function)
+ *
+ * This is a convenience function that adds ConfigSchema support
+ * on top of agentx.agents.define().
  *
  * @param options - Agent definition options
  * @returns Frozen AgentDefinition with config schema
@@ -79,6 +87,7 @@ export function defineAgent<TConfigSchema extends ConfigSchema = ConfigSchema>(
     throw new Error("[defineAgent] driver is required");
   }
 
+  // Create frozen definition with configSchema
   return Object.freeze({
     name: options.name,
     description: options.description,

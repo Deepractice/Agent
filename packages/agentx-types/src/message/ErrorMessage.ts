@@ -1,24 +1,36 @@
 /**
  * Error Message
  *
- * Represents an error that occurred during agent execution.
- * Error messages can be displayed in the conversation history alongside user/assistant messages.
+ * Message representation of an AgentError.
+ * Can be displayed in the conversation history alongside user/assistant messages.
+ *
+ * Architecture:
+ * - AgentError: The error definition (category, code, message, etc.)
+ * - ErrorMessage: Message wrapper for displaying in conversation
+ *
+ * @example
+ * ```typescript
+ * const errorMessage: ErrorMessage = {
+ *   id: "err_123",
+ *   role: "error",
+ *   error: {
+ *     category: "llm",
+ *     code: "RATE_LIMITED",
+ *     message: "Rate limit exceeded, please try again later",
+ *     severity: "error",
+ *     recoverable: true,
+ *   },
+ *   timestamp: Date.now(),
+ * };
+ * ```
  */
 
-/**
- * Error categorization
- */
-export type ErrorSubtype = "system" | "agent" | "llm" | "validation" | "unknown";
-
-/**
- * Error severity level
- */
-export type ErrorSeverity = "fatal" | "error" | "warning";
+import type { AgentError } from "~/error";
 
 /**
  * Error Message Type
  *
- * Structured error information that can be displayed in conversation history.
+ * Wraps an AgentError for display in conversation history.
  */
 export interface ErrorMessage {
   /**
@@ -32,39 +44,9 @@ export interface ErrorMessage {
   role: "error";
 
   /**
-   * Error category
+   * The error that occurred
    */
-  subtype: ErrorSubtype;
-
-  /**
-   * Error severity level
-   */
-  severity: ErrorSeverity;
-
-  /**
-   * Human-readable error message
-   */
-  message: string;
-
-  /**
-   * Machine-readable error code (optional)
-   */
-  code?: string;
-
-  /**
-   * Additional error details (optional)
-   */
-  details?: unknown;
-
-  /**
-   * Whether the error is recoverable
-   */
-  recoverable?: boolean;
-
-  /**
-   * Stack trace (if available)
-   */
-  stack?: string;
+  error: AgentError;
 
   /**
    * Timestamp when error occurred

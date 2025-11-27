@@ -1,7 +1,7 @@
 {
-  "name": "@deepractice-ai/agentx-sdk-claude",
+  "name": "@deepractice-ai/agentx-claude",
   "version": "0.1.0",
-  "description": "Claude SDK integration for AgentX framework",
+  "description": "Claude Driver for AgentX - Node.js only",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",

@@ -28,7 +28,8 @@ export type { ToolUseMessageEvent } from "./ToolUseMessageEvent";
 // Error messages
 export type { ErrorMessageEvent } from "./ErrorMessageEvent";
 // Re-export error types for convenience
-export type { ErrorMessage, ErrorSubtype, ErrorSeverity } from "~/message";
+export type { ErrorMessage } from "~/message";
+export type { AgentError, ErrorSeverity } from "~/error";
 
 /**
  * Union of all Message events
