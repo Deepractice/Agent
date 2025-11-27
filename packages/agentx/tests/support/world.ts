@@ -62,6 +62,17 @@ export interface TestWorld {
   stateChanges: StateChange[];
   stateChangeUnsubscribe?: Unsubscribe;
 
+  // Batch subscription
+  batchUnsubscribe?: Unsubscribe;
+
+  // React subscription
+  reactUnsubscribe?: Unsubscribe;
+
+  // Lifecycle hooks
+  lifecycleUnsubscribe?: Unsubscribe;
+  onReadyCalled: boolean;
+  onDestroyCalled: boolean;
+
   // Generic result holder
   result?: unknown;
 }
@@ -77,6 +88,8 @@ export function createWorld(): TestWorld {
     errorHandlers: [],
     errorCalls: [],
     stateChanges: [],
+    onReadyCalled: false,
+    onDestroyCalled: false,
   };
 }
 
@@ -109,5 +122,13 @@ export function resetWorld(world: TestWorld): void {
   world.stateChanges = [];
   world.stateChangeUnsubscribe?.();
   world.stateChangeUnsubscribe = undefined;
+  world.batchUnsubscribe?.();
+  world.batchUnsubscribe = undefined;
+  world.reactUnsubscribe?.();
+  world.reactUnsubscribe = undefined;
+  world.lifecycleUnsubscribe?.();
+  world.lifecycleUnsubscribe = undefined;
+  world.onReadyCalled = false;
+  world.onDestroyCalled = false;
   world.result = undefined;
 }

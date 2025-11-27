@@ -65,6 +65,80 @@ export interface StateChange {
 export type StateChangeHandler = (change: StateChange) => void;
 
 /**
+ * Event handler map for batch subscription
+ *
+ * Usage:
+ * ```typescript
+ * agent.on({
+ *   text_delta: (event) => console.log(event.data.text),
+ *   assistant_message: (event) => setMessages(prev => [...prev, event.data]),
+ *   error_message: (event) => setError(event.data),
+ * });
+ * ```
+ */
+export interface EventHandlerMap {
+  // Stream Layer Events
+  message_start?: (event: MessageStartEvent) => void;
+  message_delta?: (event: MessageDeltaEvent) => void;
+  message_stop?: (event: MessageStopEvent) => void;
+  text_content_block_start?: (event: TextContentBlockStartEvent) => void;
+  text_delta?: (event: TextDeltaEvent) => void;
+  text_content_block_stop?: (event: TextContentBlockStopEvent) => void;
+  tool_use_content_block_start?: (event: ToolUseContentBlockStartEvent) => void;
+  input_json_delta?: (event: InputJsonDeltaEvent) => void;
+  tool_use_content_block_stop?: (event: ToolUseContentBlockStopEvent) => void;
+  tool_call?: (event: ToolCallEvent) => void;
+  tool_result?: (event: ToolResultEvent) => void;
+
+  // Message Layer Events
+  user_message?: (event: UserMessageEvent) => void;
+  assistant_message?: (event: AssistantMessageEvent) => void;
+  tool_use_message?: (event: ToolUseMessageEvent) => void;
+  error_message?: (event: ErrorMessageEvent) => void;
+
+  // Turn Layer Events
+  turn_request?: (event: TurnRequestEvent) => void;
+  turn_response?: (event: TurnResponseEvent) => void;
+}
+
+/**
+ * React-style handler map for fluent event subscription
+ *
+ * Usage:
+ * ```typescript
+ * agent.react({
+ *   onTextDelta: (event) => console.log(event.data.text),
+ *   onAssistantMessage: (event) => setMessages(prev => [...prev, event.data]),
+ *   onError: (event) => setError(event.data),
+ * });
+ * ```
+ */
+export interface ReactHandlerMap {
+  // Stream Layer Events
+  onMessageStart?: (event: MessageStartEvent) => void;
+  onMessageDelta?: (event: MessageDeltaEvent) => void;
+  onMessageStop?: (event: MessageStopEvent) => void;
+  onTextContentBlockStart?: (event: TextContentBlockStartEvent) => void;
+  onTextDelta?: (event: TextDeltaEvent) => void;
+  onTextContentBlockStop?: (event: TextContentBlockStopEvent) => void;
+  onToolUseContentBlockStart?: (event: ToolUseContentBlockStartEvent) => void;
+  onInputJsonDelta?: (event: InputJsonDeltaEvent) => void;
+  onToolUseContentBlockStop?: (event: ToolUseContentBlockStopEvent) => void;
+  onToolCall?: (event: ToolCallEvent) => void;
+  onToolResult?: (event: ToolResultEvent) => void;
+
+  // Message Layer Events
+  onUserMessage?: (event: UserMessageEvent) => void;
+  onAssistantMessage?: (event: AssistantMessageEvent) => void;
+  onToolUseMessage?: (event: ToolUseMessageEvent) => void;
+  onError?: (event: ErrorMessageEvent) => void;
+
+  // Turn Layer Events
+  onTurnRequest?: (event: TurnRequestEvent) => void;
+  onTurnResponse?: (event: TurnResponseEvent) => void;
+}
+
+/**
  * Agent interface - Runtime instance contract
  */
 export interface Agent {
@@ -110,6 +184,23 @@ export interface Agent {
    */
   on(handler: AgentEventHandler): Unsubscribe;
 
+  /**
+   * Batch subscribe to multiple event types with type-safe handlers
+   *
+   * @example
+   * ```typescript
+   * const unsub = agent.on({
+   *   text_delta: (event) => setStreaming(prev => prev + event.data.text),
+   *   assistant_message: (event) => setMessages(prev => [...prev, event.data]),
+   *   error_message: (event) => setError(event.data),
+   * });
+   *
+   * // Cleanup
+   * unsub();
+   * ```
+   */
+  on(handlers: EventHandlerMap): Unsubscribe;
+
   // ===== Type-safe overloads for Stream Layer Events =====
   on(type: "message_start", handler: (event: MessageStartEvent) => void): Unsubscribe;
   on(type: "message_delta", handler: (event: MessageDeltaEvent) => void): Unsubscribe;
@@ -152,6 +243,42 @@ export interface Agent {
    * @returns Unsubscribe function
    */
   onStateChange(handler: StateChangeHandler): Unsubscribe;
+
+  /**
+   * React-style fluent event subscription
+   *
+   * @example
+   * ```typescript
+   * const unsub = agent.react({
+   *   onTextDelta: (event) => setStreaming(prev => prev + event.data.text),
+   *   onAssistantMessage: (event) => setMessages(prev => [...prev, event.data]),
+   *   onError: (event) => setError(event.data),
+   * });
+   *
+   * // Cleanup
+   * unsub();
+   * ```
+   */
+  react(handlers: ReactHandlerMap): Unsubscribe;
+
+  /**
+   * Subscribe to agent ready event
+   *
+   * Called when agent lifecycle becomes 'running'.
+   * If already running, handler is called immediately.
+   *
+   * @returns Unsubscribe function
+   */
+  onReady(handler: () => void): Unsubscribe;
+
+  /**
+   * Subscribe to agent destroy event
+   *
+   * Called when agent lifecycle becomes 'destroyed'.
+   *
+   * @returns Unsubscribe function
+   */
+  onDestroy(handler: () => void): Unsubscribe;
 
   /**
    * Abort - System/error forced stop

@@ -26,6 +26,8 @@ import type {
   AgentError,
   ErrorMessageEvent,
   StateChangeHandler,
+  EventHandlerMap,
+  ReactHandlerMap,
   // Stream Layer Events
   MessageStartEvent,
   MessageDeltaEvent,
@@ -79,6 +81,16 @@ export class AgentInstance implements Agent {
    * For backward compatibility with on(handler)
    */
   private readonly globalHandlers: Set<AgentEventHandler> = new Set();
+
+  /**
+   * Lifecycle handlers for onReady
+   */
+  private readonly readyHandlers: Set<() => void> = new Set();
+
+  /**
+   * Lifecycle handlers for onDestroy
+   */
+  private readonly destroyHandlers: Set<() => void> = new Set();
 
   constructor(definition: AgentDefinition, context: AgentContext, engine: AgentEngine) {
     this.agentId = context.agentId;
@@ -267,6 +279,9 @@ export class AgentInstance implements Agent {
    */
   on(handler: AgentEventHandler): Unsubscribe;
 
+  // Batch subscription with EventHandlerMap
+  on(handlers: EventHandlerMap): Unsubscribe;
+
   // Type-safe overloads for Stream Layer Events
   on(type: "message_start", handler: (event: MessageStartEvent) => void): Unsubscribe;
   on(type: "message_delta", handler: (event: MessageDeltaEvent) => void): Unsubscribe;
@@ -295,19 +310,44 @@ export class AgentInstance implements Agent {
   on(types: string[], handler: AgentEventHandler): Unsubscribe;
 
   on(
-    typeOrHandler: string | string[] | ((event: any) => void),
+    typeOrHandlerOrMap: string | string[] | ((event: any) => void) | EventHandlerMap,
     handler?: (event: any) => void
   ): Unsubscribe {
-    // Overload 1: on(handler) - global subscription
-    if (typeof typeOrHandler === "function") {
-      this.globalHandlers.add(typeOrHandler as AgentEventHandler);
+    // Overload 1: on(handler) - global subscription (function as first arg)
+    if (typeof typeOrHandlerOrMap === "function") {
+      this.globalHandlers.add(typeOrHandlerOrMap as AgentEventHandler);
       return () => {
-        this.globalHandlers.delete(typeOrHandler as AgentEventHandler);
+        this.globalHandlers.delete(typeOrHandlerOrMap as AgentEventHandler);
       };
     }
 
-    // Overload 2 & 3: on(type, handler) or on(types, handler)
-    const types = Array.isArray(typeOrHandler) ? typeOrHandler : [typeOrHandler];
+    // Overload 2: on(handlers) - batch subscription (object with event handlers)
+    if (this.isEventHandlerMap(typeOrHandlerOrMap)) {
+      const unsubscribes: Unsubscribe[] = [];
+
+      for (const [eventType, eventHandler] of Object.entries(typeOrHandlerOrMap)) {
+        if (eventHandler) {
+          if (!this.typedHandlers.has(eventType)) {
+            this.typedHandlers.set(eventType, new Set());
+          }
+          this.typedHandlers.get(eventType)!.add(eventHandler as AgentEventHandler);
+
+          unsubscribes.push(() => {
+            this.typedHandlers.get(eventType)?.delete(eventHandler as AgentEventHandler);
+          });
+        }
+      }
+
+      // Return single unsubscribe function that cleans up all subscriptions
+      return () => {
+        for (const unsub of unsubscribes) {
+          unsub();
+        }
+      };
+    }
+
+    // Overload 3 & 4: on(type, handler) or on(types, handler)
+    const types = Array.isArray(typeOrHandlerOrMap) ? typeOrHandlerOrMap : [typeOrHandlerOrMap];
     const h = handler! as AgentEventHandler;
 
     for (const type of types) {
@@ -325,6 +365,26 @@ export class AgentInstance implements Agent {
   }
 
   /**
+   * Check if the argument is an EventHandlerMap (object with event type keys)
+   */
+  private isEventHandlerMap(arg: unknown): arg is EventHandlerMap {
+    if (typeof arg !== "object" || arg === null || Array.isArray(arg)) {
+      return false;
+    }
+    // Check if it's a plain object (not a function)
+    // EventHandlerMap has keys like "text_delta", "assistant_message", etc.
+    const keys = Object.keys(arg);
+    if (keys.length === 0) {
+      return false;
+    }
+    // All values should be functions or undefined
+    return keys.every((key) => {
+      const value = (arg as Record<string, unknown>)[key];
+      return value === undefined || typeof value === "function";
+    });
+  }
+
+  /**
    * Subscribe to state changes (delegated to StateMachine)
    *
    * @param handler - Callback receiving { prev, current } state change
@@ -332,6 +392,84 @@ export class AgentInstance implements Agent {
    */
   onStateChange(handler: StateChangeHandler): Unsubscribe {
     return this.stateMachine.onStateChange(handler);
+  }
+
+  /**
+   * React-style fluent event subscription
+   *
+   * Converts onXxx handlers to event type keys and delegates to on(handlers)
+   */
+  react(handlers: ReactHandlerMap): Unsubscribe {
+    const eventHandlerMap: EventHandlerMap = {};
+
+    // Map ReactHandlerMap keys to EventHandlerMap keys
+    const mapping: Record<keyof ReactHandlerMap, keyof EventHandlerMap> = {
+      // Stream Layer Events
+      onMessageStart: "message_start",
+      onMessageDelta: "message_delta",
+      onMessageStop: "message_stop",
+      onTextContentBlockStart: "text_content_block_start",
+      onTextDelta: "text_delta",
+      onTextContentBlockStop: "text_content_block_stop",
+      onToolUseContentBlockStart: "tool_use_content_block_start",
+      onInputJsonDelta: "input_json_delta",
+      onToolUseContentBlockStop: "tool_use_content_block_stop",
+      onToolCall: "tool_call",
+      onToolResult: "tool_result",
+      // Message Layer Events
+      onUserMessage: "user_message",
+      onAssistantMessage: "assistant_message",
+      onToolUseMessage: "tool_use_message",
+      onError: "error_message",
+      // Turn Layer Events
+      onTurnRequest: "turn_request",
+      onTurnResponse: "turn_response",
+    };
+
+    // Convert ReactHandlerMap to EventHandlerMap
+    for (const [reactKey, eventKey] of Object.entries(mapping)) {
+      const handler = handlers[reactKey as keyof ReactHandlerMap];
+      if (handler) {
+        (eventHandlerMap as any)[eventKey] = handler;
+      }
+    }
+
+    // Delegate to on(handlers)
+    return this.on(eventHandlerMap);
+  }
+
+  /**
+   * Subscribe to agent ready event
+   *
+   * If already running, handler is called immediately.
+   */
+  onReady(handler: () => void): Unsubscribe {
+    // If already running, call handler immediately
+    if (this._lifecycle === "running") {
+      try {
+        handler();
+      } catch (error) {
+        console.error("[Agent] onReady handler error:", error);
+      }
+    }
+
+    // Add to handlers for future use (in case of re-initialization patterns)
+    this.readyHandlers.add(handler);
+
+    return () => {
+      this.readyHandlers.delete(handler);
+    };
+  }
+
+  /**
+   * Subscribe to agent destroy event
+   */
+  onDestroy(handler: () => void): Unsubscribe {
+    this.destroyHandlers.add(handler);
+
+    return () => {
+      this.destroyHandlers.delete(handler);
+    };
   }
 
   /**
@@ -354,10 +492,21 @@ export class AgentInstance implements Agent {
    * Destroy - Clean up resources
    */
   async destroy(): Promise<void> {
+    // Notify destroy handlers before cleanup
+    for (const handler of this.destroyHandlers) {
+      try {
+        handler();
+      } catch (error) {
+        console.error("[Agent] onDestroy handler error:", error);
+      }
+    }
+
     this._lifecycle = "destroyed";
     this.stateMachine.reset();
     this.typedHandlers.clear();
     this.globalHandlers.clear();
+    this.readyHandlers.clear();
+    this.destroyHandlers.clear();
     // Clear engine state for this agent
     this.engine.clearState(this.agentId);
   }

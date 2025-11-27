@@ -217,11 +217,6 @@ When("I subscribe to state changes", function (this: TestWorld) {
   });
 });
 
-Then("I should receive the unsubscribe function", function (this: TestWorld) {
-  expect(this.stateChangeUnsubscribe).toBeDefined();
-  expect(typeof this.stateChangeUnsubscribe).toBe("function");
-});
-
 Then("the agent state should be {string}", function (this: TestWorld, expectedState: string) {
   expect(this.agent?.state).toBe(expectedState);
 });
@@ -232,4 +227,120 @@ When("I unsubscribe from state changes", function (this: TestWorld) {
   } catch (error) {
     this.thrownError = error as Error;
   }
+});
+
+// ===== Batch Event Subscription =====
+
+When("I batch subscribe to events:", function (this: TestWorld, table: DataTable) {
+  const eventTypes = table.hashes().map((row) => row.event_type);
+
+  // Build EventHandlerMap dynamically
+  const handlers: Record<string, (event: unknown) => void> = {};
+  for (const eventType of eventTypes) {
+    handlers[eventType] = () => {
+      // No-op handler for testing
+    };
+  }
+
+  this.batchUnsubscribe = this.agent!.on(handlers as any);
+});
+
+Given("I batch subscribe to events:", function (this: TestWorld, table: DataTable) {
+  const eventTypes = table.hashes().map((row) => row.event_type);
+
+  const handlers: Record<string, (event: unknown) => void> = {};
+  for (const eventType of eventTypes) {
+    handlers[eventType] = () => {};
+  }
+
+  this.batchUnsubscribe = this.agent!.on(handlers as any);
+});
+
+Then("I should receive a single unsubscribe function", function (this: TestWorld) {
+  // Check either batchUnsubscribe, reactUnsubscribe, or lifecycleUnsubscribe
+  const unsub = this.batchUnsubscribe ?? this.reactUnsubscribe ?? this.lifecycleUnsubscribe;
+  expect(unsub).toBeDefined();
+  expect(typeof unsub).toBe("function");
+});
+
+Then("I should receive the unsubscribe function", function (this: TestWorld) {
+  // Check either stateChangeUnsubscribe or lifecycleUnsubscribe
+  const unsub = this.stateChangeUnsubscribe ?? this.lifecycleUnsubscribe;
+  expect(unsub).toBeDefined();
+  expect(typeof unsub).toBe("function");
+});
+
+When("I call the batch unsubscribe function", function (this: TestWorld) {
+  try {
+    this.batchUnsubscribe?.();
+  } catch (error) {
+    this.thrownError = error as Error;
+  }
+});
+
+// ===== React API =====
+
+When("I react with handlers:", function (this: TestWorld, table: DataTable) {
+  const handlerNames = table.hashes().map((row) => row.handler);
+
+  // Build ReactHandlerMap dynamically
+  const handlers: Record<string, (event: unknown) => void> = {};
+  for (const handlerName of handlerNames) {
+    handlers[handlerName] = () => {
+      // No-op handler for testing
+    };
+  }
+
+  this.reactUnsubscribe = this.agent!.react(handlers as any);
+});
+
+Given("I react with handlers:", function (this: TestWorld, table: DataTable) {
+  const handlerNames = table.hashes().map((row) => row.handler);
+
+  const handlers: Record<string, (event: unknown) => void> = {};
+  for (const handlerName of handlerNames) {
+    handlers[handlerName] = () => {};
+  }
+
+  this.reactUnsubscribe = this.agent!.react(handlers as any);
+});
+
+When("I call the react unsubscribe function", function (this: TestWorld) {
+  try {
+    this.reactUnsubscribe?.();
+  } catch (error) {
+    this.thrownError = error as Error;
+  }
+});
+
+// ===== Lifecycle Hooks =====
+
+When("I subscribe to onReady", function (this: TestWorld) {
+  this.lifecycleUnsubscribe = this.agent!.onReady(() => {
+    this.onReadyCalled = true;
+  });
+});
+
+When("I subscribe to onDestroy", function (this: TestWorld) {
+  this.lifecycleUnsubscribe = this.agent!.onDestroy(() => {
+    this.onDestroyCalled = true;
+  });
+});
+
+Given("I subscribe to onDestroy", function (this: TestWorld) {
+  this.lifecycleUnsubscribe = this.agent!.onDestroy(() => {
+    this.onDestroyCalled = true;
+  });
+});
+
+When("I destroy the agent", async function (this: TestWorld) {
+  await this.agent!.destroy();
+});
+
+Then("the onReady handler should have been called", function (this: TestWorld) {
+  expect(this.onReadyCalled).toBe(true);
+});
+
+Then("the onDestroy handler should have been called", function (this: TestWorld) {
+  expect(this.onDestroyCalled).toBe(true);
 });

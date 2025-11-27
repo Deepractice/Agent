@@ -107,3 +107,66 @@ Feature: Agent Manager
     And I subscribe to state changes
     When I unsubscribe from state changes
     Then it should not throw
+
+  # ===== Batch Event Subscription =====
+
+  Scenario: Batch subscribe to multiple events returns single unsubscribe
+    Given a created agent
+    When I batch subscribe to events:
+      | event_type        |
+      | text_delta        |
+      | assistant_message |
+      | error_message     |
+    Then I should receive a single unsubscribe function
+
+  Scenario: Batch unsubscribe cleans up all subscriptions
+    Given a created agent
+    And I batch subscribe to events:
+      | event_type        |
+      | text_delta        |
+      | assistant_message |
+    When I call the batch unsubscribe function
+    Then it should not throw
+
+  # ===== React API =====
+
+  Scenario: React API subscribes to events with onXxx handlers
+    Given a created agent
+    When I react with handlers:
+      | handler             |
+      | onTextDelta         |
+      | onAssistantMessage  |
+      | onError             |
+    Then I should receive a single unsubscribe function
+
+  Scenario: React unsubscribe cleans up all subscriptions
+    Given a created agent
+    And I react with handlers:
+      | handler             |
+      | onTextDelta         |
+      | onAssistantMessage  |
+    When I call the react unsubscribe function
+    Then it should not throw
+
+  # ===== Lifecycle Hooks =====
+
+  Scenario: onReady is called immediately when agent is running
+    Given a created agent
+    When I subscribe to onReady
+    Then the onReady handler should have been called
+
+  Scenario: onReady returns unsubscribe function
+    Given a created agent
+    When I subscribe to onReady
+    Then I should receive the unsubscribe function
+
+  Scenario: onDestroy is called when agent is destroyed
+    Given a created agent
+    And I subscribe to onDestroy
+    When I destroy the agent
+    Then the onDestroy handler should have been called
+
+  Scenario: onDestroy returns unsubscribe function
+    Given a created agent
+    When I subscribe to onDestroy
+    Then I should receive the unsubscribe function

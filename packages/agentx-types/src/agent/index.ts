@@ -6,7 +6,7 @@
  */
 
 // Core interface
-export type { Agent, StateChange, StateChangeHandler } from "./Agent";
+export type { Agent, StateChange, StateChangeHandler, EventHandlerMap, ReactHandlerMap } from "./Agent";
 
 // Driver & Presenter
 export type { AgentDriver } from "./AgentDriver";
