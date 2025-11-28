@@ -369,6 +369,10 @@ async function* transformSDKMessages(
   onSessionIdCaptured?: (sessionId: string) => void
 ): AsyncIterable<StreamEventType> {
   let hasStartedMessage = false;
+  // Track if content was already processed via stream_event
+  // When includePartialMessages=true, SDK sends both stream_event AND assistant message
+  // We should only process content once (via stream_event for real-time updates)
+  let hasProcessedViaStream = false;
 
   for await (const sdkMsg of sdkMessages) {
     if (sdkMsg.session_id && onSessionIdCaptured) {
@@ -388,20 +392,26 @@ async function* transformSDKMessages(
           throw new Error(`Claude SDK error: ${errorText}`);
         }
 
-        if (!hasStartedMessage) {
-          yield messageStart(agentId, sdkMsg.message.id, sdkMsg.message.model);
-          hasStartedMessage = true;
+        // Only process assistant message content if we haven't already via stream_event
+        // This prevents duplicate content when includePartialMessages=true
+        if (!hasProcessedViaStream) {
+          if (!hasStartedMessage) {
+            yield messageStart(agentId, sdkMsg.message.id, sdkMsg.message.model);
+            hasStartedMessage = true;
+          }
+          yield* processAssistantContent(agentId, sdkMsg);
+          yield messageStop(agentId);
         }
-
-        yield* processAssistantContent(agentId, sdkMsg);
-        yield messageStop(agentId);
+        // Reset for next turn
         hasStartedMessage = false;
+        hasProcessedViaStream = false;
         break;
 
       case "stream_event":
         yield* processStreamEvent(agentId, sdkMsg);
         if (sdkMsg.event.type === "message_start") {
           hasStartedMessage = true;
+          hasProcessedViaStream = true;  // Mark that we're processing via stream
         }
         if (sdkMsg.event.type === "message_stop") {
           hasStartedMessage = false;
