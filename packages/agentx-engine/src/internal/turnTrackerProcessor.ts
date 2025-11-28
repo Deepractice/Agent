@@ -241,6 +241,7 @@ function completeTurn(
       assistantMessage: {
         id: generateId(),
         role: "assistant",
+        subtype: "assistant",
         content: "",
         timestamp: completedAt,
       },

@@ -27,6 +27,7 @@ export const SystemPrompt: Story = {
     message: {
       id: "1",
       role: "system",
+      subtype: "system",
       content:
         "You are a helpful AI assistant specialized in software development. You provide clear, accurate, and actionable advice to help developers solve problems.",
       timestamp: Date.now(),
@@ -42,6 +43,7 @@ export const SessionStart: Story = {
     message: {
       id: "2",
       role: "system",
+      subtype: "system",
       content: "New conversation started. All previous context has been cleared.",
       timestamp: Date.now(),
     },
@@ -56,6 +58,7 @@ export const Configuration: Story = {
     message: {
       id: "3",
       role: "system",
+      subtype: "system",
       content:
         "Configuration loaded: Model: claude-3-5-sonnet-20241022 | Temperature: 0.7 | Max tokens: 4096",
       timestamp: Date.now(),
@@ -71,6 +74,7 @@ export const Warning: Story = {
     message: {
       id: "4",
       role: "system",
+      subtype: "system",
       content:
         "Warning: API rate limit approaching. Please reduce request frequency to avoid throttling.",
       timestamp: Date.now(),
@@ -86,6 +90,7 @@ export const FeatureAnnouncement: Story = {
     message: {
       id: "5",
       role: "system",
+      subtype: "system",
       content:
         "New feature enabled: Image analysis is now available. You can attach images to your messages for AI analysis.",
       timestamp: Date.now(),
@@ -101,6 +106,7 @@ export const DetailedInstructions: Story = {
     message: {
       id: "6",
       role: "system",
+      subtype: "system",
       content: `You are an expert TypeScript developer. Follow these guidelines:
 
 1. Always use proper TypeScript types
@@ -121,6 +127,7 @@ export const ContextUpdate: Story = {
     message: {
       id: "7",
       role: "system",
+      subtype: "system",
       content:
         "Context updated: Added 3 files to working memory (Button.tsx, Input.tsx, Modal.tsx)",
       timestamp: Date.now(),
@@ -136,6 +143,7 @@ export const TokenUsage: Story = {
     message: {
       id: "8",
       role: "system",
+      subtype: "system",
       content: "Token usage: 1,234 / 100,000 (1.2% of context window used)",
       timestamp: Date.now(),
     },
@@ -150,6 +158,7 @@ export const SystemInitialized: Story = {
     message: {
       id: "9",
       role: "system",
+      subtype: "system",
       content: "System initialized with default settings. Ready to assist.",
       timestamp: Date.now(),
     },
@@ -166,6 +175,7 @@ export const MultipleMessages: Story = {
         message={{
           id: "1",
           role: "system",
+      subtype: "system",
           content: "Session started at 2:30 PM",
           timestamp: Date.now() - 120000,
         }}
@@ -174,6 +184,7 @@ export const MultipleMessages: Story = {
         message={{
           id: "2",
           role: "system",
+      subtype: "system",
           content: "Model switched to claude-3-5-sonnet-20241022",
           timestamp: Date.now() - 60000,
         }}
@@ -182,6 +193,7 @@ export const MultipleMessages: Story = {
         message={{
           id: "3",
           role: "system",
+      subtype: "system",
           content: "Project context loaded: /Users/dev/my-app",
           timestamp: Date.now(),
         }}
@@ -198,6 +210,7 @@ export const ErrorNotification: Story = {
     message: {
       id: "10",
       role: "system",
+      subtype: "system",
       content: "Error: Failed to load configuration file. Using default settings.",
       timestamp: Date.now(),
     },
@@ -212,6 +225,7 @@ export const ConnectionStatus: Story = {
     message: {
       id: "11",
       role: "system",
+      subtype: "system",
       content: "Connected to Anthropic API (Status: Healthy | Latency: 42ms)",
       timestamp: Date.now(),
     },
@@ -226,6 +240,7 @@ export const SessionEnd: Story = {
     message: {
       id: "12",
       role: "system",
+      subtype: "system",
       content: "Session ended. Total messages: 24 | Duration: 15 minutes | Tokens used: 12,456",
       timestamp: Date.now(),
     },
@@ -240,6 +255,7 @@ export const UpdateAvailable: Story = {
     message: {
       id: "13",
       role: "system",
+      subtype: "system",
       content: "Update available: Version 0.2.0 is now available. Current version: 0.1.5",
       timestamp: Date.now(),
     },
@@ -254,6 +270,7 @@ export const ShortNotification: Story = {
     message: {
       id: "14",
       role: "system",
+      subtype: "system",
       content: "Ready.",
       timestamp: Date.now(),
     },

@@ -352,6 +352,7 @@ export function createAgentXHandler(
     const message: UserMessage = {
       id: `msg_${Date.now()}_${Math.random().toString(36).slice(2, 9)}`,
       role: "user",
+      subtype: "user",
       content: typeof body.content === "string"
         ? body.content
         : body.content,

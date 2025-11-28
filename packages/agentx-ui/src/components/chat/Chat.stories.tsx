@@ -175,12 +175,14 @@ export const WithInitialMessages: Story = {
               {
                 id: "1",
                 role: "user",
+                subtype: "user",
                 content: "Hello! What can you help me with?",
                 timestamp: Date.now() - 60000,
               },
               {
                 id: "2",
                 role: "assistant",
+                subtype: "assistant",
                 content:
                   "Hello! I can help you with a variety of tasks including coding, answering questions, and providing explanations. What would you like to know?",
                 timestamp: Date.now() - 30000,

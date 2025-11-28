@@ -37,6 +37,7 @@ export const SingleMessage: Story = {
       {
         id: "1",
         role: "user",
+        subtype: "user",
         content: "Hello, how are you?",
         timestamp: Date.now(),
       },
@@ -53,12 +54,14 @@ export const SimpleConversation: Story = {
       {
         id: "1",
         role: "user",
+        subtype: "user",
         content: "What is React?",
         timestamp: Date.now() - 180000,
       },
       {
         id: "2",
         role: "assistant",
+        subtype: "assistant",
         content:
           "React is a JavaScript library for building user interfaces. It was created by Facebook and is now maintained by Meta.",
         timestamp: Date.now() - 120000,
@@ -66,12 +69,14 @@ export const SimpleConversation: Story = {
       {
         id: "3",
         role: "user",
+        subtype: "user",
         content: "Can you show me an example?",
         timestamp: Date.now() - 60000,
       },
       {
         id: "4",
         role: "assistant",
+        subtype: "assistant",
         content: `Sure! Here's a simple component:
 
 \`\`\`tsx
@@ -94,12 +99,14 @@ export const WithStreaming: Story = {
       {
         id: "1",
         role: "user",
+        subtype: "user",
         content: "Explain useState hook",
         timestamp: Date.now() - 120000,
       },
       {
         id: "2",
         role: "assistant",
+        subtype: "assistant",
         content:
           "The useState hook is a fundamental React hook that allows you to add state to function components.",
         timestamp: Date.now() - 60000,
@@ -107,6 +114,7 @@ export const WithStreaming: Story = {
       {
         id: "3",
         role: "user",
+        subtype: "user",
         content: "Show me an example",
         timestamp: Date.now() - 30000,
       },
@@ -124,12 +132,14 @@ export const LongConversation: Story = {
       {
         id: "1",
         role: "user",
+        subtype: "user",
         content: "I want to learn React. Where should I start?",
         timestamp: Date.now() - 540000,
       },
       {
         id: "2",
         role: "assistant",
+        subtype: "assistant",
         content:
           "Great choice! Start with understanding components, JSX, and props. These are the foundations of React.",
         timestamp: Date.now() - 480000,
@@ -137,12 +147,14 @@ export const LongConversation: Story = {
       {
         id: "3",
         role: "user",
+        subtype: "user",
         content: "What are components?",
         timestamp: Date.now() - 420000,
       },
       {
         id: "4",
         role: "assistant",
+        subtype: "assistant",
         content: `Components are the building blocks of React applications. They are reusable pieces of UI.
 
 There are two types:
@@ -161,12 +173,14 @@ function Greeting() {
       {
         id: "5",
         role: "user",
+        subtype: "user",
         content: "What about props?",
         timestamp: Date.now() - 300000,
       },
       {
         id: "6",
         role: "assistant",
+        subtype: "assistant",
         content: `Props (short for "properties") are how you pass data to components.
 
 \`\`\`tsx
@@ -182,12 +196,14 @@ function Greeting({ name }) {
       {
         id: "7",
         role: "user",
+        subtype: "user",
         content: "How do I manage state?",
         timestamp: Date.now() - 180000,
       },
       {
         id: "8",
         role: "assistant",
+        subtype: "assistant",
         content: `Use the \`useState\` hook for state management:
 
 \`\`\`tsx
@@ -210,12 +226,14 @@ The \`useState\` hook returns:
       {
         id: "9",
         role: "user",
+        subtype: "user",
         content: "What about side effects?",
         timestamp: Date.now() - 60000,
       },
       {
         id: "10",
         role: "assistant",
+        subtype: "assistant",
         content: `For side effects, use the \`useEffect\` hook:
 
 \`\`\`tsx
@@ -245,12 +263,14 @@ export const WithCodeExamples: Story = {
       {
         id: "1",
         role: "user",
+        subtype: "user",
         content: "Show me different React patterns",
         timestamp: Date.now() - 60000,
       },
       {
         id: "2",
         role: "assistant",
+        subtype: "assistant",
         content: `Here are some common React patterns:
 
 **1. Conditional Rendering**
@@ -286,6 +306,7 @@ export const WaitingForResponse: Story = {
       {
         id: "1",
         role: "user",
+        subtype: "user",
         content: "Explain React hooks in detail",
         timestamp: Date.now() - 5000,
       },
@@ -304,24 +325,28 @@ export const FixedHeight: Story = {
           {
             id: "1",
             role: "user",
+        subtype: "user",
             content: "Hello!",
             timestamp: Date.now() - 180000,
           },
           {
             id: "2",
             role: "assistant",
+        subtype: "assistant",
             content: "Hi! How can I help you today?",
             timestamp: Date.now() - 120000,
           },
           {
             id: "3",
             role: "user",
+        subtype: "user",
             content: "I want to learn React",
             timestamp: Date.now() - 60000,
           },
           {
             id: "4",
             role: "assistant",
+        subtype: "assistant",
             content: "Great! React is a powerful library for building user interfaces.",
             timestamp: Date.now(),
           },

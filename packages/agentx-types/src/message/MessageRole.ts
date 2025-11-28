@@ -2,5 +2,6 @@
  * Message Role
  *
  * Represents who sent the message in the conversation.
+ * Four fundamental roles in the conversation.
  */
-export type MessageRole = "user" | "assistant" | "system" | "tool-use" | "error";
+export type MessageRole = "user" | "assistant" | "tool" | "system";

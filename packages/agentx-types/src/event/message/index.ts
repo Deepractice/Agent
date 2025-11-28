@@ -23,7 +23,8 @@ export type { UserMessageEvent } from "./UserMessageEvent";
 export type { AssistantMessageEvent } from "./AssistantMessageEvent";
 
 // Tool messages
-export type { ToolUseMessageEvent } from "./ToolUseMessageEvent";
+export type { ToolCallMessageEvent } from "./ToolCallMessageEvent";
+export type { ToolResultMessageEvent } from "./ToolResultMessageEvent";
 
 // Error messages
 export type { ErrorMessageEvent } from "./ErrorMessageEvent";
@@ -37,5 +38,6 @@ export type { AgentError, ErrorSeverity } from "~/error";
 export type MessageEventType =
   | import("./UserMessageEvent").UserMessageEvent
   | import("./AssistantMessageEvent").AssistantMessageEvent
-  | import("./ToolUseMessageEvent").ToolUseMessageEvent
+  | import("./ToolCallMessageEvent").ToolCallMessageEvent
+  | import("./ToolResultMessageEvent").ToolResultMessageEvent
   | import("./ErrorMessageEvent").ErrorMessageEvent;

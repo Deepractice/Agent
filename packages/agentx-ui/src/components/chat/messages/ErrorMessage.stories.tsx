@@ -24,7 +24,8 @@ const createError = (
   cause?: Error
 ): ErrorMessageType => ({
   id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-  role: "error",
+  role: "system",
+  subtype: "error",
   error: {
     category,
     code,

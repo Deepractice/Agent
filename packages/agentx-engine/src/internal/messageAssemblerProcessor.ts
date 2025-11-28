@@ -11,12 +11,14 @@
  * - tool_use_content_block_start
  * - input_json_delta
  * - tool_use_content_block_stop
+ * - tool_result
  * - message_stop
  *
- * Output Events (Message Layer + tool_call):
- * - tool_call (when tool parameters are fully assembled)
- * - tool_use_message (complete tool use record)
- * - assistant_message (complete assistant response)
+ * Output Events (Message Layer):
+ * - tool_call (Stream - when tool parameters are fully assembled)
+ * - tool_call_message (Message - AI's request to call a tool)
+ * - tool_result_message (Message - tool execution result)
+ * - assistant_message (Message - complete assistant response)
  */
 
 import type { Processor, ProcessorDefinition } from "~/mealy";
@@ -27,12 +29,15 @@ import type {
   ToolUseContentBlockStartEvent,
   InputJsonDeltaEvent,
   ToolUseContentBlockStopEvent,
+  ToolResultEvent,
   MessageStopEvent,
   ToolCallEvent,
   AssistantMessageEvent,
-  ToolUseMessageEvent,
+  ToolCallMessageEvent,
+  ToolResultMessageEvent,
   AssistantMessage,
-  ToolUseMessage,
+  ToolCallMessage,
+  ToolResultMessage,
   ToolCallPart,
   ToolResultPart,
 } from "@deepractice-ai/agentx-types";
@@ -51,6 +56,14 @@ export interface PendingContent {
   toolId?: string;
   toolName?: string;
   toolInputJson?: string;
+}
+
+/**
+ * Pending tool call info (for matching with tool_result)
+ */
+export interface PendingToolCall {
+  id: string;
+  name: string;
 }
 
 /**
@@ -74,6 +87,12 @@ export interface MessageAssemblerState {
    * Key is the content block index
    */
   pendingContents: Record<number, PendingContent>;
+
+  /**
+   * Pending tool calls waiting for results
+   * Key is the tool call ID
+   */
+  pendingToolCalls: Record<string, PendingToolCall>;
 }
 
 /**
@@ -84,6 +103,7 @@ export function createInitialMessageAssemblerState(): MessageAssemblerState {
     currentMessageId: null,
     messageStartTime: null,
     pendingContents: {},
+    pendingToolCalls: {},
   };
 }
 
@@ -99,7 +119,11 @@ function generateId(): string {
 /**
  * Output event types from MessageAssembler
  */
-export type MessageAssemblerOutput = ToolCallEvent | AssistantMessageEvent | ToolUseMessageEvent;
+export type MessageAssemblerOutput =
+  | ToolCallEvent
+  | AssistantMessageEvent
+  | ToolCallMessageEvent
+  | ToolResultMessageEvent;
 
 /**
  * Input event types for MessageAssembler (subset of StreamEventType)
@@ -132,6 +156,9 @@ export const messageAssemblerProcessor: Processor<
 
     case "tool_use_content_block_stop":
       return handleToolUseContentBlockStop(state, input);
+
+    case "tool_result":
+      return handleToolResult(state, input);
 
     case "message_stop":
       return handleMessageStop(state, input);
@@ -257,6 +284,10 @@ function handleInputJsonDelta(
 
 /**
  * Handle tool_use_content_block_stop event
+ *
+ * Emits:
+ * - tool_call (Stream Event) - for tool execution
+ * - tool_call_message (Message Event) - for UI display
  */
 function handleToolUseContentBlockStop(
   state: Readonly<MessageAssemblerState>,
@@ -281,64 +312,117 @@ function handleToolUseContentBlockStop(
   // Create output events
   const outputs: MessageAssemblerOutput[] = [];
 
-  // 1. Emit tool_call event
+  const toolId = pendingContent.toolId!;
+  const toolName = pendingContent.toolName!;
+
+  // 1. Emit tool_call event (Stream Layer - for tool execution)
   const toolCallEvent: ToolCallEvent = {
     type: "tool_call",
     uuid: generateId(),
     agentId: event.agentId,
     timestamp: Date.now(),
     data: {
-      id: pendingContent.toolId!,
-      name: pendingContent.toolName!,
+      id: toolId,
+      name: toolName,
       input: toolInput,
     },
   };
   outputs.push(toolCallEvent);
 
-  // 2. Emit tool_use_message event
+  // 2. Emit tool_call_message event (Message Layer - for UI)
   const toolCall: ToolCallPart = {
     type: "tool-call",
-    id: pendingContent.toolId!,
-    name: pendingContent.toolName!,
+    id: toolId,
+    name: toolName,
     input: toolInput,
   };
 
-  const toolResult: ToolResultPart = {
-    type: "tool-result",
-    id: pendingContent.toolId!,
-    name: pendingContent.toolName!,
-    output: {
-      type: "text",
-      value: "", // Will be filled by tool execution
-    },
-  };
-
-  const toolUseMessage: ToolUseMessage = {
+  const toolCallMessage: ToolCallMessage = {
     id: generateId(),
-    role: "tool-use",
+    role: "assistant",
+    subtype: "tool-call",
     toolCall,
-    toolResult,
     timestamp: Date.now(),
   };
 
-  const toolUseEvent: ToolUseMessageEvent = {
-    type: "tool_use_message",
+  const toolCallMessageEvent: ToolCallMessageEvent = {
+    type: "tool_call_message",
     uuid: generateId(),
     agentId: event.agentId,
     timestamp: Date.now(),
-    data: toolUseMessage,
+    data: toolCallMessage,
   };
-  outputs.push(toolUseEvent);
+  outputs.push(toolCallMessageEvent);
 
-  // Remove from pending
+  // Remove from pending contents, add to pending tool calls
   const { [index]: _, ...remainingContents } = state.pendingContents;
 
   return [
     {
       ...state,
       pendingContents: remainingContents,
+      pendingToolCalls: {
+        ...state.pendingToolCalls,
+        [toolId]: { id: toolId, name: toolName },
+      },
     },
     outputs,
+  ];
+}
+
+/**
+ * Handle tool_result event
+ *
+ * Emits:
+ * - tool_result_message (Message Event) - for UI display
+ */
+function handleToolResult(
+  state: Readonly<MessageAssemblerState>,
+  event: ToolResultEvent
+): [MessageAssemblerState, MessageAssemblerOutput[]] {
+  const { toolId, content, isError } = event.data;
+
+  // Find pending tool call
+  const pendingToolCall = state.pendingToolCalls[toolId];
+  const toolName = pendingToolCall?.name || "unknown";
+
+  // Create tool result message
+  const toolResult: ToolResultPart = {
+    type: "tool-result",
+    id: toolId,
+    name: toolName,
+    output: {
+      type: isError ? "error-text" : "text",
+      value: typeof content === "string" ? content : JSON.stringify(content),
+    },
+  };
+
+  const toolResultMessage: ToolResultMessage = {
+    id: generateId(),
+    role: "tool",
+    subtype: "tool-result",
+    toolResult,
+    toolCallId: toolId,
+    timestamp: Date.now(),
+  };
+
+  const toolResultMessageEvent: ToolResultMessageEvent = {
+    type: "tool_result_message",
+    uuid: generateId(),
+    agentId: event.agentId,
+    timestamp: Date.now(),
+    data: toolResultMessage,
+  };
+
+  // Remove from pending tool calls
+  const { [toolId]: _, ...remainingToolCalls } = state.pendingToolCalls;
+
+  return [
+    {
+      ...state,
+      pendingToolCalls: remainingToolCalls,
+    },
+    [toolResultMessageEvent],
   ];
 }
 
@@ -374,6 +458,7 @@ function handleMessageStop(
   const assistantMessage: AssistantMessage = {
     id: state.currentMessageId,
     role: "assistant",
+    subtype: "assistant",
     content,
     timestamp: state.messageStartTime || Date.now(),
     usage: event.data.usage,

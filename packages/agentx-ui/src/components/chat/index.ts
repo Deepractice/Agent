@@ -11,7 +11,8 @@ export type { ChatInputProps } from "./ChatInput";
 export {
   UserMessage,
   AssistantMessage,
-  ToolUseMessage,
+  ToolCallMessage,
+  ToolResultMessage,
   SystemMessage,
   ErrorMessage,
 } from "./messages";
@@ -19,7 +20,8 @@ export {
 export type {
   UserMessageProps,
   AssistantMessageProps,
-  ToolUseMessageProps,
+  ToolCallMessageProps,
+  ToolResultMessageProps,
   SystemMessageProps,
   ErrorMessageProps,
 } from "./messages";

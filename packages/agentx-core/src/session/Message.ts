@@ -77,23 +77,38 @@ export function createMessage(
  * Convert industry-level Message to business-level Message
  */
 export function fromTypesMessage(msg: TypesMessage, agentId: string): Message {
-  const roleMap: Record<string, MessageRole> = {
-    user: "user",
-    assistant: "assistant",
-    system: "system",
-    "tool-use": "tool",
-    error: "error",
-  };
-
-  const role = roleMap[msg.role] ?? "assistant";
-
+  let role: MessageRole;
   let content: string | ContentPart[];
-  if (msg.role === "tool-use") {
-    content = [msg.toolCall, msg.toolResult];
-  } else if (msg.role === "error") {
-    content = msg.error.message;
-  } else {
-    content = msg.content;
+
+  // Use subtype for discrimination
+  switch (msg.subtype) {
+    case "user":
+      role = "user";
+      content = msg.content;
+      break;
+    case "assistant":
+      role = "assistant";
+      content = msg.content;
+      break;
+    case "tool-call":
+      role = "tool";
+      content = [msg.toolCall];
+      break;
+    case "tool-result":
+      role = "tool";
+      content = [msg.toolResult];
+      break;
+    case "system":
+      role = "system";
+      content = msg.content;
+      break;
+    case "error":
+      role = "error";
+      content = msg.error.message;
+      break;
+    default:
+      role = "assistant";
+      content = "";
   }
 
   return {

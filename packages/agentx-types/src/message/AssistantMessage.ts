@@ -17,6 +17,9 @@ export interface AssistantMessage {
   /** Message role */
   role: "assistant";
 
+  /** Message subtype for serialization */
+  subtype: "assistant";
+
   /** Message content - can be simple string or array of parts */
   content: string | Array<TextPart | ThinkingPart | ToolCallPart | FilePart>;
 

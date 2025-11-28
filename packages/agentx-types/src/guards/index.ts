@@ -9,7 +9,8 @@ export {
   isUserMessage,
   isAssistantMessage,
   isSystemMessage,
-  isToolUseMessage,
+  isToolCallMessage,
+  isToolResultMessage,
   isErrorMessage,
 } from "./MessageGuards";
 

@@ -15,6 +15,9 @@ export interface UserMessage {
   /** Message role */
   role: "user";
 
+  /** Message subtype for serialization */
+  subtype: "user";
+
   /** Message content - can be simple string or array of parts */
   content: string | Array<TextPart | ImagePart | FilePart>;
 

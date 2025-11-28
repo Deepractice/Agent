@@ -27,6 +27,7 @@ export const Default: Story = {
     message: {
       id: "1",
       role: "user",
+      subtype: "user",
       content: "How do I use React hooks?",
       timestamp: Date.now(),
     },
@@ -41,6 +42,7 @@ export const LongMessage: Story = {
     message: {
       id: "2",
       role: "user",
+      subtype: "user",
       content:
         "I'm working on a complex React application and I need to understand how to properly use useEffect, useState, and useCallback hooks together. Can you explain the best practices for managing side effects and state in functional components? Also, how do I prevent unnecessary re-renders and optimize performance in a large component tree?",
       timestamp: Date.now(),
@@ -56,6 +58,7 @@ export const WithCodeBlock: Story = {
     message: {
       id: "3",
       role: "user",
+      subtype: "user",
       content: `Here is my React component:
 
 \`\`\`tsx
@@ -90,6 +93,7 @@ export const MultipleMessages: Story = {
         message={{
           id: "1",
           role: "user",
+      subtype: "user",
           content: "What is TypeScript?",
           timestamp: Date.now() - 60000,
         }}
@@ -98,6 +102,7 @@ export const MultipleMessages: Story = {
         message={{
           id: "2",
           role: "user",
+      subtype: "user",
           content: "How do I set up a TypeScript project?",
           timestamp: Date.now() - 30000,
         }}
@@ -106,6 +111,7 @@ export const MultipleMessages: Story = {
         message={{
           id: "3",
           role: "user",
+      subtype: "user",
           content: "Can you show me an example?",
           timestamp: Date.now(),
         }}
@@ -122,6 +128,7 @@ export const WithSpecialCharacters: Story = {
     message: {
       id: "4",
       role: "user",
+      subtype: "user",
       content: "How do I use *markdown*, **bold**, and `code` in my messages?",
       timestamp: Date.now(),
     },
@@ -136,6 +143,7 @@ export const MultilineQuestion: Story = {
     message: {
       id: "5",
       role: "user",
+      subtype: "user",
       content: `I have several questions:
 
 1. How do I deploy a React app?
@@ -156,6 +164,7 @@ export const WithArrayContent: Story = {
     message: {
       id: "6",
       role: "user",
+      subtype: "user",
       content: [
         {
           type: "text",
@@ -175,6 +184,7 @@ export const ShortMessage: Story = {
     message: {
       id: "7",
       role: "user",
+      subtype: "user",
       content: "Thanks!",
       timestamp: Date.now(),
     },

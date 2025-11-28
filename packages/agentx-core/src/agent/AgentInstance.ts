@@ -45,7 +45,8 @@ import type {
   // Message Layer Events
   UserMessageEvent,
   AssistantMessageEvent,
-  ToolUseMessageEvent,
+  ToolCallMessageEvent,
+  ToolResultMessageEvent,
   ErrorMessageEvent,
   // Turn Layer Events
   TurnRequestEvent,
@@ -178,6 +179,7 @@ export class AgentInstance implements Agent {
         ? {
             id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
             role: "user",
+            subtype: "user",
             content: message,
             timestamp: Date.now(),
           }
@@ -313,7 +315,8 @@ export class AgentInstance implements Agent {
   // Type-safe overloads for Message Layer Events
   on(type: "user_message", handler: (event: UserMessageEvent) => void): Unsubscribe;
   on(type: "assistant_message", handler: (event: AssistantMessageEvent) => void): Unsubscribe;
-  on(type: "tool_use_message", handler: (event: ToolUseMessageEvent) => void): Unsubscribe;
+  on(type: "tool_call_message", handler: (event: ToolCallMessageEvent) => void): Unsubscribe;
+  on(type: "tool_result_message", handler: (event: ToolResultMessageEvent) => void): Unsubscribe;
   on(type: "error_message", handler: (event: ErrorMessageEvent) => void): Unsubscribe;
 
   // Type-safe overloads for Turn Layer Events

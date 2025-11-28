@@ -22,7 +22,8 @@ import { useRef, useEffect } from "react";
 import type { Message } from "@deepractice-ai/agentx-types";
 import { UserMessage } from "./messages/UserMessage";
 import { AssistantMessage } from "./messages/AssistantMessage";
-import { ToolUseMessage } from "./messages/ToolUseMessage";
+import { ToolCallMessage } from "./messages/ToolCallMessage";
+import { ToolResultMessage } from "./messages/ToolResultMessage";
 import { SystemMessage } from "./messages/SystemMessage";
 
 export interface ChatMessageListProps {
@@ -71,15 +72,17 @@ export function ChatMessageList({ messages, streamingText, className = "" }: Cha
   return (
     <div className={`flex-1 overflow-y-auto overflow-x-hidden relative ${className}`}>
       <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
-        {/* Existing messages - route by role */}
+        {/* Existing messages - route by subtype */}
         {messages.map((msg) => {
-          switch (msg.role) {
+          switch (msg.subtype) {
             case "user":
               return <UserMessage key={msg.id} message={msg} />;
             case "assistant":
               return <AssistantMessage key={msg.id} message={msg} />;
-            case "tool-use":
-              return <ToolUseMessage key={msg.id} message={msg} />;
+            case "tool-call":
+              return <ToolCallMessage key={msg.id} message={msg} />;
+            case "tool-result":
+              return <ToolResultMessage key={msg.id} message={msg} />;
             case "system":
               return <SystemMessage key={msg.id} message={msg} />;
             default:
@@ -93,6 +96,7 @@ export function ChatMessageList({ messages, streamingText, className = "" }: Cha
             message={{
               id: "streaming",
               role: "assistant",
+              subtype: "assistant",
               content: streamingText,
               timestamp: Date.now(),
             }}

@@ -15,7 +15,7 @@
  * );
  *
  * agent.on((event) => {
- *   // Receives ASSEMBLED events: assistant_message, tool_use_message, etc.
+ *   // Receives ASSEMBLED events: assistant_message, tool_call_message, tool_result_message, etc.
  *   console.log(event);
  * });
  *

@@ -11,6 +11,9 @@ export interface SystemMessage {
   /** Message role */
   role: "system";
 
+  /** Message subtype for serialization */
+  subtype: "system";
+
   /** Message content - always a string */
   content: string;
 

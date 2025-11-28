@@ -46,7 +46,8 @@ import type {
 import type {
   UserMessageEvent,
   AssistantMessageEvent,
-  ToolUseMessageEvent,
+  ToolCallMessageEvent,
+  ToolResultMessageEvent,
   ErrorMessageEvent,
 } from "~/event/message";
 
@@ -95,7 +96,8 @@ export interface EventHandlerMap {
   // Message Layer Events
   user_message?: (event: UserMessageEvent) => void;
   assistant_message?: (event: AssistantMessageEvent) => void;
-  tool_use_message?: (event: ToolUseMessageEvent) => void;
+  tool_call_message?: (event: ToolCallMessageEvent) => void;
+  tool_result_message?: (event: ToolResultMessageEvent) => void;
   error_message?: (event: ErrorMessageEvent) => void;
 
   // Turn Layer Events
@@ -132,7 +134,8 @@ export interface ReactHandlerMap {
   // Message Layer Events
   onUserMessage?: (event: UserMessageEvent) => void;
   onAssistantMessage?: (event: AssistantMessageEvent) => void;
-  onToolUseMessage?: (event: ToolUseMessageEvent) => void;
+  onToolCallMessage?: (event: ToolCallMessageEvent) => void;
+  onToolResultMessage?: (event: ToolResultMessageEvent) => void;
   onError?: (event: ErrorMessageEvent) => void;
 
   // Turn Layer Events
@@ -219,7 +222,8 @@ export interface Agent {
   // ===== Type-safe overloads for Message Layer Events =====
   on(type: "user_message", handler: (event: UserMessageEvent) => void): Unsubscribe;
   on(type: "assistant_message", handler: (event: AssistantMessageEvent) => void): Unsubscribe;
-  on(type: "tool_use_message", handler: (event: ToolUseMessageEvent) => void): Unsubscribe;
+  on(type: "tool_call_message", handler: (event: ToolCallMessageEvent) => void): Unsubscribe;
+  on(type: "tool_result_message", handler: (event: ToolResultMessageEvent) => void): Unsubscribe;
   on(type: "error_message", handler: (event: ErrorMessageEvent) => void): Unsubscribe;
 
   // ===== Type-safe overloads for Turn Layer Events =====

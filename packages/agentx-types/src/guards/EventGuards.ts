@@ -35,7 +35,8 @@ const STATE_EVENT_TYPES = new Set([
 const MESSAGE_EVENT_TYPES = new Set([
   "user_message",
   "assistant_message",
-  "tool_use_message",
+  "tool_call_message",
+  "tool_result_message",
   "error_message",
 ]);
 

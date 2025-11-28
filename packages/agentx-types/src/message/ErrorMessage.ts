@@ -39,9 +39,14 @@ export interface ErrorMessage {
   id: string;
 
   /**
-   * Message role discriminator
+   * Message role - system owns errors
    */
-  role: "error";
+  role: "system";
+
+  /**
+   * Message subtype for serialization
+   */
+  subtype: "error";
 
   /**
    * The error that occurred

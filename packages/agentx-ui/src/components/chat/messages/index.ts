@@ -10,8 +10,11 @@ export type { UserMessageProps } from "./UserMessage";
 export { AssistantMessage } from "./AssistantMessage";
 export type { AssistantMessageProps } from "./AssistantMessage";
 
-export { ToolUseMessage } from "./ToolUseMessage";
-export type { ToolUseMessageProps } from "./ToolUseMessage";
+export { ToolCallMessage } from "./ToolCallMessage";
+export type { ToolCallMessageProps } from "./ToolCallMessage";
+
+export { ToolResultMessage } from "./ToolResultMessage";
+export type { ToolResultMessageProps } from "./ToolResultMessage";
 
 export { SystemMessage } from "./SystemMessage";
 export type { SystemMessageProps } from "./SystemMessage";

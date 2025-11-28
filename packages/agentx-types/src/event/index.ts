@@ -55,7 +55,8 @@ export type {
   MessageEventType,
   UserMessageEvent,
   AssistantMessageEvent,
-  ToolUseMessageEvent,
+  ToolCallMessageEvent,
+  ToolResultMessageEvent,
   ErrorMessageEvent,
 } from "./message";
 

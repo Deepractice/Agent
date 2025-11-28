@@ -27,6 +27,7 @@ export const Default: Story = {
     message: {
       id: "1",
       role: "assistant",
+      subtype: "assistant",
       content:
         "React hooks are functions that let you use state and other React features in functional components. The most common hooks are useState, useEffect, and useContext.",
       timestamp: Date.now(),
@@ -42,6 +43,7 @@ export const WithCodeExample: Story = {
     message: {
       id: "2",
       role: "assistant",
+      subtype: "assistant",
       content: `Here's how to use the useState hook:
 
 \`\`\`tsx
@@ -75,6 +77,7 @@ export const Streaming: Story = {
     message: {
       id: "3",
       role: "assistant",
+      subtype: "assistant",
       content: "I'm analyzing your code right now. Let me break down the issues I see...",
       timestamp: Date.now(),
     },
@@ -90,6 +93,7 @@ export const WithMarkdown: Story = {
     message: {
       id: "4",
       role: "assistant",
+      subtype: "assistant",
       content: `Here are the **key benefits** of TypeScript:
 
 1. **Type Safety** - Catch errors at compile time
@@ -111,6 +115,7 @@ export const LongResponse: Story = {
     message: {
       id: "5",
       role: "assistant",
+      subtype: "assistant",
       content: `To deploy a React application, you have several excellent options. Let me walk you through the most popular ones:
 
 **Vercel** is one of the easiest platforms for deploying React apps. It's free for personal projects and offers excellent performance with automatic HTTPS and global CDN. Simply connect your GitHub repository and Vercel will automatically deploy on every push.
@@ -133,6 +138,7 @@ export const WithThinking: Story = {
     message: {
       id: "6",
       role: "assistant",
+      subtype: "assistant",
       content: [
         {
           type: "thinking",
@@ -157,6 +163,7 @@ export const WithToolCall: Story = {
     message: {
       id: "7",
       role: "assistant",
+      subtype: "assistant",
       content: [
         {
           type: "text",
@@ -182,6 +189,7 @@ export const WithFile: Story = {
     message: {
       id: "8",
       role: "assistant",
+      subtype: "assistant",
       content: [
         {
           type: "text",
@@ -209,6 +217,7 @@ export const ConversationFlow: Story = {
         message={{
           id: "1",
           role: "assistant",
+      subtype: "assistant",
           content: "Hello! I'm your AI assistant. How can I help you today?",
           timestamp: Date.now() - 120000,
         }}
@@ -217,6 +226,7 @@ export const ConversationFlow: Story = {
         message={{
           id: "2",
           role: "assistant",
+      subtype: "assistant",
           content:
             "TypeScript is a strongly typed programming language that builds on JavaScript. It adds optional static typing to the language, which helps catch errors early and improves code quality.",
           timestamp: Date.now() - 60000,
@@ -226,6 +236,7 @@ export const ConversationFlow: Story = {
         message={{
           id: "3",
           role: "assistant",
+      subtype: "assistant",
           content: "I'm currently analyzing your code...",
           timestamp: Date.now(),
         }}
@@ -243,6 +254,7 @@ export const ShortResponse: Story = {
     message: {
       id: "9",
       role: "assistant",
+      subtype: "assistant",
       content: "You're welcome! Feel free to ask if you have more questions.",
       timestamp: Date.now(),
     },
@@ -257,6 +269,7 @@ export const ErrorExplanation: Story = {
     message: {
       id: "10",
       role: "assistant",
+      subtype: "assistant",
       content: `I see the error in your code. The issue is that you're trying to access a property on an undefined object. Here's how to fix it:
 
 \`\`\`tsx

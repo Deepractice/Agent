@@ -166,7 +166,7 @@ export function useAgent(agent: Agent | null, options: UseAgentOptions = {}): Us
         });
       },
 
-      onToolUseMessage: (event) => {
+      onToolCallMessage: (event) => {
         if (!mountedRef.current) return;
         const msg = event.data;
         setMessages((prev) => {
@@ -175,27 +175,13 @@ export function useAgent(agent: Agent | null, options: UseAgentOptions = {}): Us
         });
       },
 
-      // Stream layer - tool results (update existing tool message)
-      onToolResult: (event) => {
+      onToolResultMessage: (event) => {
         if (!mountedRef.current) return;
-        const { toolId, content, isError } = event.data;
-        setMessages((prev) =>
-          prev.map((msg) => {
-            if (msg.role === "tool-use" && msg.toolCall.id === toolId) {
-              return {
-                ...msg,
-                toolResult: {
-                  ...msg.toolResult,
-                  output: {
-                    type: isError ? ("error-text" as const) : ("text" as const),
-                    value: typeof content === "string" ? content : JSON.stringify(content),
-                  },
-                },
-              };
-            }
-            return msg;
-          })
-        );
+        const msg = event.data;
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === msg.id)) return prev;
+          return [...prev, msg];
+        });
       },
 
       // Error handling
@@ -238,6 +224,7 @@ export function useAgent(agent: Agent | null, options: UseAgentOptions = {}): Us
       const userMessage: UserMessage = {
         id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         role: "user",
+        subtype: "user",
         content: text,
         timestamp: Date.now(),
       };
