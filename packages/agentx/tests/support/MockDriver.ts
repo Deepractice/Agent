@@ -7,7 +7,7 @@
  * - Minimal stream events for testing
  */
 
-import type { AgentDriver, AgentContext } from "@deepractice-ai/agentx-types";
+import type { AgentDriver, AgentContext, DriverClass } from "@deepractice-ai/agentx-types";
 import type { UserMessage } from "@deepractice-ai/agentx-types";
 import type { StreamEventType } from "@deepractice-ai/agentx-types";
 
@@ -36,15 +36,19 @@ export interface MockDriverConfig {
 /**
  * MockDriver - Test driver that echoes messages
  */
-export class MockDriver implements AgentDriver<MockDriverConfig> {
+export class MockDriver implements AgentDriver {
   readonly name = "MockDriver";
   readonly description = "Test driver for BDD tests";
 
-  async *receive(
-    message: UserMessage,
-    context: AgentContext<MockDriverConfig>
-  ): AsyncIterable<StreamEventType> {
-    const config = context as MockDriverConfig;
+  private readonly context: AgentContext<MockDriverConfig>;
+
+  constructor(context: AgentContext<MockDriverConfig>) {
+    this.context = context;
+  }
+
+  async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
+    const config = this.context as MockDriverConfig;
+    const agentId = this.context.agentId;
 
     // Optional delay
     if (config.delay) {
@@ -66,7 +70,7 @@ export class MockDriver implements AgentDriver<MockDriverConfig> {
     yield {
       type: "message_start",
       uuid: this.generateUUID(),
-      agentId: context.agentId,
+      agentId,
       timestamp,
       data: {
         message: {
@@ -86,7 +90,7 @@ export class MockDriver implements AgentDriver<MockDriverConfig> {
       yield {
         type: "text_delta",
         uuid: this.generateUUID(),
-        agentId: context.agentId,
+        agentId,
         timestamp: Date.now(),
         data: {
           text: chunk,
@@ -98,10 +102,14 @@ export class MockDriver implements AgentDriver<MockDriverConfig> {
     yield {
       type: "message_stop",
       uuid: this.generateUUID(),
-      agentId: context.agentId,
+      agentId,
       timestamp: Date.now(),
       data: {},
     };
+  }
+
+  async destroy(): Promise<void> {
+    // No cleanup needed for MockDriver
   }
 
   /**
@@ -142,11 +150,29 @@ export class MockDriver implements AgentDriver<MockDriverConfig> {
     }
     return chunks;
   }
+
+  /**
+   * Create a configured driver class with custom options
+   */
+  static withConfig(
+    extraConfig: Partial<MockDriverConfig>
+  ): DriverClass<MockDriverConfig> {
+    return class ConfiguredMockDriver extends MockDriver {
+      constructor(context: AgentContext<MockDriverConfig>) {
+        const mergedContext = {
+          ...context,
+          ...extraConfig,
+        };
+        super(mergedContext);
+      }
+    };
+  }
 }
 
 /**
- * Create a mock driver instance
+ * Create a mock driver class (for backwards compatibility)
+ * @deprecated Use MockDriver class directly
  */
-export function createMockDriver(): MockDriver {
-  return new MockDriver();
+export function createMockDriver(): typeof MockDriver {
+  return MockDriver;
 }

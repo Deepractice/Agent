@@ -1,10 +1,10 @@
 import { useEffect, useState } from "react";
-import { SSEAgent } from "./agent";
-import type { AgentInstance } from "@deepractice-ai/agentx";
+import { createRemoteAgent } from "./agent";
+import type { Agent } from "@deepractice-ai/agentx";
 import { Chat } from "@deepractice-ai/agentx-ui";
 
 export default function App() {
-  const [agent, setAgent] = useState<AgentInstance | null>(null);
+  const [agent, setAgent] = useState<Agent | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,29 +17,27 @@ export default function App() {
     // Create SSE browser agent
     const sessionId = `session-${Date.now()}`;
 
-    const agentInstance = SSEAgent.create({
-      serverUrl,
-      sessionId,
-    } as any);
-
-    // Initialize agent
-    agentInstance
-      .initialize()
-      .then(() => {
-        console.log("✅ Agent connected");
-        setAgent(agentInstance);
-      })
-      .catch((err) => {
-        console.error("❌ Failed to initialize agent:", err);
-        setError("Failed to connect to agent server");
+    try {
+      const agentInstance = createRemoteAgent({
+        serverUrl,
+        agentId: sessionId,
       });
 
-    // Cleanup on unmount
-    return () => {
-      if (agent) {
-        agent.destroy();
-      }
-    };
+      // Agent is ready immediately after creation
+      agentInstance.onReady(() => {
+        console.log("✅ Agent connected");
+      });
+
+      setAgent(agentInstance);
+
+      // Cleanup on unmount
+      return () => {
+        agentInstance.destroy();
+      };
+    } catch (err) {
+      console.error("❌ Failed to create agent:", err);
+      setError("Failed to connect to agent server");
+    }
   }, []);
 
   if (error) {

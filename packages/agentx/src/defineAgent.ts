@@ -24,7 +24,7 @@
  * ```
  */
 
-import type { AgentDefinition, AgentDriver, AgentPresenter } from "@deepractice-ai/agentx-types";
+import type { AgentDefinition, DriverClass, AgentPresenter } from "@deepractice-ai/agentx-types";
 import type { ConfigSchema, InferConfig } from "./ConfigSchema";
 
 /**
@@ -42,9 +42,12 @@ export interface DefineAgentOptions<TConfigSchema extends ConfigSchema> {
   description?: string;
 
   /**
-   * Stateless driver for message processing
+   * Driver class for message processing
+   *
+   * Pass the class itself, not an instance.
+   * AgentInstance will instantiate the driver with AgentContext.
    */
-  driver: AgentDriver<InferConfig<TConfigSchema>>;
+  driver: DriverClass<InferConfig<TConfigSchema>>;
 
   /**
    * Output presenters (optional)

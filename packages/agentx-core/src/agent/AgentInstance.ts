@@ -29,6 +29,7 @@ import type {
   AgentMiddleware,
   AgentInterceptor,
   EventConsumer,
+  AgentDriver,
   // Stream Layer Events
   MessageStartEvent,
   MessageDeltaEvent,
@@ -78,6 +79,11 @@ export class AgentInstance implements Agent {
   private readonly engine: AgentEngine;
 
   /**
+   * Driver instance - created from definition.driver class
+   */
+  private readonly driver: AgentDriver;
+
+  /**
    * State machine - manages state transitions driven by StateEvents
    */
   private readonly stateMachine = new AgentStateMachine();
@@ -119,6 +125,10 @@ export class AgentInstance implements Agent {
     this.engine = engine;
     this.createdAt = context.createdAt;
 
+    // Instantiate driver from driver class
+    // eslint-disable-next-line new-cap
+    this.driver = new definition.driver(context);
+
     // Initialize components that need agentId
     this.errorClassifier = new AgentErrorClassifier(this.agentId);
     this.interceptorChain = new InterceptorChain(this.agentId);
@@ -126,6 +136,7 @@ export class AgentInstance implements Agent {
     logger.debug("AgentInstance created", {
       agentId: this.agentId,
       definitionName: definition.name,
+      driverName: this.driver.name,
     });
   }
 
@@ -217,7 +228,7 @@ export class AgentInstance implements Agent {
       this.notifyHandlers(queuedEvent);
 
       // 1. Get stream events from driver
-      const streamEvents = this.definition.driver.receive(userMessage, this.context);
+      const streamEvents = this.driver.receive(userMessage);
 
       // 2. Process each stream event through engine
       for await (const streamEvent of streamEvents) {
@@ -479,6 +490,18 @@ export class AgentInstance implements Agent {
     this.destroyHandlers.clear();
     this.middlewareChain.clear();
     this.interceptorChain.clear();
+
+    // Destroy driver and cleanup its resources
+    try {
+      await this.driver.destroy();
+    } catch (error) {
+      logger.error("Driver destroy error", {
+        agentId: this.agentId,
+        driverName: this.driver.name,
+        error,
+      });
+    }
+
     // Clear engine state for this agent
     this.engine.clearState(this.agentId);
 

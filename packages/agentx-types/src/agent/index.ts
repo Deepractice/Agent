@@ -9,7 +9,7 @@
 export type { Agent, StateChange, StateChangeHandler, EventHandlerMap, ReactHandlerMap } from "./Agent";
 
 // Driver & Presenter
-export type { AgentDriver } from "./AgentDriver";
+export type { AgentDriver, DriverClass } from "./AgentDriver";
 export type { AgentPresenter } from "./AgentPresenter";
 
 // Definition & Container

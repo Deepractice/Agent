@@ -5,14 +5,20 @@
  *
  * @example
  * ```typescript
- * import { ClaudeDriver } from "@deepractice-ai/agentx-claude";
+ * import { ClaudeSDKDriver } from "@deepractice-ai/agentx-claude";
  *
  * const MyAgent = agentx.agents.define({
  *   name: "Assistant",
- *   driver: ClaudeDriver,
+ *   driver: ClaudeSDKDriver,
  * });
  *
  * const agent = agentx.agents.create(MyAgent, { apiKey: "xxx" });
+ *
+ * // Or with custom configuration
+ * const MyAgent2 = agentx.agents.define({
+ *   name: "CustomAssistant",
+ *   driver: ClaudeSDKDriver.withConfig({ model: "claude-sonnet-4-5-20250929" }),
+ * });
  * ```
  */
 
@@ -32,6 +38,7 @@ import {
 import type {
   AgentDriver,
   AgentContext,
+  DriverClass,
   UserMessage,
   StreamEventType,
   MessageStartEvent,
@@ -88,21 +95,6 @@ export interface ClaudeSDKDriverConfig {
   extraArgs?: Record<string, string | null>;
   abortController?: AbortController;
 }
-
-/**
- * Driver state (per agent instance)
- */
-interface DriverState {
-  promptSubject: Subject<SDKUserMessage>;
-  responseSubject: Subject<SDKMessage>;
-  claudeQuery: Query | null;
-  abortController: AbortController;
-  sessionMap: Map<string, string>;
-  isInitialized: boolean;
-}
-
-// State storage per agentId
-const driverStates = new Map<string, DriverState>();
 
 // ============================================================================
 // Event Builders (inline, no external dependency)
@@ -438,104 +430,137 @@ async function* transformSDKMessages(
 }
 
 // ============================================================================
-// Driver State Management
+// ClaudeSDKDriver Class
 // ============================================================================
 
-function getOrCreateState(agentId: string): DriverState {
-  if (!driverStates.has(agentId)) {
-    driverStates.set(agentId, {
-      promptSubject: new Subject<SDKUserMessage>(),
-      responseSubject: new Subject<SDKMessage>(),
-      claudeQuery: null,
-      abortController: new AbortController(),
-      sessionMap: new Map(),
-      isInitialized: false,
-    });
+/**
+ * ClaudeSDKDriver - Stateful driver for Claude Agent SDK
+ *
+ * Each instance is bound to a single Agent and manages its own
+ * connection to the Claude SDK.
+ */
+export class ClaudeSDKDriver implements AgentDriver {
+  readonly name = "ClaudeSDK";
+  readonly description = "Claude AI SDK integration using Streaming Input Mode";
+
+  private readonly context: AgentContext<ClaudeSDKDriverConfig>;
+  private readonly promptSubject: Subject<SDKUserMessage>;
+  private readonly responseSubject: Subject<SDKMessage>;
+  private readonly abortController: AbortController;
+  private readonly sessionMap: Map<string, string>;
+  private claudeQuery: Query | null = null;
+  private isInitialized = false;
+
+  constructor(context: AgentContext<ClaudeSDKDriverConfig>) {
+    this.context = context;
+    this.promptSubject = new Subject<SDKUserMessage>();
+    this.responseSubject = new Subject<SDKMessage>();
+    this.abortController = new AbortController();
+    this.sessionMap = new Map();
+
+    logger.debug("ClaudeSDKDriver created", { agentId: context.agentId });
   }
-  return driverStates.get(agentId)!;
-}
 
-async function initializeState(
-  state: DriverState,
-  agentId: string,
-  config: ClaudeSDKDriverConfig
-): Promise<void> {
-  if (state.isInitialized) return;
+  /**
+   * Initialize the driver (lazy initialization on first message)
+   */
+  private async initialize(): Promise<void> {
+    if (this.isInitialized) return;
 
-  logger.info("Initializing ClaudeSDKDriver", { agentId });
+    const { agentId, ...config } = this.context;
+    logger.info("Initializing ClaudeSDKDriver", { agentId });
 
-  const options = buildOptions(config, state.abortController);
-  const promptStream = observableToAsyncIterable(state.promptSubject);
+    const options = buildOptions(config, this.abortController);
+    const promptStream = observableToAsyncIterable(this.promptSubject);
 
-  state.claudeQuery = query({
-    prompt: promptStream,
-    options,
-  });
+    this.claudeQuery = query({
+      prompt: promptStream,
+      options,
+    });
 
-  state.isInitialized = true;
+    this.isInitialized = true;
 
-  // Background listener
-  (async () => {
-    try {
-      for await (const sdkMsg of state.claudeQuery!) {
-        state.responseSubject.next(sdkMsg);
+    // Background listener for SDK responses
+    (async () => {
+      try {
+        for await (const sdkMsg of this.claudeQuery!) {
+          this.responseSubject.next(sdkMsg);
+        }
+        this.responseSubject.complete();
+      } catch (error) {
+        logger.error("Background listener error", { agentId, error });
+        this.responseSubject.error(error);
       }
-      state.responseSubject.complete();
-    } catch (error) {
-      logger.error("Background listener error", { error });
-      state.responseSubject.error(error);
-    }
-  })();
+    })();
 
-  logger.info("ClaudeSDKDriver initialized", { agentId });
-}
+    logger.info("ClaudeSDKDriver initialized", { agentId });
+  }
 
-// ============================================================================
-// ClaudeSDKDriver
-// ============================================================================
+  /**
+   * Receive a user message and yield stream events
+   */
+  async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
+    const agentId = this.context.agentId;
 
-export const ClaudeSDKDriver: AgentDriver<ClaudeSDKDriverConfig> = {
-  name: "ClaudeSDK",
-  description: "Claude AI SDK integration using Streaming Input Mode",
-
-  async *receive(
-    message: UserMessage,
-    context: AgentContext<ClaudeSDKDriverConfig>
-  ): AsyncIterable<StreamEventType> {
-    const { agentId, ...config } = context;
-    const state = getOrCreateState(agentId);
-
-    await initializeState(state, agentId, config);
+    await this.initialize();
 
     const sessionId = agentId;
     const sdkUserMessage = buildSDKUserMessage(message, sessionId);
 
     logger.debug("Sending message", { agentId, content: buildPrompt(message).substring(0, 80) });
-    state.promptSubject.next(sdkUserMessage);
+    this.promptSubject.next(sdkUserMessage);
 
-    const responseStream = (async function* () {
-      for await (const sdkMsg of observableToAsyncIterable(state.responseSubject)) {
+    const responseStream = (async function* (self: ClaudeSDKDriver) {
+      for await (const sdkMsg of observableToAsyncIterable(self.responseSubject)) {
         yield sdkMsg;
         if (sdkMsg.type === "result") break;
       }
-    })();
+    })(this);
 
     yield* transformSDKMessages(agentId, responseStream, (capturedSessionId) => {
-      state.sessionMap.set(agentId, capturedSessionId);
+      this.sessionMap.set(agentId, capturedSessionId);
     });
-  },
-};
+  }
 
-/**
- * Cleanup driver state for an agent
- */
-export function destroyClaudeDriver(agentId: string): void {
-  const state = driverStates.get(agentId);
-  if (state) {
-    state.promptSubject.complete();
-    state.responseSubject.complete();
-    state.abortController.abort();
-    driverStates.delete(agentId);
+  /**
+   * Destroy the driver and cleanup resources
+   */
+  async destroy(): Promise<void> {
+    const agentId = this.context.agentId;
+
+    this.promptSubject.complete();
+    this.responseSubject.complete();
+    this.abortController.abort();
+
     logger.info("ClaudeSDKDriver destroyed", { agentId });
+  }
+
+  /**
+   * Create a configured driver class with custom options
+   *
+   * @example
+   * ```typescript
+   * const MyAgent = defineAgent({
+   *   name: "CustomAgent",
+   *   driver: ClaudeSDKDriver.withConfig({
+   *     model: "claude-sonnet-4-5-20250929",
+   *     maxTurns: 10,
+   *   }),
+   * });
+   * ```
+   */
+  static withConfig(
+    extraConfig: Partial<ClaudeSDKDriverConfig>
+  ): DriverClass<ClaudeSDKDriverConfig> {
+    return class ConfiguredClaudeSDKDriver extends ClaudeSDKDriver {
+      constructor(context: AgentContext<ClaudeSDKDriverConfig>) {
+        // Merge extra config with context config
+        const mergedContext = {
+          ...context,
+          ...extraConfig,
+        };
+        super(mergedContext);
+      }
+    };
   }
 }

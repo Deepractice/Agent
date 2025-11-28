@@ -25,7 +25,7 @@
 
 import type { Agent } from "~/agent/Agent";
 import type { AgentDefinition } from "~/agent/AgentDefinition";
-import type { AgentDriver } from "~/agent/AgentDriver";
+import type { DriverClass } from "~/agent/AgentDriver";
 import type { AgentPresenter } from "~/agent/AgentPresenter";
 
 /**
@@ -34,7 +34,7 @@ import type { AgentPresenter } from "~/agent/AgentPresenter";
 export interface DefineAgentInput<TConfig = Record<string, unknown>> {
   name: string;
   description?: string;
-  driver: AgentDriver<TConfig>;
+  driver: DriverClass<TConfig>;
   presenters?: AgentPresenter[];
 }
 

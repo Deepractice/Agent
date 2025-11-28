@@ -23,7 +23,7 @@
  * ```
  */
 
-import type { AgentDriver, AgentContext, UserMessage, StreamEventType } from "@deepractice-ai/agentx-types";
+import type { AgentDriver, AgentContext, DriverClass, UserMessage, StreamEventType } from "@deepractice-ai/agentx-types";
 
 /**
  * SSEDriver configuration (passed via AgentContext)
@@ -174,22 +174,25 @@ function createSSEEventStream(
  * Because it uses the standard AgentDriver interface, the client
  * gets full AgentEngine processing (event assembly, state tracking).
  */
-export const SSEDriver: AgentDriver<SSEDriverConfig> = {
-  name: "SSEDriver",
-  description: "Browser SSE driver for connecting to remote AgentX server",
+export class SSEDriver implements AgentDriver {
+  readonly name = "SSEDriver";
+  readonly description = "Browser SSE driver for connecting to remote AgentX server";
 
-  async *receive(
-    message: UserMessage,
-    context: AgentContext<SSEDriverConfig>
-  ): AsyncIterable<StreamEventType> {
-    const { serverUrl, agentId, headers = {} } = context;
+  private readonly context: AgentContext<SSEDriverConfig>;
 
-    if (!serverUrl) {
+  constructor(context: AgentContext<SSEDriverConfig>) {
+    this.context = context;
+
+    if (!context.serverUrl) {
       throw new Error("[SSEDriver] serverUrl is required in context");
     }
-    if (!agentId) {
+    if (!context.agentId) {
       throw new Error("[SSEDriver] agentId is required in context");
     }
+  }
+
+  async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
+    const { serverUrl, agentId, headers = {} } = this.context;
 
     // 1. Send message to server via HTTP POST
     const messageUrl = `${serverUrl}/agents/${agentId}/messages`;
@@ -214,5 +217,26 @@ export const SSEDriver: AgentDriver<SSEDriverConfig> = {
     // 2. Yield events from SSE stream
     // AgentEngine will process these and produce assembled events
     yield* createSSEEventStream(serverUrl, agentId);
-  },
-};
+  }
+
+  async destroy(): Promise<void> {
+    // No cleanup needed for SSEDriver
+  }
+
+  /**
+   * Create a configured driver class with custom options
+   */
+  static withConfig(
+    extraConfig: Partial<SSEDriverConfig>
+  ): DriverClass<SSEDriverConfig> {
+    return class ConfiguredSSEDriver extends SSEDriver {
+      constructor(context: AgentContext<SSEDriverConfig>) {
+        const mergedContext = {
+          ...context,
+          ...extraConfig,
+        };
+        super(mergedContext);
+      }
+    };
+  }
+}
