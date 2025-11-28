@@ -46,6 +46,10 @@ export interface ChatMessageListProps {
 export function ChatMessageList({ messages, streamingText, className = "" }: ChatMessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
+  // Sort messages by timestamp to ensure correct order
+  // (events may arrive out of order due to async processing)
+  const sortedMessages = [...messages].sort((a, b) => a.timestamp - b.timestamp);
+
   // Auto-scroll to bottom when messages change
   useEffect(() => {
     if (messagesEndRef.current) {
@@ -73,7 +77,7 @@ export function ChatMessageList({ messages, streamingText, className = "" }: Cha
     <div className={`flex-1 overflow-y-auto overflow-x-hidden relative ${className}`}>
       <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
         {/* Existing messages - route by subtype */}
-        {messages.map((msg) => {
+        {sortedMessages.map((msg) => {
           switch (msg.subtype) {
             case "user":
               return <UserMessage key={msg.id} message={msg} />;

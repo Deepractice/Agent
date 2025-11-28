@@ -151,7 +151,6 @@ class PersistentSSEConnection {
 
     return {
       [Symbol.asyncIterator]() {
-        let lastStopReason: string | null = null;
         let turnComplete = false;
 
         return {
@@ -160,15 +159,11 @@ class PersistentSSEConnection {
             if (connection.messageQueue.length > 0) {
               const event = connection.messageQueue.shift()!;
 
-              // Track stopReason from message_delta
-              if (event.type === "message_delta") {
-                lastStopReason = (event.data.delta as any).stopReason || null;
-              }
-
               // Check if turn is complete at message_stop
               // Continue if stopReason is "tool_use", stop otherwise
               if (event.type === "message_stop") {
-                if (lastStopReason !== "tool_use") {
+                const stopReason = event.data.stopReason;
+                if (stopReason !== "tool_use") {
                   turnComplete = true;
                 }
               }
@@ -188,17 +183,13 @@ class PersistentSSEConnection {
 
             // Wait for next event
             return new Promise((resolve, reject) => {
-              // Wrap resolve to track stopReason and check for completion
+              // Wrap resolve to check for completion
               const wrappedResolve = (result: IteratorResult<StreamEventType>) => {
                 if (!result.done) {
-                  // Track stopReason from message_delta
-                  if (result.value.type === "message_delta") {
-                    lastStopReason = (result.value.data.delta as any).stopReason || null;
-                  }
-
                   // Check if turn is complete at message_stop
                   if (result.value.type === "message_stop") {
-                    if (lastStopReason !== "tool_use") {
+                    const stopReason = result.value.data.stopReason;
+                    if (stopReason !== "tool_use") {
                       turnComplete = true;
                     }
                   }

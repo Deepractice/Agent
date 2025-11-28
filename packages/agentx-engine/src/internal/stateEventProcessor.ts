@@ -35,7 +35,6 @@ import type {
   ConversationEndStateEvent,
   ToolPlannedStateEvent,
   ToolExecutingStateEvent,
-  StopReason,
 } from "@deepractice-ai/agentx-types";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 
@@ -48,22 +47,18 @@ const logger = createLogger("engine/stateEventProcessor");
  *
  * Minimal context needed for event transformation logic.
  * Does NOT track agent state - only auxiliary info for decision-making.
+ *
+ * Currently empty - no context needed as all information comes from events.
  */
 export interface StateEventProcessorContext {
-  /**
-   * Last stop reason from message_delta event
-   * Used to determine if conversation truly ended
-   */
-  lastStopReason?: StopReason;
+  // Empty - all information comes from events
 }
 
 /**
  * Initial context factory for StateEventProcessor
  */
 export function createInitialStateEventProcessorContext(): StateEventProcessorContext {
-  return {
-    lastStopReason: undefined,
-  };
+  return {};
 }
 
 // ===== Processor Implementation =====
@@ -173,20 +168,14 @@ function handleMessageStart(
 /**
  * Handle message_delta event
  *
- * Captures stopReason for later use in message_stop.
- * Does not emit State Events.
+ * No longer needed as stopReason is now in message_stop event.
+ * Kept for compatibility with event routing.
  */
 function handleMessageDelta(
   context: Readonly<StateEventProcessorContext>,
-  event: MessageDeltaEvent
+  _event: MessageDeltaEvent
 ): [StateEventProcessorContext, StateEventProcessorOutput[]] {
-  const stopReason = event.data.delta.stopReason;
-
-  if (stopReason) {
-    logger.debug("message_delta with stopReason", { stopReason });
-    return [{ ...context, lastStopReason: stopReason }, []];
-  }
-
+  // No-op: stopReason now comes from message_stop
   return [context, []];
 }
 
@@ -203,16 +192,15 @@ function handleMessageStop(
   context: Readonly<StateEventProcessorContext>,
   event: MessageStopEvent
 ): [StateEventProcessorContext, StateEventProcessorOutput[]] {
-  const { lastStopReason } = context;
+  const stopReason = event.data.stopReason;
 
-  logger.debug("message_stop received", { lastStopReason });
+  logger.debug("message_stop received", { stopReason });
 
   // If stopReason is "tool_use", don't emit conversation_end
   // The conversation continues after tool execution
-  if (lastStopReason === "tool_use") {
+  if (stopReason === "tool_use") {
     logger.debug("Skipping conversation_end (tool_use in progress)");
-    // Reset stopReason for next message
-    return [{ ...context, lastStopReason: undefined }, []];
+    return [context, []];
   }
 
   // For all other cases (end_turn, max_tokens, etc.), emit conversation_end
@@ -239,8 +227,7 @@ function handleMessageStop(
     },
   };
 
-  // Reset stopReason for next message
-  return [{ ...context, lastStopReason: undefined }, [conversationEndEvent]];
+  return [context, [conversationEndEvent]];
 }
 
 /**

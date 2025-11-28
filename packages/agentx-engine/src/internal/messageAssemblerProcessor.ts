@@ -449,9 +449,17 @@ function handleMessageStop(
 
   const content = textParts.join("");
 
-  // Skip empty messages
+  // Skip empty messages (but preserve pendingToolCalls if stopReason is "tool_use")
+  const stopReason = event.data.stopReason;
   if (!content || content.trim().length === 0) {
-    return [createInitialMessageAssemblerState(), []];
+    const shouldPreserveToolCalls = stopReason === "tool_use";
+    return [
+      {
+        ...createInitialMessageAssemblerState(),
+        pendingToolCalls: shouldPreserveToolCalls ? state.pendingToolCalls : {},
+      },
+      [],
+    ];
   }
 
   // Create AssistantMessage
@@ -461,7 +469,9 @@ function handleMessageStop(
     subtype: "assistant",
     content,
     timestamp: state.messageStartTime || Date.now(),
-    usage: event.data.usage,
+    // Usage data is not available in message_stop event
+    // It would need to be tracked separately if needed
+    usage: undefined,
   };
 
   // Emit AssistantMessageEvent
@@ -473,8 +483,17 @@ function handleMessageStop(
     data: assistantMessage,
   };
 
-  // Reset state, OUTPUT is the goal!
-  return [createInitialMessageAssemblerState(), [assistantEvent]];
+  // Reset state, but preserve pendingToolCalls if stopReason is "tool_use"
+  // (tool_result events arrive after message_stop in tool call scenarios)
+  const shouldPreserveToolCalls = stopReason === "tool_use";
+
+  return [
+    {
+      ...createInitialMessageAssemblerState(),
+      pendingToolCalls: shouldPreserveToolCalls ? state.pendingToolCalls : {},
+    },
+    [assistantEvent],
+  ];
 }
 
 /**

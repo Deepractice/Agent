@@ -87,6 +87,9 @@ importers:
       '@deepractice-ai/agentx-claude':
         specifier: workspace:*
         version: link:../../packages/agentx-claude
+      '@deepractice-ai/agentx-logger':
+        specifier: workspace:*
+        version: link:../../packages/agentx-logger
       '@deepractice-ai/agentx-ui':
         specifier: workspace:*
         version: link:../../packages/agentx-ui

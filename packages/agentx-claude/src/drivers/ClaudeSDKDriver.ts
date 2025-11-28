@@ -42,11 +42,11 @@ import type {
   StreamEventType,
   MessageStartEvent,
   MessageStopEvent,
-  MessageDeltaEvent,
   TextContentBlockStartEvent,
   TextContentBlockStopEvent,
   TextDeltaEvent,
   ToolUseContentBlockStartEvent,
+  ToolUseContentBlockStopEvent,
   InputJsonDeltaEvent,
   ToolResultEvent,
 } from "@deepractice-ai/agentx-types";
@@ -117,19 +117,14 @@ function messageStart(agentId: string, id: string, model: string): MessageStartE
   };
 }
 
-function messageStop(agentId: string): MessageStopEvent {
+function messageStop(agentId: string, stopReason?: string, stopSequence?: string): MessageStopEvent {
   return {
     ...createEventBase(agentId),
     type: "message_stop",
-    data: {},
-  };
-}
-
-function messageDelta(agentId: string, stopReason: string, stopSequence?: string): MessageDeltaEvent {
-  return {
-    ...createEventBase(agentId),
-    type: "message_delta",
-    data: { delta: { stopReason: stopReason as any, stopSequence } },
+    data: {
+      stopReason: stopReason as any,
+      stopSequence,
+    },
   };
 }
 
@@ -146,6 +141,14 @@ function textContentBlockStop(agentId: string): TextContentBlockStopEvent {
     ...createEventBase(agentId),
     type: "text_content_block_stop",
     data: {},
+  };
+}
+
+function toolUseContentBlockStop(agentId: string, id: string): ToolUseContentBlockStopEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "tool_use_content_block_stop",
+    data: { id },
   };
 }
 
@@ -269,21 +272,43 @@ function buildOptions(
 // SDK Message Processing
 // ============================================================================
 
+/**
+ * Track current content block type for proper stop event generation
+ */
+interface ContentBlockContext {
+  currentBlockType: "text" | "tool_use" | null;
+  currentBlockIndex: number;
+  currentToolId: string | null;
+  lastStopReason: string | null;
+  lastStopSequence: string | null;
+}
+
 async function* processStreamEvent(
   agentId: string,
-  sdkMsg: SDKPartialAssistantMessage
+  sdkMsg: SDKPartialAssistantMessage,
+  context: ContentBlockContext
 ): AsyncIterable<StreamEventType> {
   const event = sdkMsg.event;
 
   switch (event.type) {
     case "message_start":
+      // Reset context on new message
+      context.currentBlockType = null;
+      context.currentBlockIndex = 0;
+      context.currentToolId = null;
+      context.lastStopReason = null;
+      context.lastStopSequence = null;
       yield messageStart(agentId, event.message.id, event.message.model);
       break;
 
     case "content_block_start":
+      context.currentBlockIndex = event.index;
       if (event.content_block.type === "text") {
+        context.currentBlockType = "text";
         yield textContentBlockStart(agentId);
       } else if (event.content_block.type === "tool_use") {
+        context.currentBlockType = "tool_use";
+        context.currentToolId = event.content_block.id;
         yield toolUseContentBlockStart(
           agentId,
           event.content_block.id,
@@ -301,17 +326,30 @@ async function* processStreamEvent(
       break;
 
     case "content_block_stop":
-      yield textContentBlockStop(agentId);
+      // Send appropriate stop event based on current block type
+      if (context.currentBlockType === "tool_use" && context.currentToolId) {
+        yield toolUseContentBlockStop(agentId, context.currentToolId);
+      } else {
+        yield textContentBlockStop(agentId);
+      }
+      // Reset current block type after stop
+      context.currentBlockType = null;
+      context.currentToolId = null;
       break;
 
     case "message_delta":
       if (event.delta.stop_reason) {
-        yield messageDelta(agentId, event.delta.stop_reason, event.delta.stop_sequence || undefined);
+        // Track stopReason for message_stop event
+        context.lastStopReason = event.delta.stop_reason;
+        context.lastStopSequence = event.delta.stop_sequence || null;
       }
       break;
 
     case "message_stop":
-      yield messageStop(agentId);
+      yield messageStop(agentId, context.lastStopReason || undefined, context.lastStopSequence || undefined);
+      // Reset after emitting
+      context.lastStopReason = null;
+      context.lastStopSequence = null;
       break;
   }
 }
@@ -321,6 +359,15 @@ async function* transformSDKMessages(
   sdkMessages: AsyncIterable<SDKMessage>,
   onSessionIdCaptured?: (sessionId: string) => void
 ): AsyncIterable<StreamEventType> {
+  // Create context to track content block type across events
+  const context: ContentBlockContext = {
+    currentBlockType: null,
+    currentBlockIndex: 0,
+    currentToolId: null,
+    lastStopReason: null,
+    lastStopSequence: null,
+  };
+
   for await (const sdkMsg of sdkMessages) {
     // Log raw SDK message for debugging
     logger.debug("[RAW SDK MESSAGE]", {
@@ -354,7 +401,7 @@ async function* transformSDKMessages(
         break;
 
       case "stream_event":
-        yield* processStreamEvent(agentId, sdkMsg);
+        yield* processStreamEvent(agentId, sdkMsg, context);
         break;
 
       case "result":

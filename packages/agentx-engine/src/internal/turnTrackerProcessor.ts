@@ -5,7 +5,7 @@
  *
  * Input Events:
  * - user_message (Message Layer)
- * - message_delta (Stream Layer - contains stop reason)
+ * - message_stop (Stream Layer - contains stop reason)
  * - assistant_message (Message Layer)
  *
  * Output Events (Turn Layer):
@@ -16,7 +16,7 @@
 import type { Processor, ProcessorDefinition } from "~/mealy";
 import type {
   StreamEventType,
-  MessageDeltaEvent,
+  MessageStopEvent,
   UserMessageEvent,
   TurnRequestEvent,
   TurnResponseEvent,
@@ -34,7 +34,6 @@ export interface PendingTurn {
   turnId: string;
   userMessage: UserMessage;
   requestedAt: number;
-  lastStopReason?: string;
 }
 
 /**
@@ -118,11 +117,11 @@ export const turnTrackerProcessor: Processor<
     case "user_message":
       return handleUserMessage(state, input);
 
-    case "message_delta":
-      return handleMessageDelta(state, input);
+    case "message_stop":
+      return handleMessageStop(state, input);
 
     case "assistant_message":
-      // Turn completion is handled in message_delta
+      // Turn completion is handled in message_stop
       // This handler is kept for potential future use
       return [state, []];
 
@@ -144,7 +143,6 @@ function handleUserMessage(
     turnId,
     userMessage: event.data,
     requestedAt: event.timestamp,
-    lastStopReason: undefined,
   };
 
   const turnRequestEvent: TurnRequestEvent = {
@@ -169,26 +167,17 @@ function handleUserMessage(
 }
 
 /**
- * Handle message_delta event
+ * Handle message_stop event
  */
-function handleMessageDelta(
+function handleMessageStop(
   state: Readonly<TurnTrackerState>,
-  event: MessageDeltaEvent
+  event: MessageStopEvent
 ): [TurnTrackerState, TurnTrackerOutput[]] {
   if (!state.pendingTurn) {
     return [state, []];
   }
 
-  const stopReason = event.data.delta.stopReason;
-  if (!stopReason) {
-    return [state, []];
-  }
-
-  // Update last stop reason
-  const updatedPendingTurn: PendingTurn = {
-    ...state.pendingTurn,
-    lastStopReason: stopReason,
-  };
+  const stopReason = event.data.stopReason;
 
   // Complete turn based on stop reason
   // - "end_turn": Normal completion (no tool use)
@@ -196,21 +185,11 @@ function handleMessageDelta(
   // - "max_tokens": Hit token limit, complete turn
   // - "stop_sequence": Hit stop sequence, complete turn
   if (stopReason === "end_turn" || stopReason === "max_tokens" || stopReason === "stop_sequence") {
-    return completeTurn(
-      { ...state, pendingTurn: updatedPendingTurn },
-      event.agentId,
-      event.timestamp
-    );
+    return completeTurn(state, event.agentId, event.timestamp);
   }
 
-  // For tool_use, just update the state
-  return [
-    {
-      ...state,
-      pendingTurn: updatedPendingTurn,
-    },
-    [],
-  ];
+  // For tool_use, don't complete turn yet
+  return [state, []];
 }
 
 /**
