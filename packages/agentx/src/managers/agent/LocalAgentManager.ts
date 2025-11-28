@@ -17,6 +17,9 @@ import type {
 import { AgentInstance, createAgentContext } from "@deepractice-ai/agentx-core";
 import type { AgentEngine } from "@deepractice-ai/agentx-engine";
 import type { ErrorManager } from "../error/ErrorManager";
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("agentx/LocalAgentManager");
 
 /**
  * Local agent lifecycle manager implementation
@@ -56,6 +59,8 @@ export class LocalAgentManager implements IAgentManager {
     definition: AgentDefinition<TConfig>,
     config: TConfig
   ): Agent {
+    logger.debug("Creating agent", { definitionName: definition.name });
+
     // Create context
     const agentContext: AgentContext<TConfig> = createAgentContext(config);
 
@@ -69,6 +74,11 @@ export class LocalAgentManager implements IAgentManager {
 
     // Register in container
     this.container.register(agent);
+
+    logger.info("Agent created", {
+      agentId: agent.agentId,
+      definitionName: definition.name,
+    });
 
     return agent;
   }
@@ -100,8 +110,10 @@ export class LocalAgentManager implements IAgentManager {
   async destroy(agentId: string): Promise<void> {
     const agent = this.container.get(agentId);
     if (agent) {
+      logger.debug("Destroying agent", { agentId });
       await agent.destroy();
       this.container.unregister(agentId);
+      logger.info("Agent destroyed", { agentId });
     }
   }
 
@@ -110,6 +122,8 @@ export class LocalAgentManager implements IAgentManager {
    */
   async destroyAll(): Promise<void> {
     const agentIds = this.container.getAllIds();
+    logger.debug("Destroying all agents", { count: agentIds.length });
     await Promise.all(agentIds.map((id) => this.destroy(id)));
+    logger.info("All agents destroyed", { count: agentIds.length });
   }
 }

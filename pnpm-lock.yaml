@@ -244,6 +244,9 @@ importers:
 
   packages/agentx-engine:
     dependencies:
+      '@deepractice-ai/agentx-logger':
+        specifier: workspace:*
+        version: link:../agentx-logger
       '@deepractice-ai/agentx-types':
         specifier: workspace:*
         version: link:../agentx-types

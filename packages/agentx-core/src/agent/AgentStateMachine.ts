@@ -14,6 +14,9 @@
  */
 
 import type { AgentState, StateEventType, Unsubscribe } from "@deepractice-ai/agentx-types";
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("core/AgentStateMachine");
 
 /**
  * State change event payload
@@ -53,6 +56,11 @@ export class AgentStateMachine {
 
     if (next !== null && prev !== next) {
       this._state = next;
+      logger.debug("State transition", {
+        eventType: event.type,
+        from: prev,
+        to: next,
+      });
       this.notifyHandlers({ prev, current: next });
     }
   }
@@ -138,7 +146,11 @@ export class AgentStateMachine {
       try {
         handler(change);
       } catch (error) {
-        console.error("[AgentStateMachine] Handler error:", error);
+        logger.error("State change handler error", {
+          from: change.prev,
+          to: change.current,
+          error,
+        });
       }
     }
   }

@@ -46,6 +46,7 @@
   },
   "homepage": "https://github.com/Deepractice/Agent#readme",
   "dependencies": {
+    "@deepractice-ai/agentx-logger": "workspace:*",
     "@deepractice-ai/agentx-types": "workspace:*"
   },
   "devDependencies": {

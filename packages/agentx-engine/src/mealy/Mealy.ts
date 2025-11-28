@@ -34,6 +34,9 @@
 import type { Processor } from "./Processor";
 import type { Store } from "./Store";
 import type { Sink, SinkDefinition } from "./Sink";
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("engine/Mealy");
 
 /**
  * MealyConfig - Configuration for creating a Mealy instance
@@ -117,6 +120,12 @@ export class Mealy<TState, TInput> {
     this.sinks = config.sinks ?? [];
     this.recursive = config.recursive ?? true;
     this.maxDepth = config.maxDepth ?? 100;
+
+    logger.debug("Mealy instance created", {
+      sinkCount: this.sinks.length,
+      recursive: this.recursive,
+      maxDepth: this.maxDepth,
+    });
   }
 
   /**
@@ -136,7 +145,11 @@ export class Mealy<TState, TInput> {
   private processInternal(id: string, input: TInput, depth: number): ProcessResult<TState, TInput> {
     // Guard against infinite recursion
     if (depth >= this.maxDepth) {
-      console.warn(`[Mealy] Max recursion depth (${this.maxDepth}) reached for id: ${id}`);
+      logger.warn("Max recursion depth reached", {
+        id,
+        maxDepth: this.maxDepth,
+        depth,
+      });
       return {
         state: this.store.get(id) ?? this.initialState,
         outputs: [],
@@ -193,11 +206,11 @@ export class Mealy<TState, TInput> {
           const result = sink(id, outputs);
           if (result instanceof Promise) {
             result.catch((error) => {
-              console.error(`[Mealy] Sink error:`, error);
+              logger.error("Sink error (async)", { id, error });
             });
           }
         } catch (error) {
-          console.error(`[Mealy] Sink error:`, error);
+          logger.error("Sink error (sync)", { id, error });
         }
       } else {
         // SinkDefinition with filter/name
@@ -211,11 +224,19 @@ export class Mealy<TState, TInput> {
           const result = sink.sink(id, filteredOutputs);
           if (result instanceof Promise) {
             result.catch((error) => {
-              console.error(`[Mealy] Sink "${sink.name}" error:`, error);
+              logger.error("Named sink error (async)", {
+                id,
+                sinkName: sink.name,
+                error,
+              });
             });
           }
         } catch (error) {
-          console.error(`[Mealy] Sink "${sink.name}" error:`, error);
+          logger.error("Named sink error (sync)", {
+            id,
+            sinkName: sink.name,
+            error,
+          });
         }
       }
     }
@@ -239,6 +260,7 @@ export class Mealy<TState, TInput> {
    * Delete state for an ID (cleanup)
    */
   cleanup(id: string): void {
+    logger.debug("Cleaning up state", { id });
     this.store.delete(id);
   }
 
@@ -246,6 +268,8 @@ export class Mealy<TState, TInput> {
    * Add a sink at runtime
    */
   addSink(sink: Sink<TInput> | SinkDefinition<TInput>): void {
+    const sinkName = typeof sink === "function" ? "(anonymous)" : sink.name;
+    logger.debug("Adding sink", { sinkName });
     this.sinks.push(sink);
   }
 
@@ -256,8 +280,10 @@ export class Mealy<TState, TInput> {
     const index = this.sinks.findIndex((s) => typeof s !== "function" && s.name === name);
     if (index !== -1) {
       this.sinks.splice(index, 1);
+      logger.debug("Removed sink", { name });
       return true;
     }
+    logger.debug("Sink not found for removal", { name });
     return false;
   }
 }

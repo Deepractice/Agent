@@ -36,7 +36,7 @@ import type {
 import { LoggerFactoryKey } from "@deepractice-ai/agentx-types";
 import { MemoryAgentContainer } from "@deepractice-ai/agentx-core";
 import { AgentEngine } from "@deepractice-ai/agentx-engine";
-import { setLoggerFactory } from "@deepractice-ai/agentx-logger";
+import { createLogger, setLoggerFactory } from "@deepractice-ai/agentx-logger";
 import {
   LocalAgentManager,
   LocalSessionManager,
@@ -45,6 +45,8 @@ import {
   PlatformManager,
   createHttpClient,
 } from "./managers";
+
+const logger = createLogger("agentx/AgentX");
 
 /**
  * Provider registry for dependency injection
@@ -77,6 +79,8 @@ function isRemoteOptions(options?: AgentXOptions): options is AgentXRemoteOption
  * Create a Local AgentX instance
  */
 function createLocalAgentX(): AgentXLocal {
+  logger.info("Creating local AgentX instance");
+
   // Create shared infrastructure
   const container = new MemoryAgentContainer();
   const engine = new AgentEngine();
@@ -88,6 +92,8 @@ function createLocalAgentX(): AgentXLocal {
 
   // Create provider registry
   const registry = new ProviderRegistry();
+
+  logger.debug("Local AgentX instance created");
 
   return {
     mode: "local",
@@ -106,6 +112,10 @@ function createLocalAgentX(): AgentXLocal {
  * Agent definitions use drivers that connect to the server (e.g., SSEDriver).
  */
 function createRemoteAgentX(options: AgentXRemoteOptions): AgentXRemote {
+  logger.info("Creating remote AgentX instance", {
+    serverUrl: options.remote.serverUrl,
+  });
+
   // Create HTTP client
   const http = createHttpClient({
     baseUrl: options.remote.serverUrl,
@@ -124,6 +134,8 @@ function createRemoteAgentX(options: AgentXRemoteOptions): AgentXRemote {
 
   // Create provider registry
   const registry = new ProviderRegistry();
+
+  logger.debug("Remote AgentX instance created");
 
   return {
     mode: "remote",

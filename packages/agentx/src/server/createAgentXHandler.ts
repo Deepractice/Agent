@@ -37,6 +37,9 @@ import type {
   ErrorCode,
 } from "./types";
 import { SSEConnectionManager } from "./SSETransport";
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("agentx/AgentXHandler");
 
 const VERSION = "0.1.0";
 
@@ -434,7 +437,7 @@ export function createAgentXHandler(
           return errorResponse("INVALID_REQUEST", "Not found", 404);
       }
     } catch (error) {
-      console.error("[AgentXHandler] Unhandled error:", error);
+      logger.error("Unhandled error in request handler", { error });
       return errorResponse(
         "INTERNAL_ERROR",
         error instanceof Error ? error.message : "Internal server error",

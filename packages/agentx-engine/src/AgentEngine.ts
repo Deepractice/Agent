@@ -39,6 +39,9 @@ import {
 } from "./AgentProcessor";
 import { MemoryStore } from "~/mealy";
 import type { AgentOutput, StreamEventType } from "@deepractice-ai/agentx-types";
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("engine/AgentEngine");
 
 /**
  * AgentEngine - Pure Mealy Machine for event processing
@@ -52,6 +55,7 @@ export class AgentEngine {
 
   constructor() {
     this.store = new MemoryStore<AgentEngineState>();
+    logger.debug("AgentEngine initialized");
   }
 
   /**
@@ -65,8 +69,16 @@ export class AgentEngine {
    * @returns Array of output events (state, message, turn events)
    */
   process(agentId: string, event: StreamEventType): AgentOutput[] {
+    const eventType = (event as any).type || "unknown";
+    logger.debug("Processing event", { agentId, eventType });
+
     // Get current state or create initial state
+    const isNewState = !this.store.has(agentId);
     let state = this.store.get(agentId) ?? createInitialAgentEngineState();
+
+    if (isNewState) {
+      logger.debug("Created initial state for agent", { agentId });
+    }
 
     // Collect all outputs
     const allOutputs: AgentOutput[] = [];
@@ -90,6 +102,15 @@ export class AgentEngine {
 
     // Store updated state
     this.store.set(agentId, state);
+
+    if (outputs.length > 0) {
+      logger.debug("Produced outputs", {
+        agentId,
+        inputEvent: eventType,
+        outputCount: allOutputs.length,
+        processorOutputs: outputs.length,
+      });
+    }
 
     return allOutputs;
   }
@@ -130,6 +151,7 @@ export class AgentEngine {
    * Call this when an agent is destroyed to free memory.
    */
   clearState(agentId: string): void {
+    logger.debug("Clearing state", { agentId });
     this.store.delete(agentId);
   }
 

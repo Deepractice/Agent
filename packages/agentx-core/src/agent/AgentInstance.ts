@@ -53,7 +53,10 @@ import type {
 import type { UserMessage, AgentState } from "@deepractice-ai/agentx-types";
 import { isStateEvent } from "@deepractice-ai/agentx-types";
 import type { AgentEngine } from "@deepractice-ai/agentx-engine";
+import { createLogger } from "@deepractice-ai/agentx-logger";
 import { AgentStateMachine } from "./AgentStateMachine";
+
+const logger = createLogger("core/AgentInstance");
 
 /**
  * AgentInstance - Implementation of Agent interface
@@ -110,6 +113,11 @@ export class AgentInstance implements Agent {
     this.context = context;
     this.engine = engine;
     this.createdAt = context.createdAt;
+
+    logger.debug("AgentInstance created", {
+      agentId: this.agentId,
+      definitionName: definition.name,
+    });
   }
 
   /**
@@ -138,6 +146,7 @@ export class AgentInstance implements Agent {
    */
   async receive(message: string | UserMessage): Promise<void> {
     if (this._lifecycle === "destroyed") {
+      logger.warn("Receive called on destroyed agent", { agentId: this.agentId });
       const error = this.createAgentError("system", "AGENT_DESTROYED", "Agent has been destroyed", false);
       const errorEvent = this.createErrorMessageEvent(error);
       this.notifyHandlers(errorEvent);
@@ -153,6 +162,11 @@ export class AgentInstance implements Agent {
             timestamp: Date.now(),
           }
         : message;
+
+    logger.debug("Receiving message", {
+      agentId: this.agentId,
+      messageId: userMessage.id,
+    });
 
     // Run through middleware chain
     await this.executeMiddlewareChain(userMessage);
@@ -188,6 +202,11 @@ export class AgentInstance implements Agent {
    */
   private async doReceive(userMessage: UserMessage): Promise<void> {
     try {
+      logger.debug("Processing message through driver", {
+        agentId: this.agentId,
+        messageId: userMessage.id,
+      });
+
       // 1. Get stream events from driver
       const streamEvents = this.definition.driver.receive(userMessage, this.context);
 
@@ -205,10 +224,23 @@ export class AgentInstance implements Agent {
           this.notifyHandlers(output);
         }
       }
+
+      logger.debug("Message processing completed", {
+        agentId: this.agentId,
+        messageId: userMessage.id,
+      });
     } catch (error) {
       // Convert error to AgentError and emit as ErrorMessageEvent
       const agentError = this.classifyError(error);
       const errorEvent = this.createErrorMessageEvent(agentError);
+
+      logger.error("Message processing failed", {
+        agentId: this.agentId,
+        messageId: userMessage.id,
+        errorCategory: agentError.category,
+        errorCode: agentError.code,
+        error,
+      });
 
       // Notify handlers so UI can display the error
       this.notifyHandlers(errorEvent);
@@ -308,7 +340,11 @@ export class AgentInstance implements Agent {
       try {
         presenter.present(this.agentId, output);
       } catch (error) {
-        console.error("[Agent] Presenter error:", error);
+        logger.error("Presenter error", {
+          agentId: this.agentId,
+          eventType: output.type,
+          error,
+        });
       }
     }
   }
@@ -488,7 +524,10 @@ export class AgentInstance implements Agent {
       try {
         handler();
       } catch (error) {
-        console.error("[Agent] onReady handler error:", error);
+        logger.error("onReady handler error", {
+          agentId: this.agentId,
+          error,
+        });
       }
     }
 
@@ -559,12 +598,17 @@ export class AgentInstance implements Agent {
    * Destroy - Clean up resources
    */
   async destroy(): Promise<void> {
+    logger.debug("Destroying agent", { agentId: this.agentId });
+
     // Notify destroy handlers before cleanup
     for (const handler of this.destroyHandlers) {
       try {
         handler();
       } catch (error) {
-        console.error("[Agent] onDestroy handler error:", error);
+        logger.error("onDestroy handler error", {
+          agentId: this.agentId,
+          error,
+        });
       }
     }
 
@@ -578,6 +622,8 @@ export class AgentInstance implements Agent {
     this.interceptors.length = 0;
     // Clear engine state for this agent
     this.engine.clearState(this.agentId);
+
+    logger.info("Agent destroyed", { agentId: this.agentId });
   }
 
   /**
@@ -607,7 +653,12 @@ export class AgentInstance implements Agent {
         try {
           interceptor(e, next);
         } catch (error) {
-          console.error("[Agent] Interceptor error:", error);
+          logger.error("Interceptor error", {
+            agentId: this.agentId,
+            eventType: e.type,
+            interceptorIndex: index - 1,
+            error,
+          });
           // Continue to next interceptor even if one fails
           next(e);
         }
@@ -631,7 +682,11 @@ export class AgentInstance implements Agent {
         try {
           handler(event);
         } catch (error) {
-          console.error("[Agent] Handler error:", error);
+          logger.error("Event handler error (typed)", {
+            agentId: this.agentId,
+            eventType: event.type,
+            error,
+          });
         }
       }
     }
@@ -641,7 +696,11 @@ export class AgentInstance implements Agent {
       try {
         handler(event);
       } catch (error) {
-        console.error("[Agent] Handler error:", error);
+        logger.error("Event handler error (global)", {
+          agentId: this.agentId,
+          eventType: event.type,
+          error,
+        });
       }
     }
   }

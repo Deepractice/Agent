@@ -6,6 +6,9 @@
 
 import type { Agent, AgentOutput, StreamEventType, Unsubscribe } from "@deepractice-ai/agentx-types";
 import type { TransportConnection, ConnectionState } from "./types";
+import { createLogger } from "@deepractice-ai/agentx-logger";
+
+const logger = createLogger("agentx/SSETransport");
 
 /**
  * Stream event type names for filtering
@@ -51,6 +54,10 @@ export class SSEConnection implements TransportConnection {
   ) {
     this.connectionId = connectionId;
     this.agentId = agentId;
+    logger.debug("SSE connection created", {
+      connectionId,
+      agentId,
+    });
   }
 
   get state(): ConnectionState {
@@ -135,6 +142,11 @@ export class SSEConnection implements TransportConnection {
     if (this._state === "closed" || this._state === "closing") {
       return;
     }
+
+    logger.debug("Closing SSE connection", {
+      connectionId: this.connectionId,
+      agentId: this.agentId,
+    });
 
     this._state = "closing";
 
