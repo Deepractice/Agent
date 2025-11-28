@@ -53,6 +53,21 @@ function ChatStory({ children }: { children: (agent: Agent) => ReactNode }) {
           agentId,
         });
 
+        // Test all console methods
+        console.log("[Story] Testing console.log");
+        console.info("[Story] Testing console.info");
+        console.debug("[Story] Testing console.debug");
+        console.warn("[Story] Testing console.warn");
+
+        // Enable event debugging
+        currentAgent.on((event) => {
+          console.log("[Browser Agent Event]", {
+            type: event.type,
+            timestamp: new Date().toISOString(),
+            data: event.data,
+          });
+        });
+
         console.log("[Story] Remote agent created successfully");
         setAgent(currentAgent);
       } catch (err) {

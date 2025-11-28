@@ -14,16 +14,16 @@ import {
 // They flow through the system but AgentProcessor doesn't need to import them directly
 import {
   messageAssemblerProcessor,
-  stateMachineProcessor,
+  stateEventProcessor,
   turnTrackerProcessor,
   createInitialMessageAssemblerState,
-  createInitialStateMachineState,
+  createInitialStateEventProcessorContext,
   createInitialTurnTrackerState,
   type MessageAssemblerState,
-  type StateMachineState,
+  type StateEventProcessorContext,
   type TurnTrackerState,
   type MessageAssemblerOutput,
-  type StateMachineOutput,
+  type StateEventProcessorOutput,
   type TurnTrackerOutput,
 } from "./internal";
 import type { AgentOutput } from "@deepractice-ai/agentx-types";
@@ -33,7 +33,7 @@ import type { AgentOutput } from "@deepractice-ai/agentx-types";
  */
 export type AgentEngineState = {
   messageAssembler: MessageAssemblerState;
-  stateMachine: StateMachineState;
+  stateEventProcessor: StateEventProcessorContext;
   turnTracker: TurnTrackerState;
 };
 
@@ -53,19 +53,19 @@ export type AgentProcessorInput = AgentOutput;
  *
  * Produces:
  * - MessageAssemblerOutput: Assembled message events
- * - StateMachineOutput: State transition events
+ * - StateEventProcessorOutput: State transition events
  * - TurnTrackerOutput: Turn analytics events
  *
  * Note: StreamEventType is NOT in output - it's passed through by AgentEngine
  */
-export type AgentProcessorOutput = MessageAssemblerOutput | StateMachineOutput | TurnTrackerOutput;
+export type AgentProcessorOutput = MessageAssemblerOutput | StateEventProcessorOutput | TurnTrackerOutput;
 
 /**
  * Combined processor for the full agent engine
  *
  * This combines:
  * - MessageAssembler: Stream → Message events
- * - StateMachine: Stream → State events
+ * - StateEventProcessor: Stream → State events
  * - TurnTracker: Message → Turn events
  *
  * Pattern: (state, input) => [newState, outputs]
@@ -84,8 +84,8 @@ export const agentProcessor = combineProcessors<
     AgentProcessorInput,
     AgentProcessorOutput
   >,
-  stateMachine: stateMachineProcessor as Processor<
-    AgentEngineState["stateMachine"],
+  stateEventProcessor: stateEventProcessor as Processor<
+    AgentEngineState["stateEventProcessor"],
     AgentProcessorInput,
     AgentProcessorOutput
   >,
@@ -101,6 +101,6 @@ export const agentProcessor = combineProcessors<
  */
 export const createInitialAgentEngineState = combineInitialStates<AgentEngineState>({
   messageAssembler: createInitialMessageAssemblerState,
-  stateMachine: createInitialStateMachineState,
+  stateEventProcessor: createInitialStateEventProcessorContext,
   turnTracker: createInitialTurnTrackerState,
 });

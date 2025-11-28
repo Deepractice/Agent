@@ -66,119 +66,198 @@ const STREAM_EVENT_TYPES = [
 ] as const;
 
 /**
- * Create an async iterable from SSE connection
+ * Persistent SSE connection manager
  *
- * Bridges SSE push model to async generator pull model.
- * Automatically closes when message_stop is received.
+ * Maintains a single SSE connection for the lifetime of the driver.
+ * Bridges SSE push model to async generator pull model for each receive() call.
  */
-function createSSEEventStream(
-  serverUrl: string,
-  agentId: string
-): AsyncIterable<StreamEventType> {
-  return {
-    [Symbol.asyncIterator]() {
-      const queue: StreamEventType[] = [];
-      let resolveNext: ((result: IteratorResult<StreamEventType>) => void) | null = null;
-      let rejectNext: ((error: Error) => void) | null = null;
-      let isDone = false;
-      let eventSource: EventSource | null = null;
+class PersistentSSEConnection {
+  private eventSource: EventSource | null = null;
+  private messageQueue: StreamEventType[] = [];
+  private activeIterators: Set<{
+    resolve: (result: IteratorResult<StreamEventType>) => void;
+    reject: (error: Error) => void;
+  }> = new Set();
+  private isDone = false;
 
-      // Create SSE connection
-      const sseUrl = `${serverUrl}/agents/${agentId}/sse`;
-      eventSource = new EventSource(sseUrl);
+  constructor(
+    private readonly serverUrl: string,
+    private readonly agentId: string
+  ) {}
 
-      const handleEvent = (event: MessageEvent) => {
-        try {
-          const data = JSON.parse(event.data) as StreamEventType;
+  /**
+   * Initialize SSE connection
+   */
+  connect(): void {
+    if (this.eventSource) {
+      return; // Already connected
+    }
 
-          if (resolveNext) {
-            resolveNext({ value: data, done: false });
-            resolveNext = null;
-            rejectNext = null;
-          } else {
-            queue.push(data);
+    const sseUrl = `${this.serverUrl}/agents/${this.agentId}/sse`;
+    this.eventSource = new EventSource(sseUrl);
+
+    const handleEvent = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data) as StreamEventType;
+
+        // Notify all active iterators
+        if (this.activeIterators.size > 0) {
+          const iterator = this.activeIterators.values().next().value;
+          if (iterator) {
+            this.activeIterators.delete(iterator);
+            iterator.resolve({ value: data, done: false });
           }
-
-          // Close on message_stop (turn complete)
-          if (data.type === "message_stop") {
-            isDone = true;
-            eventSource?.close();
-            eventSource = null;
-          }
-        } catch {
-          // Ignore parse errors
+        } else {
+          // Queue event if no iterator is waiting
+          this.messageQueue.push(data);
         }
-      };
-
-      const handleError = () => {
-        isDone = true;
-        eventSource?.close();
-        eventSource = null;
-
-        if (rejectNext) {
-          rejectNext(new Error("SSE connection error"));
-          resolveNext = null;
-          rejectNext = null;
-        }
-      };
-
-      // Listen for all stream event types
-      for (const eventType of STREAM_EVENT_TYPES) {
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        eventSource.addEventListener(eventType, handleEvent as any);
+      } catch {
+        // Ignore parse errors
       }
+    };
 
-      // Also listen for generic message events (fallback)
-      eventSource.onmessage = handleEvent;
-      eventSource.onerror = handleError;
+    const handleError = () => {
+      this.isDone = true;
+      this.eventSource?.close();
+      this.eventSource = null;
 
-      return {
-        async next(): Promise<IteratorResult<StreamEventType>> {
-          // Return queued events first
-          if (queue.length > 0) {
-            return { value: queue.shift()!, done: false };
-          }
+      // Reject all waiting iterators
+      for (const iterator of this.activeIterators) {
+        iterator.reject(new Error("SSE connection error"));
+      }
+      this.activeIterators.clear();
+    };
 
-          // If done, return done
-          if (isDone) {
+    // Listen for all stream event types
+    for (const eventType of STREAM_EVENT_TYPES) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      this.eventSource.addEventListener(eventType, handleEvent as any);
+    }
+
+    // Also listen for generic message events (fallback)
+    this.eventSource.onmessage = handleEvent;
+    this.eventSource.onerror = handleError;
+  }
+
+  /**
+   * Create an async iterable for a single receive() call
+   *
+   * This iterator continues until a final message_stop is received (stopReason !== "tool_use").
+   * For tool calls, this means it will span multiple message_start/message_stop cycles.
+   * The SSE connection itself remains open for future receive() calls.
+   */
+  createIterator(): AsyncIterable<StreamEventType> {
+    const connection = this;
+
+    return {
+      [Symbol.asyncIterator]() {
+        let lastStopReason: string | null = null;
+        let turnComplete = false;
+
+        return {
+          async next(): Promise<IteratorResult<StreamEventType>> {
+            // Return queued events first
+            if (connection.messageQueue.length > 0) {
+              const event = connection.messageQueue.shift()!;
+
+              // Track stopReason from message_delta
+              if (event.type === "message_delta") {
+                lastStopReason = (event.data.delta as any).stopReason || null;
+              }
+
+              // Check if turn is complete at message_stop
+              // Continue if stopReason is "tool_use", stop otherwise
+              if (event.type === "message_stop") {
+                if (lastStopReason !== "tool_use") {
+                  turnComplete = true;
+                }
+              }
+
+              return { value: event, done: false };
+            }
+
+            // If turn is complete, end iteration (but keep connection open for next receive())
+            if (turnComplete) {
+              return { done: true, value: undefined as any };
+            }
+
+            // If connection died, end iteration
+            if (connection.isDone) {
+              return { done: true, value: undefined as any };
+            }
+
+            // Wait for next event
+            return new Promise((resolve, reject) => {
+              // Wrap resolve to track stopReason and check for completion
+              const wrappedResolve = (result: IteratorResult<StreamEventType>) => {
+                if (!result.done) {
+                  // Track stopReason from message_delta
+                  if (result.value.type === "message_delta") {
+                    lastStopReason = (result.value.data.delta as any).stopReason || null;
+                  }
+
+                  // Check if turn is complete at message_stop
+                  if (result.value.type === "message_stop") {
+                    if (lastStopReason !== "tool_use") {
+                      turnComplete = true;
+                    }
+                  }
+                }
+                resolve(result);
+              };
+
+              const iterator = { resolve: wrappedResolve, reject };
+              connection.activeIterators.add(iterator);
+            });
+          },
+
+          async return(): Promise<IteratorResult<StreamEventType>> {
+            // Cleanup this iterator (but keep connection alive)
             return { done: true, value: undefined as any };
-          }
+          },
+        };
+      },
+    };
+  }
 
-          // Wait for next event
-          return new Promise((resolve, reject) => {
-            resolveNext = resolve;
-            rejectNext = reject;
-          });
-        },
+  /**
+   * Close the connection
+   */
+  close(): void {
+    this.isDone = true;
 
-        async return(): Promise<IteratorResult<StreamEventType>> {
-          // Cleanup on early termination
-          isDone = true;
-          eventSource?.close();
-          eventSource = null;
-          return { done: true, value: undefined as any };
-        },
-      };
-    },
-  };
+    if (this.eventSource) {
+      this.eventSource.close();
+      this.eventSource = null;
+    }
+
+    // Reject all waiting iterators
+    for (const iterator of this.activeIterators) {
+      iterator.reject(new Error("Connection closed"));
+    }
+    this.activeIterators.clear();
+    this.messageQueue = [];
+  }
 }
 
 /**
  * SSEDriver - Connects to remote AgentX server via SSE
  *
  * This driver:
- * 1. Sends messages to server via HTTP POST
- * 2. Receives stream events via SSE
- * 3. Yields events to AgentEngine for assembly
+ * 1. Establishes persistent SSE connection on first use
+ * 2. Sends messages to server via HTTP POST
+ * 3. Yields stream events from the persistent connection
+ * 4. Supports multi-turn conversations (tool calls)
  *
- * Because it uses the standard AgentDriver interface, the client
- * gets full AgentEngine processing (event assembly, state tracking).
+ * The SSE connection remains open across multiple receive() calls,
+ * enabling proper tool call flows where Claude responds → calls tool → continues responding.
  */
 export class SSEDriver implements AgentDriver {
   readonly name = "SSEDriver";
   readonly description = "Browser SSE driver for connecting to remote AgentX server";
 
   private readonly context: AgentContext<SSEDriverConfig>;
+  private connection: PersistentSSEConnection | null = null;
 
   constructor(context: AgentContext<SSEDriverConfig>) {
     this.context = context;
@@ -194,7 +273,13 @@ export class SSEDriver implements AgentDriver {
   async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
     const { serverUrl, agentId, headers = {} } = this.context;
 
-    // 1. Send message to server via HTTP POST
+    // 1. Ensure SSE connection is established
+    if (!this.connection) {
+      this.connection = new PersistentSSEConnection(serverUrl, agentId);
+      this.connection.connect();
+    }
+
+    // 2. Send message to server via HTTP POST
     const messageUrl = `${serverUrl}/agents/${agentId}/messages`;
     const response = await fetch(messageUrl, {
       method: "POST",
@@ -203,32 +288,35 @@ export class SSEDriver implements AgentDriver {
         ...headers,
       },
       body: JSON.stringify({
-        content: typeof message.content === "string"
-          ? message.content
-          : message.content,
+        content: typeof message.content === "string" ? message.content : message.content,
       }),
     });
 
     if (!response.ok) {
-      const errorBody = await response.json().catch(() => ({})) as { error?: { message?: string } };
+      const errorBody = (await response.json().catch(() => ({}))) as {
+        error?: { message?: string };
+      };
       throw new Error(errorBody.error?.message || `HTTP ${response.status}`);
     }
 
-    // 2. Yield events from SSE stream
-    // AgentEngine will process these and produce assembled events
-    yield* createSSEEventStream(serverUrl, agentId);
+    // 3. Yield events from persistent SSE connection
+    // Each receive() call gets its own iterator that completes on message_stop,
+    // but the underlying SSE connection stays open for future calls
+    yield* this.connection.createIterator();
   }
 
   async destroy(): Promise<void> {
-    // No cleanup needed for SSEDriver
+    // Close the persistent SSE connection
+    if (this.connection) {
+      this.connection.close();
+      this.connection = null;
+    }
   }
 
   /**
    * Create a configured driver class with custom options
    */
-  static withConfig(
-    extraConfig: Partial<SSEDriverConfig>
-  ): DriverClass<SSEDriverConfig> {
+  static withConfig(extraConfig: Partial<SSEDriverConfig>): DriverClass<SSEDriverConfig> {
     return class ConfiguredSSEDriver extends SSEDriver {
       constructor(context: AgentContext<SSEDriverConfig>) {
         const mergedContext = {

@@ -16,13 +16,13 @@ export {
 } from "./messageAssemblerProcessor";
 
 export {
-  stateMachineProcessor,
-  stateMachineProcessorDef,
-  type StateMachineInput,
-  type StateMachineOutput,
-  type StateMachineState,
-  createInitialStateMachineState,
-} from "./stateMachineProcessor";
+  stateEventProcessor,
+  stateEventProcessorDef,
+  type StateEventProcessorInput,
+  type StateEventProcessorOutput,
+  type StateEventProcessorContext,
+  createInitialStateEventProcessorContext,
+} from "./stateEventProcessor";
 
 export {
   turnTrackerProcessor,

@@ -70,13 +70,13 @@ export {
   type MessageAssemblerState,
   type PendingContent,
   createInitialMessageAssemblerState,
-  // StateMachine
-  stateMachineProcessor,
-  stateMachineProcessorDef,
-  type StateMachineInput,
-  type StateMachineOutput,
-  type StateMachineState,
-  createInitialStateMachineState,
+  // StateEventProcessor
+  stateEventProcessor,
+  stateEventProcessorDef,
+  type StateEventProcessorInput,
+  type StateEventProcessorOutput,
+  type StateEventProcessorContext,
+  createInitialStateEventProcessorContext,
   // TurnTracker
   turnTrackerProcessor,
   turnTrackerProcessorDef,

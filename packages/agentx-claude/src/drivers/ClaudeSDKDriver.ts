@@ -26,7 +26,6 @@ import {
   query,
   type SDKMessage,
   type SDKUserMessage,
-  type SDKAssistantMessage,
   type SDKPartialAssistantMessage,
   type Options,
   type CanUseTool,
@@ -48,9 +47,7 @@ import type {
   TextContentBlockStopEvent,
   TextDeltaEvent,
   ToolUseContentBlockStartEvent,
-  ToolUseContentBlockStopEvent,
   InputJsonDeltaEvent,
-  ToolCallEvent,
   ToolResultEvent,
 } from "@deepractice-ai/agentx-types";
 import { createLogger } from "@deepractice-ai/agentx-logger";
@@ -172,27 +169,11 @@ function toolUseContentBlockStart(
   };
 }
 
-function toolUseContentBlockStop(agentId: string, toolId: string): ToolUseContentBlockStopEvent {
-  return {
-    ...createEventBase(agentId),
-    type: "tool_use_content_block_stop",
-    data: { id: toolId },
-  };
-}
-
 function inputJsonDelta(agentId: string, partialJson: string): InputJsonDeltaEvent {
   return {
     ...createEventBase(agentId),
     type: "input_json_delta",
     data: { partialJson },
-  };
-}
-
-function toolCall(agentId: string, toolId: string, toolName: string, input: unknown): ToolCallEvent {
-  return {
-    ...createEventBase(agentId),
-    type: "tool_call",
-    data: { id: toolId, name: toolName, input },
   };
 }
 
@@ -288,26 +269,6 @@ function buildOptions(
 // SDK Message Processing
 // ============================================================================
 
-async function* processAssistantContent(
-  agentId: string,
-  sdkMsg: SDKAssistantMessage
-): AsyncIterable<StreamEventType> {
-  const content = sdkMsg.message.content;
-
-  for (const block of content) {
-    if (block.type === "text") {
-      yield textContentBlockStart(agentId);
-      yield textDelta(agentId, block.text);
-      yield textContentBlockStop(agentId);
-    } else if (block.type === "tool_use") {
-      yield toolUseContentBlockStart(agentId, block.id, block.name);
-      yield inputJsonDelta(agentId, JSON.stringify(block.input));
-      yield toolUseContentBlockStop(agentId, block.id);
-      yield toolCall(agentId, block.id, block.name, block.input);
-    }
-  }
-}
-
 async function* processStreamEvent(
   agentId: string,
   sdkMsg: SDKPartialAssistantMessage
@@ -360,13 +321,16 @@ async function* transformSDKMessages(
   sdkMessages: AsyncIterable<SDKMessage>,
   onSessionIdCaptured?: (sessionId: string) => void
 ): AsyncIterable<StreamEventType> {
-  let hasStartedMessage = false;
-  // Track if content was already processed via stream_event
-  // When includePartialMessages=true, SDK sends both stream_event AND assistant message
-  // We should only process content once (via stream_event for real-time updates)
-  let hasProcessedViaStream = false;
-
   for await (const sdkMsg of sdkMessages) {
+    // Log raw SDK message for debugging
+    logger.debug("[RAW SDK MESSAGE]", {
+      type: sdkMsg.type,
+      session_id: sdkMsg.session_id,
+      message_id: (sdkMsg as any).message?.id,
+      model: (sdkMsg as any).message?.model,
+      event_type: (sdkMsg as any).event?.type,
+    });
+
     if (sdkMsg.session_id && onSessionIdCaptured) {
       onSessionIdCaptured(sdkMsg.session_id);
     }
@@ -376,6 +340,8 @@ async function* transformSDKMessages(
         break;
 
       case "assistant":
+        // Only check for synthetic error messages
+        // All content processing is done via stream_event
         if (sdkMsg.message.model === "<synthetic>") {
           const errorText = sdkMsg.message.content
             .filter((block: any) => block.type === "text")
@@ -383,31 +349,12 @@ async function* transformSDKMessages(
             .join(" ");
           throw new Error(`Claude SDK error: ${errorText}`);
         }
-
-        // Only process assistant message content if we haven't already via stream_event
-        // This prevents duplicate content when includePartialMessages=true
-        if (!hasProcessedViaStream) {
-          if (!hasStartedMessage) {
-            yield messageStart(agentId, sdkMsg.message.id, sdkMsg.message.model);
-            hasStartedMessage = true;
-          }
-          yield* processAssistantContent(agentId, sdkMsg);
-          yield messageStop(agentId);
-        }
-        // Reset for next turn
-        hasStartedMessage = false;
-        hasProcessedViaStream = false;
+        // Ignore assistant messages - stream_event provides all necessary events
+        // MessageAssembler will assemble complete messages from stream events
         break;
 
       case "stream_event":
         yield* processStreamEvent(agentId, sdkMsg);
-        if (sdkMsg.event.type === "message_start") {
-          hasStartedMessage = true;
-          hasProcessedViaStream = true;  // Mark that we're processing via stream
-        }
-        if (sdkMsg.event.type === "message_stop") {
-          hasStartedMessage = false;
-        }
         break;
 
       case "result":
