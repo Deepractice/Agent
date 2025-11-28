@@ -17,6 +17,7 @@ const STATE_EVENT_TYPES = new Set([
   "agent_initializing",
   "agent_ready",
   "agent_destroyed",
+  "conversation_queued",
   "conversation_start",
   "conversation_thinking",
   "conversation_responding",

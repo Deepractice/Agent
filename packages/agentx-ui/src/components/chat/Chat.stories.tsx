@@ -14,11 +14,12 @@ async function createServerAgent(): Promise<{ agentId: string }> {
   const response = await fetch(`${SERVER_URL}/agents`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ name: "StoryAgent" }),
+    body: JSON.stringify({ definition: "ClaudeAgent" }),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create agent: ${response.status}`);
+    const error = await response.json().catch(() => ({}));
+    throw new Error(`Failed to create agent: ${response.status} - ${JSON.stringify(error)}`);
   }
 
   return response.json();

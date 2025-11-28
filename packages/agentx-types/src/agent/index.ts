@@ -31,3 +31,12 @@ export type { AgentEventHandler, Unsubscribe } from "./AgentEventHandler";
 // Middleware & Interceptor
 export type { AgentMiddleware, AgentMiddlewareNext } from "./AgentMiddleware";
 export type { AgentInterceptor, AgentInterceptorNext } from "./AgentInterceptor";
+
+// Event Bus
+export type {
+  EventHandler,
+  SubscribeOptions,
+  EventProducer,
+  EventConsumer,
+  AgentEventBus,
+} from "./AgentEventBus";

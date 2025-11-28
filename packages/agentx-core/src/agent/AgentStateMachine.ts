@@ -109,6 +109,8 @@ export class AgentStateMachine {
         return "idle";
 
       // Conversation lifecycle
+      case "conversation_queued":
+        return "queued";
       case "conversation_start":
         return "conversation_active";
       case "conversation_thinking":

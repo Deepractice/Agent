@@ -23,6 +23,7 @@ export type { AgentReadyStateEvent } from "./AgentReadyStateEvent";
 export type { AgentDestroyedStateEvent } from "./AgentDestroyedStateEvent";
 
 // ===== Conversation Lifecycle States =====
+export type { ConversationQueuedStateEvent } from "./ConversationQueuedStateEvent";
 export type { ConversationStartStateEvent } from "./ConversationStartStateEvent";
 export type { ConversationThinkingStateEvent } from "./ConversationThinkingStateEvent";
 export type { ConversationRespondingStateEvent } from "./ConversationRespondingStateEvent";
@@ -47,6 +48,7 @@ export type StateEventType =
   | import("./AgentInitializingStateEvent").AgentInitializingStateEvent
   | import("./AgentReadyStateEvent").AgentReadyStateEvent
   | import("./AgentDestroyedStateEvent").AgentDestroyedStateEvent
+  | import("./ConversationQueuedStateEvent").ConversationQueuedStateEvent
   | import("./ConversationStartStateEvent").ConversationStartStateEvent
   | import("./ConversationThinkingStateEvent").ConversationThinkingStateEvent
   | import("./ConversationRespondingStateEvent").ConversationRespondingStateEvent

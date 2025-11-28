@@ -36,6 +36,7 @@ export type {
   AgentInitializingStateEvent,
   AgentReadyStateEvent,
   AgentDestroyedStateEvent,
+  ConversationQueuedStateEvent,
   ConversationStartStateEvent,
   ConversationThinkingStateEvent,
   ConversationRespondingStateEvent,

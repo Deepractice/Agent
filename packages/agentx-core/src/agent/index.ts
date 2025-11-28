@@ -21,6 +21,12 @@ export type {
   Unsubscribe,
   StateChange,
   StateChangeHandler,
+  // Event Bus types
+  AgentEventBus as IAgentEventBus,
+  EventProducer,
+  EventConsumer,
+  EventHandler,
+  SubscribeOptions,
 } from "@deepractice-ai/agentx-types";
 
 // Implementation
@@ -29,6 +35,9 @@ export { AgentInstance } from "./AgentInstance";
 // State Machine
 export { AgentStateMachine } from "./AgentStateMachine";
 export type { StateChangeHandler as StateMachineHandler } from "./AgentStateMachine";
+
+// Event Bus implementation
+export { AgentEventBus } from "./AgentEventBus";
 
 // Container implementation
 export { MemoryAgentContainer } from "./MemoryAgentContainer";

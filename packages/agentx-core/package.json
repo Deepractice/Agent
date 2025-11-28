@@ -47,7 +47,8 @@
   "dependencies": {
     "@deepractice-ai/agentx-engine": "workspace:*",
     "@deepractice-ai/agentx-logger": "workspace:*",
-    "@deepractice-ai/agentx-types": "workspace:*"
+    "@deepractice-ai/agentx-types": "workspace:*",
+    "rxjs": "^7.8.2"
   },
   "devDependencies": {
     "@deepracticex/vitest-cucumber": "^1.4.3",

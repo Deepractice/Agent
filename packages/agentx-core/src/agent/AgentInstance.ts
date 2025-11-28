@@ -23,13 +23,12 @@ import type {
   AgentEventHandler,
   Unsubscribe,
   AgentOutput,
-  AgentError,
-  ErrorMessageEvent,
   StateChangeHandler,
   EventHandlerMap,
   ReactHandlerMap,
   AgentMiddleware,
   AgentInterceptor,
+  EventConsumer,
   // Stream Layer Events
   MessageStartEvent,
   MessageDeltaEvent,
@@ -46,15 +45,23 @@ import type {
   UserMessageEvent,
   AssistantMessageEvent,
   ToolUseMessageEvent,
+  ErrorMessageEvent,
   // Turn Layer Events
   TurnRequestEvent,
   TurnResponseEvent,
+  // State Layer Events
+  ConversationQueuedStateEvent,
 } from "@deepractice-ai/agentx-types";
 import type { UserMessage, AgentState } from "@deepractice-ai/agentx-types";
 import { isStateEvent } from "@deepractice-ai/agentx-types";
 import type { AgentEngine } from "@deepractice-ai/agentx-engine";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 import { AgentStateMachine } from "./AgentStateMachine";
+import { AgentEventBus } from "./AgentEventBus";
+import { AgentErrorClassifier } from "./AgentErrorClassifier";
+import { MiddlewareChain } from "./MiddlewareChain";
+import { InterceptorChain } from "./InterceptorChain";
+import { mapReactHandlers } from "./ReactHandlerMapper";
 
 const logger = createLogger("core/AgentInstance");
 
@@ -76,16 +83,24 @@ export class AgentInstance implements Agent {
   private readonly stateMachine = new AgentStateMachine();
 
   /**
-   * Type-based handlers: Map<EventType, Set<Handler>>
-   * O(1) lookup by event type
+   * Event bus - centralized event pub/sub
    */
-  private readonly typedHandlers: Map<string, Set<AgentEventHandler>> = new Map();
+  private readonly eventBus = new AgentEventBus();
 
   /**
-   * Global handlers: receive all events
-   * For backward compatibility with on(handler)
+   * Error classifier - classifies and creates error events
    */
-  private readonly globalHandlers: Set<AgentEventHandler> = new Set();
+  private readonly errorClassifier: AgentErrorClassifier;
+
+  /**
+   * Middleware chain for receive() interception
+   */
+  private readonly middlewareChain = new MiddlewareChain();
+
+  /**
+   * Interceptor chain for event dispatch interception
+   */
+  private readonly interceptorChain: InterceptorChain;
 
   /**
    * Lifecycle handlers for onReady
@@ -97,22 +112,16 @@ export class AgentInstance implements Agent {
    */
   private readonly destroyHandlers: Set<() => void> = new Set();
 
-  /**
-   * Middleware chain for receive() interception
-   */
-  private readonly middlewares: AgentMiddleware[] = [];
-
-  /**
-   * Interceptor chain for event dispatch interception
-   */
-  private readonly interceptors: AgentInterceptor[] = [];
-
   constructor(definition: AgentDefinition, context: AgentContext, engine: AgentEngine) {
     this.agentId = context.agentId;
     this.definition = definition;
     this.context = context;
     this.engine = engine;
     this.createdAt = context.createdAt;
+
+    // Initialize components that need agentId
+    this.errorClassifier = new AgentErrorClassifier(this.agentId);
+    this.interceptorChain = new InterceptorChain(this.agentId);
 
     logger.debug("AgentInstance created", {
       agentId: this.agentId,
@@ -147,8 +156,8 @@ export class AgentInstance implements Agent {
   async receive(message: string | UserMessage): Promise<void> {
     if (this._lifecycle === "destroyed") {
       logger.warn("Receive called on destroyed agent", { agentId: this.agentId });
-      const error = this.createAgentError("system", "AGENT_DESTROYED", "Agent has been destroyed", false);
-      const errorEvent = this.createErrorMessageEvent(error);
+      const error = this.errorClassifier.create("system", "AGENT_DESTROYED", "Agent has been destroyed", false);
+      const errorEvent = this.errorClassifier.createEvent(error);
       this.notifyHandlers(errorEvent);
       throw new Error("[Agent] Agent has been destroyed");
     }
@@ -176,19 +185,7 @@ export class AgentInstance implements Agent {
    * Execute middleware chain and then process the message
    */
   private async executeMiddlewareChain(message: UserMessage): Promise<void> {
-    let index = 0;
-
-    const next = async (msg: UserMessage): Promise<void> => {
-      if (index < this.middlewares.length) {
-        const middleware = this.middlewares[index++];
-        await middleware(msg, next);
-      } else {
-        // End of chain - do actual processing
-        await this.doReceive(msg);
-      }
-    };
-
-    await next(message);
+    await this.middlewareChain.execute(message, (msg) => this.doReceive(msg));
   }
 
   /**
@@ -206,6 +203,18 @@ export class AgentInstance implements Agent {
         agentId: this.agentId,
         messageId: userMessage.id,
       });
+
+      // 0. Emit queued state event - message received, processing about to start
+      const queuedEvent: ConversationQueuedStateEvent = {
+        type: "conversation_queued",
+        uuid: `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
+        agentId: this.agentId,
+        timestamp: Date.now(),
+        data: {
+          userMessage,
+        },
+      };
+      this.notifyHandlers(queuedEvent);
 
       // 1. Get stream events from driver
       const streamEvents = this.definition.driver.receive(userMessage, this.context);
@@ -231,8 +240,8 @@ export class AgentInstance implements Agent {
       });
     } catch (error) {
       // Convert error to AgentError and emit as ErrorMessageEvent
-      const agentError = this.classifyError(error);
-      const errorEvent = this.createErrorMessageEvent(agentError);
+      const agentError = this.errorClassifier.classify(error);
+      const errorEvent = this.errorClassifier.createEvent(agentError);
 
       logger.error("Message processing failed", {
         agentId: this.agentId,
@@ -249,86 +258,6 @@ export class AgentInstance implements Agent {
       throw error;
     }
     // State will be set to "idle" by ConversationEndStateEvent from Engine
-  }
-
-  /**
-   * Create an AgentError with the specified category and code
-   */
-  private createAgentError(
-    category: AgentError["category"],
-    code: string,
-    message: string,
-    recoverable: boolean,
-    cause?: Error
-  ): AgentError {
-    return {
-      category,
-      code,
-      message,
-      severity: recoverable ? "error" : "fatal",
-      recoverable,
-      cause,
-    } as AgentError;
-  }
-
-  /**
-   * Classify an unknown error into an AgentError
-   */
-  private classifyError(error: unknown): AgentError {
-    const err = error instanceof Error ? error : new Error(String(error));
-    const message = err.message;
-
-    // Try to classify based on error message patterns
-    // LLM errors
-    if (message.includes("rate limit") || message.includes("429")) {
-      return this.createAgentError("llm", "RATE_LIMITED", message, true, err);
-    }
-    if (message.includes("api key") || message.includes("401") || message.includes("unauthorized")) {
-      return this.createAgentError("llm", "INVALID_API_KEY", message, false, err);
-    }
-    if (message.includes("context") && message.includes("long")) {
-      return this.createAgentError("llm", "CONTEXT_TOO_LONG", message, true, err);
-    }
-    if (message.includes("overloaded") || message.includes("503")) {
-      return this.createAgentError("llm", "OVERLOADED", message, true, err);
-    }
-
-    // Network errors
-    if (message.includes("timeout") || message.includes("ETIMEDOUT")) {
-      return this.createAgentError("network", "TIMEOUT", message, true, err);
-    }
-    if (message.includes("ECONNREFUSED") || message.includes("connection")) {
-      return this.createAgentError("network", "CONNECTION_FAILED", message, true, err);
-    }
-    if (message.includes("network") || message.includes("fetch")) {
-      return this.createAgentError("network", "CONNECTION_FAILED", message, true, err);
-    }
-
-    // Driver errors
-    if (message.includes("driver")) {
-      return this.createAgentError("driver", "RECEIVE_FAILED", message, true, err);
-    }
-
-    // Default to system error
-    return this.createAgentError("system", "UNKNOWN", message, true, err);
-  }
-
-  /**
-   * Create an ErrorMessageEvent from an AgentError
-   */
-  private createErrorMessageEvent(error: AgentError): ErrorMessageEvent {
-    return {
-      type: "error_message",
-      uuid: `${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-      agentId: this.agentId,
-      timestamp: Date.now(),
-      data: {
-        id: `err_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        role: "error",
-        error,
-        timestamp: Date.now(),
-      },
-    };
   }
 
   /**
@@ -390,10 +319,7 @@ export class AgentInstance implements Agent {
   ): Unsubscribe {
     // Overload 1: on(handler) - global subscription (function as first arg)
     if (typeof typeOrHandlerOrMap === "function") {
-      this.globalHandlers.add(typeOrHandlerOrMap as AgentEventHandler);
-      return () => {
-        this.globalHandlers.delete(typeOrHandlerOrMap as AgentEventHandler);
-      };
+      return this.eventBus.onAny(typeOrHandlerOrMap as AgentEventHandler);
     }
 
     // Overload 2: on(handlers) - batch subscription (object with event handlers)
@@ -402,14 +328,7 @@ export class AgentInstance implements Agent {
 
       for (const [eventType, eventHandler] of Object.entries(typeOrHandlerOrMap)) {
         if (eventHandler) {
-          if (!this.typedHandlers.has(eventType)) {
-            this.typedHandlers.set(eventType, new Set());
-          }
-          this.typedHandlers.get(eventType)!.add(eventHandler as AgentEventHandler);
-
-          unsubscribes.push(() => {
-            this.typedHandlers.get(eventType)?.delete(eventHandler as AgentEventHandler);
-          });
+          unsubscribes.push(this.eventBus.on(eventType, eventHandler as AgentEventHandler));
         }
       }
 
@@ -425,18 +344,7 @@ export class AgentInstance implements Agent {
     const types = Array.isArray(typeOrHandlerOrMap) ? typeOrHandlerOrMap : [typeOrHandlerOrMap];
     const h = handler! as AgentEventHandler;
 
-    for (const type of types) {
-      if (!this.typedHandlers.has(type)) {
-        this.typedHandlers.set(type, new Set());
-      }
-      this.typedHandlers.get(type)!.add(h);
-    }
-
-    return () => {
-      for (const type of types) {
-        this.typedHandlers.get(type)?.delete(h);
-      }
-    };
+    return this.eventBus.on(types, h);
   }
 
   /**
@@ -475,41 +383,7 @@ export class AgentInstance implements Agent {
    * Converts onXxx handlers to event type keys and delegates to on(handlers)
    */
   react(handlers: ReactHandlerMap): Unsubscribe {
-    const eventHandlerMap: EventHandlerMap = {};
-
-    // Map ReactHandlerMap keys to EventHandlerMap keys
-    const mapping: Record<keyof ReactHandlerMap, keyof EventHandlerMap> = {
-      // Stream Layer Events
-      onMessageStart: "message_start",
-      onMessageDelta: "message_delta",
-      onMessageStop: "message_stop",
-      onTextContentBlockStart: "text_content_block_start",
-      onTextDelta: "text_delta",
-      onTextContentBlockStop: "text_content_block_stop",
-      onToolUseContentBlockStart: "tool_use_content_block_start",
-      onInputJsonDelta: "input_json_delta",
-      onToolUseContentBlockStop: "tool_use_content_block_stop",
-      onToolCall: "tool_call",
-      onToolResult: "tool_result",
-      // Message Layer Events
-      onUserMessage: "user_message",
-      onAssistantMessage: "assistant_message",
-      onToolUseMessage: "tool_use_message",
-      onError: "error_message",
-      // Turn Layer Events
-      onTurnRequest: "turn_request",
-      onTurnResponse: "turn_response",
-    };
-
-    // Convert ReactHandlerMap to EventHandlerMap
-    for (const [reactKey, eventKey] of Object.entries(mapping)) {
-      const handler = handlers[reactKey as keyof ReactHandlerMap];
-      if (handler) {
-        (eventHandlerMap as any)[eventKey] = handler;
-      }
-    }
-
-    // Delegate to on(handlers)
+    const eventHandlerMap = mapReactHandlers(handlers);
     return this.on(eventHandlerMap);
   }
 
@@ -554,28 +428,14 @@ export class AgentInstance implements Agent {
    * Add middleware to intercept incoming messages
    */
   use(middleware: AgentMiddleware): Unsubscribe {
-    this.middlewares.push(middleware);
-
-    return () => {
-      const index = this.middlewares.indexOf(middleware);
-      if (index !== -1) {
-        this.middlewares.splice(index, 1);
-      }
-    };
+    return this.middlewareChain.use(middleware);
   }
 
   /**
    * Add interceptor to intercept outgoing events
    */
   intercept(interceptor: AgentInterceptor): Unsubscribe {
-    this.interceptors.push(interceptor);
-
-    return () => {
-      const index = this.interceptors.indexOf(interceptor);
-      if (index !== -1) {
-        this.interceptors.splice(index, 1);
-      }
-    };
+    return this.interceptorChain.intercept(interceptor);
   }
 
   /**
@@ -614,12 +474,11 @@ export class AgentInstance implements Agent {
 
     this._lifecycle = "destroyed";
     this.stateMachine.reset();
-    this.typedHandlers.clear();
-    this.globalHandlers.clear();
+    this.eventBus.destroy();
     this.readyHandlers.clear();
     this.destroyHandlers.clear();
-    this.middlewares.length = 0;
-    this.interceptors.length = 0;
+    this.middlewareChain.clear();
+    this.interceptorChain.clear();
     // Clear engine state for this agent
     this.engine.clearState(this.agentId);
 
@@ -629,7 +488,10 @@ export class AgentInstance implements Agent {
   /**
    * Notify all registered handlers
    *
-   * Runs through interceptor chain before dispatching to handlers.
+   * Flow:
+   * 1. StateMachine processes StateEvents (for state transitions)
+   * 2. Interceptor chain can modify/filter events
+   * 3. EventBus emits to all subscribers
    */
   private notifyHandlers(event: AgentOutput): void {
     // 1. If StateEvent, let StateMachine process it first (before interceptors)
@@ -637,71 +499,23 @@ export class AgentInstance implements Agent {
       this.stateMachine.process(event);
     }
 
-    // 2. Run through interceptor chain
+    // 2. Run through interceptor chain, then emit to EventBus
     this.executeInterceptorChain(event);
   }
 
   /**
-   * Execute interceptor chain and then dispatch to handlers
+   * Execute interceptor chain and then emit to EventBus
    */
   private executeInterceptorChain(event: AgentOutput): void {
-    let index = 0;
-
-    const next = (e: AgentOutput): void => {
-      if (index < this.interceptors.length) {
-        const interceptor = this.interceptors[index++];
-        try {
-          interceptor(e, next);
-        } catch (error) {
-          logger.error("Interceptor error", {
-            agentId: this.agentId,
-            eventType: e.type,
-            interceptorIndex: index - 1,
-            error,
-          });
-          // Continue to next interceptor even if one fails
-          next(e);
-        }
-      } else {
-        // End of chain - dispatch to handlers
-        this.dispatchToHandlers(e);
-      }
-    };
-
-    next(event);
+    this.interceptorChain.execute(event, (e) => this.eventBus.emit(e));
   }
 
   /**
-   * Dispatch event to type-specific and global handlers
+   * Get the event consumer for external subscriptions
+   *
+   * Use this to expose event subscription without emit capability.
    */
-  private dispatchToHandlers(event: AgentOutput): void {
-    // 1. Notify type-specific handlers (O(1) lookup by event.type)
-    const typeHandlers = this.typedHandlers.get(event.type);
-    if (typeHandlers) {
-      for (const handler of typeHandlers) {
-        try {
-          handler(event);
-        } catch (error) {
-          logger.error("Event handler error (typed)", {
-            agentId: this.agentId,
-            eventType: event.type,
-            error,
-          });
-        }
-      }
-    }
-
-    // 2. Notify global handlers (receive all events)
-    for (const handler of this.globalHandlers) {
-      try {
-        handler(event);
-      } catch (error) {
-        logger.error("Event handler error (global)", {
-          agentId: this.agentId,
-          eventType: event.type,
-          error,
-        });
-      }
-    }
+  getEventConsumer(): EventConsumer {
+    return this.eventBus.asConsumer();
   }
 }
