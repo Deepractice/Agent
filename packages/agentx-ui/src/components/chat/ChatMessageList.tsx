@@ -19,11 +19,10 @@
  */
 
 import { useRef, useEffect } from "react";
-import type { Message } from "@deepractice-ai/agentx-types";
+import type { Message, ToolCallMessage as ToolCallMessageType, ToolResultMessage as ToolResultMessageType } from "@deepractice-ai/agentx-types";
 import { UserMessage } from "./messages/UserMessage";
 import { AssistantMessage } from "./messages/AssistantMessage";
-import { ToolCallMessage } from "./messages/ToolCallMessage";
-import { ToolResultMessage } from "./messages/ToolResultMessage";
+import { ToolUseMessage } from "./messages/ToolUseMessage";
 import { SystemMessage } from "./messages/SystemMessage";
 
 export interface ChatMessageListProps {
@@ -43,12 +42,62 @@ export interface ChatMessageListProps {
   className?: string;
 }
 
+/**
+ * Grouped tool message - combines tool-call and tool-result
+ */
+interface GroupedToolMessage {
+  type: "tool-use";
+  toolCall: ToolCallMessageType;
+  toolResult?: ToolResultMessageType;
+  timestamp: number;
+}
+
+/**
+ * Group tool messages by toolCallId
+ *
+ * Combines ToolCallMessage and ToolResultMessage into unified ToolUse groups.
+ * This improves UX by showing the complete tool lifecycle in one component.
+ */
+function groupToolMessages(messages: Message[]): (Message | GroupedToolMessage)[] {
+  const toolCallMap = new Map<string, ToolCallMessageType>();
+  const toolResultMap = new Map<string, ToolResultMessageType>();
+  const otherMessages: Message[] = [];
+
+  // Separate tool messages from other messages
+  for (const msg of messages) {
+    if (msg.subtype === "tool-call") {
+      toolCallMap.set(msg.toolCall.id, msg);
+    } else if (msg.subtype === "tool-result") {
+      toolResultMap.set(msg.toolCallId, msg);
+    } else {
+      otherMessages.push(msg);
+    }
+  }
+
+  // Create grouped tool messages
+  const groupedToolMessages: GroupedToolMessage[] = [];
+  for (const [toolCallId, toolCall] of toolCallMap.entries()) {
+    groupedToolMessages.push({
+      type: "tool-use",
+      toolCall,
+      toolResult: toolResultMap.get(toolCallId),
+      timestamp: toolCall.timestamp,
+    });
+  }
+
+  // Combine and sort by timestamp
+  return [...otherMessages, ...groupedToolMessages].sort((a, b) => a.timestamp - b.timestamp);
+}
+
 export function ChatMessageList({ messages, streamingText, className = "" }: ChatMessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
 
   // Sort messages by timestamp to ensure correct order
   // (events may arrive out of order due to async processing)
   const sortedMessages = [...messages].sort((a, b) => a.timestamp - b.timestamp);
+
+  // Group tool messages (tool-call + tool-result) for unified display
+  const groupedMessages = groupToolMessages(sortedMessages);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -76,17 +125,26 @@ export function ChatMessageList({ messages, streamingText, className = "" }: Cha
   return (
     <div className={`flex-1 overflow-y-auto overflow-x-hidden relative ${className}`}>
       <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
-        {/* Existing messages - route by subtype */}
-        {sortedMessages.map((msg) => {
+        {/* Render grouped messages */}
+        {groupedMessages.map((item) => {
+          // Handle grouped tool messages
+          if ("type" in item && item.type === "tool-use") {
+            return (
+              <ToolUseMessage
+                key={item.toolCall.id}
+                toolCall={item.toolCall}
+                toolResult={item.toolResult}
+              />
+            );
+          }
+
+          // Handle regular messages
+          const msg = item as Message;
           switch (msg.subtype) {
             case "user":
               return <UserMessage key={msg.id} message={msg} />;
             case "assistant":
               return <AssistantMessage key={msg.id} message={msg} />;
-            case "tool-call":
-              return <ToolCallMessage key={msg.id} message={msg} />;
-            case "tool-result":
-              return <ToolResultMessage key={msg.id} message={msg} />;
             case "system":
               return <SystemMessage key={msg.id} message={msg} />;
             default:
