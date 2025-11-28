@@ -1,10 +1,10 @@
 /**
  * Agent components - Agent state monitoring and UI integration
  *
- * Components for integrating AgentInstance with React UI:
+ * Components for integrating Agent with React UI:
  * - AgentStatusIndicator: Displays agent status with animations
- * - UIReactor: Reactor for accumulating UI data (messages, streaming, errors)
+ *
+ * For data binding, use the useAgent hook from @deepractice-ai/agentx-ui/hooks
  */
 
 export { AgentStatusIndicator, type AgentStatusIndicatorProps } from "./AgentStatusIndicator";
-export { UIReactor, type UIReactorConfig } from "./UIReactor";

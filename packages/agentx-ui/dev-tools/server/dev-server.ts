@@ -1,353 +1,247 @@
 /**
- * Development WebSocket Server for agentx-ui
+ * Development Server for agentx-ui
  *
- * This server runs alongside Storybook for local UI development.
- * Uses the new AgentX Framework with automatic session management.
+ * Runs alongside Storybook for local UI development.
+ * Uses the new AgentX API.
  */
 
-// ==================== STEP 1: Import only configuration utilities ====================
-import {
-  configure,
-  LogLevel,
-  type LoggerProvider,
-  type LogContext,
-} from "@deepractice-ai/agentx";
 import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
-import { appendFileSync, writeFileSync } from "fs";
+import { appendFileSync, writeFileSync, mkdirSync, existsSync } from "fs";
 import http from "http";
-import { WebSocketServer } from "ws";
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-// Load environment variables from .env.test file in same directory
+// Load environment variables from .env.test file
 const envPath = resolve(__dirname, ".env.test");
 config({ path: envPath });
 
+// Logs directory (relative to where the server is run)
+const logsDir = resolve(process.cwd(), "logs");
+const logFilePath = resolve(logsDir, "dev-server.log");
+
 /**
- * FileLogger - Outputs to both console and file
+ * FileLogger - Writes logs to file and console
  */
-class FileLogger implements LoggerProvider {
-  readonly name: string;
-  readonly level: LogLevel;
-  private readonly logFilePath: string;
-
-  private static initialized = false;
-
-  constructor(name: string, logFilePath: string, level: LogLevel = LogLevel.DEBUG) {
-    this.name = name;
-    this.level = level;
-    this.logFilePath = logFilePath;
-
-    // Clear log file only once when first logger is created
-    if (!FileLogger.initialized) {
-      writeFileSync(
-        logFilePath,
-        `=== Backend Log Started at ${new Date().toISOString()} ===\n`,
-        "utf8"
-      );
-      FileLogger.initialized = true;
-    }
-  }
-
-  debug(message: string, context?: LogContext): void {
-    if (this.isDebugEnabled()) {
-      this.log("DEBUG", message, context);
-    }
-  }
-
-  info(message: string, context?: LogContext): void {
-    if (this.isInfoEnabled()) {
-      this.log("INFO", message, context);
-    }
-  }
-
-  warn(message: string, context?: LogContext): void {
-    if (this.isWarnEnabled()) {
-      this.log("WARN", message, context);
-    }
-  }
-
-  error(message: string | Error, context?: LogContext): void {
-    if (this.isErrorEnabled()) {
-      if (message instanceof Error) {
-        this.log("ERROR", message.message, { ...context, stack: message.stack });
-      } else {
-        this.log("ERROR", message, context);
-      }
-    }
-  }
-
-  isDebugEnabled(): boolean {
-    return this.level <= LogLevel.DEBUG;
-  }
-
-  isInfoEnabled(): boolean {
-    return this.level <= LogLevel.INFO;
-  }
-
-  isWarnEnabled(): boolean {
-    return this.level <= LogLevel.WARN;
-  }
-
-  isErrorEnabled(): boolean {
-    return this.level <= LogLevel.ERROR;
-  }
-
-  private log(level: string, message: string, context?: LogContext): void {
+function createFileLogger(name: string, logFile: string) {
+  const formatLog = (level: string, message: string, context?: unknown) => {
     const timestamp = new Date().toISOString();
-    const logLine = `${timestamp} ${level.padEnd(5)} [${this.name}] ${message}`;
+    const contextStr = context ? ` ${JSON.stringify(context)}` : "";
+    return `${timestamp} ${level.padEnd(5)} [${name}] ${message}${contextStr}`;
+  };
+
+  const write = (level: string, message: string, context?: unknown) => {
+    const line = formatLog(level, message, context);
 
     // Console output with colors
-    const colors = {
+    const colors: Record<string, string> = {
       DEBUG: "\x1b[36m",
       INFO: "\x1b[32m",
       WARN: "\x1b[33m",
       ERROR: "\x1b[31m",
-      RESET: "\x1b[0m",
     };
-    const color = colors[level as keyof typeof colors] || "";
-    const consoleMethod =
-      level === "ERROR" ? console.error : level === "WARN" ? console.warn : console.log;
+    const reset = "\x1b[0m";
+    console.log(`${colors[level] || ""}${line}${reset}`);
 
-    if (context && Object.keys(context).length > 0) {
-      consoleMethod(`${color}${logLine}${colors.RESET}`, context);
-    } else {
-      consoleMethod(`${color}${logLine}${colors.RESET}`);
-    }
-
-    // File output (without colors)
-    const fileLogLine =
-      context && Object.keys(context).length > 0
-        ? `${logLine} ${JSON.stringify(context)}\n`
-        : `${logLine}\n`;
-
+    // File output
     try {
-      appendFileSync(this.logFilePath, fileLogLine, "utf8");
-    } catch (error) {
-      console.error("Failed to write to log file:", error);
+      appendFileSync(logFile, line + "\n", "utf8");
+    } catch {
+      // Ignore file write errors
     }
-  }
-}
+  };
 
-// ==================== STEP 2: Configure logger BEFORE importing AgentX modules ====================
-const backendLogPath = resolve(__dirname, "logs/backend.log");
-const frontendLogPath = resolve(__dirname, "logs/frontend.log");
-
-configure({
-  logger: {
-    defaultLevel: LogLevel.INFO,
-    defaultImplementation: (name) => new FileLogger(name, backendLogPath, LogLevel.INFO),
-  },
-});
-
-// ==================== STEP 3: Import AgentX modules AFTER configure() ====================
-// This ensures all loggers created during module loading use FileLogger
-import { createAgentServer } from "@deepractice-ai/agentx/server";
-import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
-
-// Global references for cleanup on hot reload
-let globalLogCollector: http.Server | null = null;
-let globalAgentServer: Awaited<ReturnType<typeof createAgentServer>> | null = null;
-
-/**
- * Kill process using a specific port
- */
-async function killProcessOnPort(port: number): Promise<void> {
-  const { execSync } = await import("child_process");
-  try {
-    // Find PID using the port (Linux/macOS)
-    const result = execSync(`lsof -ti:${port}`, { encoding: "utf8" }).trim();
-    if (result) {
-      const pids = result.split("\n");
-      for (const pid of pids) {
-        console.log(`[HotReload] Killing process ${pid} on port ${port}`);
-        try {
-          execSync(`kill -9 ${pid}`);
-        } catch {
-          // Process might already be dead
-        }
+  return {
+    name,
+    level: 0, // DEBUG
+    debug: (msg: string, ctx?: unknown) => write("DEBUG", msg, ctx),
+    info: (msg: string, ctx?: unknown) => write("INFO", msg, ctx),
+    warn: (msg: string, ctx?: unknown) => write("WARN", msg, ctx),
+    error: (msg: string | Error, ctx?: unknown) => {
+      if (msg instanceof Error) {
+        write("ERROR", msg.message, { ...((ctx as object) || {}), stack: msg.stack });
+      } else {
+        write("ERROR", msg, ctx);
       }
-      // Wait a bit for the port to be released
-      await new Promise((r) => setTimeout(r, 300));
-    }
-  } catch {
-    // No process found on port, which is fine
-  }
-}
-
-/**
- * Ensure port is available, killing any process using it
- */
-async function ensurePortAvailable(port: number): Promise<void> {
-  try {
-    await new Promise<void>((resolve, reject) => {
-      const testServer = http.createServer();
-      testServer.once("error", (err: NodeJS.ErrnoException) => {
-        reject(err);
-      });
-      testServer.once("listening", () => {
-        testServer.close(() => resolve());
-      });
-      testServer.listen(port, "0.0.0.0");
-    });
-  } catch {
-    // Port in use, kill the process
-    console.log(`[HotReload] Port ${port} in use, killing process...`);
-    await killProcessOnPort(port);
-  }
-}
-
-/**
- * Create WebSocket server for collecting frontend logs
- */
-async function createLogCollectorServer(port: number, logFilePath: string): Promise<http.Server> {
-  // Ensure port is available (kill any process using it)
-  await ensurePortAvailable(port);
-
-  const httpServer = http.createServer();
-  const wss = new WebSocketServer({ server: httpServer });
-
-  // Initialize frontend log file
-  writeFileSync(
-    logFilePath,
-    `=== Frontend Log Started at ${new Date().toISOString()} ===\n`,
-    "utf8"
-  );
-
-  wss.on("connection", (ws) => {
-    console.log("[LogCollector] Frontend logger connected");
-
-    ws.on("message", (data) => {
-      try {
-        const logEntry = JSON.parse(data.toString());
-        const { timestamp, level, name, message, context } = logEntry;
-
-        // Format log line
-        const logLine = context
-          ? `${timestamp} ${level.padEnd(5)} [${name}] ${message} ${JSON.stringify(context)}\n`
-          : `${timestamp} ${level.padEnd(5)} [${name}] ${message}\n`;
-
-        // Write to file
-        appendFileSync(logFilePath, logLine, "utf8");
-      } catch (error) {
-        console.error("[LogCollector] Failed to process frontend log:", error);
-      }
-    });
-
-    ws.on("close", () => {
-      console.log("[LogCollector] Frontend logger disconnected");
-    });
-
-    ws.on("error", (error) => {
-      console.error("[LogCollector] WebSocket error:", error);
-    });
-  });
-
-  httpServer.listen(port, "0.0.0.0", () => {
-    console.log(`[LogCollector] Frontend log collector listening on ws://0.0.0.0:${port}`);
-  });
-
-  return httpServer;
-}
-
-/**
- * Close server and wait for it to fully close
- */
-function closeServer(server: http.Server): Promise<void> {
-  return new Promise((resolve) => {
-    server.close(() => {
-      resolve();
-    });
-    // Force close after 2 seconds if not closed gracefully
-    setTimeout(resolve, 2000);
-  });
-}
-
-/**
- * Cleanup previous server instances (for hot reload support)
- */
-async function cleanup() {
-  if (globalLogCollector) {
-    console.log("[HotReload] Closing previous log collector...");
-    await closeServer(globalLogCollector);
-    globalLogCollector = null;
-    // Give OS time to release the port
-    await new Promise((r) => setTimeout(r, 500));
-  }
-  if (globalAgentServer) {
-    console.log("[HotReload] Stopping previous agent server...");
-    await globalAgentServer.stop();
-    globalAgentServer = null;
-    // Give OS time to release the port
-    await new Promise((r) => setTimeout(r, 500));
-  }
+    },
+    isDebugEnabled: () => true,
+    isInfoEnabled: () => true,
+    isWarnEnabled: () => true,
+    isErrorEnabled: () => true,
+  };
 }
 
 async function startDevServer() {
-  // Cleanup any previous instances first (hot reload support)
-  await cleanup();
-
   // Support both AGENT_API_KEY and ANTHROPIC_API_KEY
   const apiKey = process.env.AGENT_API_KEY || process.env.ANTHROPIC_API_KEY;
   const baseUrl = process.env.AGENT_BASE_URL;
 
   if (!apiKey) {
-    console.error("❌ Error: API key is not set");
+    console.error("Error: API key is not set");
     console.log("\nPlease set your API key in one of these ways:");
-    console.log("  1. Create .env.test file in agentx-node package");
+    console.log("  1. Create .env.test file in dev-tools/server/");
     console.log("  2. export AGENT_API_KEY='your-api-key'");
     console.log("  3. export ANTHROPIC_API_KEY='your-api-key'");
     process.exit(1);
   }
 
-  console.log("🚀 Starting AgentX Development Server...\n");
-  console.log("📝 Configuration:");
-  console.log(`   API Key: ${apiKey.substring(0, 10)}...`);
-  if (baseUrl) {
-    console.log(`   Base URL: ${baseUrl}`);
+  // Ensure logs directory exists
+  if (!existsSync(logsDir)) {
+    mkdirSync(logsDir, { recursive: true });
   }
-  console.log(`   Backend Log: ${backendLogPath}`);
-  console.log(`   Frontend Log: ${frontendLogPath}`);
+
+  // Initialize log file
+  writeFileSync(logFilePath, `=== Dev Server Started at ${new Date().toISOString()} ===\n`, "utf8");
+
+  console.log("Starting AgentX Development Server...\n");
+  console.log("Configuration:");
+  console.log(`  API Key: ${apiKey.substring(0, 10)}...`);
+  if (baseUrl) {
+    console.log(`  Base URL: ${baseUrl}`);
+  }
+  console.log(`  Log File: ${logFilePath}`);
   console.log();
 
-  // Start log collector server (port 5201)
-  globalLogCollector = await createLogCollectorServer(5201, frontendLogPath);
+  // Import AgentX modules
+  const { createAgentX } = await import("@deepractice-ai/agentx");
+  const { createAgentXHandler } = await import("@deepractice-ai/agentx/server");
+  const { ClaudeDriver } = await import("@deepractice-ai/agentx-claude");
+  const { LoggerFactoryKey } = await import("@deepractice-ai/agentx-types");
 
-  // Ensure SSE server port is available
-  await ensurePortAvailable(5200);
+  // Create AgentX instance
+  const agentx = createAgentX();
 
-  // Create SSE Server with automatic session management
-  globalAgentServer = createAgentServer(ClaudeAgent, {
-    port: 5200,
-    host: "0.0.0.0",
-    config: {
-      apiKey,
-      baseUrl,
-      model: "claude-sonnet-4-20250514",
-      systemPrompt: "You are a helpful AI assistant for UI development testing.",
-    },
+  // Provide custom LoggerFactory
+  agentx.provide(LoggerFactoryKey, {
+    getLogger: (name: string) => createFileLogger(name, logFilePath),
   });
 
-  await globalAgentServer.start();
+  // Define Claude agent
+  const ClaudeAgent = agentx.agents.define({
+    name: "ClaudeAgent",
+    description: "Claude-powered assistant for UI development testing",
+    driver: ClaudeDriver,
+  });
 
-  console.log("✅ SSE Server Started");
-  console.log(`   URL: http://0.0.0.0:5200\n`);
-  console.log("💡 Ready for UI development!");
-  console.log("   Run 'pnpm storybook' in another terminal\n");
-  console.log("📦 Framework: AgentX Framework v2");
-  console.log("   • Automatic session management (one Agent per connection)");
-  console.log("   • Real-time event streaming");
-  console.log("   • Full Claude SDK features\n");
+  // Create handler with dynamic agent creation enabled
+  const handler = createAgentXHandler(agentx, {
+    basePath: "/agentx",
+    allowDynamicCreation: true,
+    allowedDefinitions: ["ClaudeAgent"],
+  });
 
-  // Graceful shutdown handlers
+  // Register definition for dynamic creation
+  (handler as any).registerDefinition("ClaudeAgent", ClaudeAgent, {
+    apiKey,
+    baseUrl,
+    model: "claude-sonnet-4-20250514",
+    systemPrompt: "You are a helpful AI assistant for UI development testing.",
+  });
+
+  // Create HTTP server
+  const PORT = 5200;
+  const server = http.createServer(async (req, res) => {
+    // Handle CORS
+    res.setHeader("Access-Control-Allow-Origin", "*");
+    res.setHeader("Access-Control-Allow-Methods", "GET, POST, DELETE, OPTIONS");
+    res.setHeader("Access-Control-Allow-Headers", "Content-Type");
+
+    if (req.method === "OPTIONS") {
+      res.writeHead(204);
+      res.end();
+      return;
+    }
+
+    try {
+      // Convert Node.js request to Web Request
+      const url = `http://localhost:${PORT}${req.url}`;
+      const headers = new Headers();
+      for (const [key, value] of Object.entries(req.headers)) {
+        if (value) {
+          headers.set(key, Array.isArray(value) ? value[0] : value);
+        }
+      }
+
+      let body: string | undefined;
+      if (req.method === "POST") {
+        body = await new Promise<string>((resolve) => {
+          let data = "";
+          req.on("data", (chunk) => (data += chunk));
+          req.on("end", () => resolve(data));
+        });
+      }
+
+      const webRequest = new Request(url, {
+        method: req.method,
+        headers,
+        body: body || undefined,
+      });
+
+      // Call handler
+      const webResponse = await handler(webRequest);
+
+      // Check if SSE response
+      const contentType = webResponse.headers.get("Content-Type");
+      if (contentType === "text/event-stream") {
+        // SSE response - pipe the stream
+        res.writeHead(webResponse.status, {
+          "Content-Type": "text/event-stream",
+          "Cache-Control": "no-cache",
+          Connection: "keep-alive",
+          "Access-Control-Allow-Origin": "*",
+        });
+
+        const reader = webResponse.body?.getReader();
+        if (reader) {
+          const pump = async () => {
+            while (true) {
+              const { done, value } = await reader.read();
+              if (done) break;
+              res.write(value);
+            }
+            res.end();
+          };
+          pump().catch(() => res.end());
+        }
+      } else {
+        // Regular response
+        res.writeHead(webResponse.status, {
+          "Content-Type": contentType || "application/json",
+          "Access-Control-Allow-Origin": "*",
+        });
+        const text = await webResponse.text();
+        res.end(text);
+      }
+    } catch (error) {
+      console.error("Request error:", error);
+      res.writeHead(500, { "Content-Type": "application/json" });
+      res.end(JSON.stringify({ error: { message: "Internal server error" } }));
+    }
+  });
+
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`Server started on http://0.0.0.0:${PORT}`);
+    console.log(`\nEndpoints:`);
+    console.log(`  GET  /agentx/info          - Platform info`);
+    console.log(`  GET  /agentx/health        - Health check`);
+    console.log(`  GET  /agentx/agents        - List agents`);
+    console.log(`  POST /agentx/agents        - Create agent`);
+    console.log(`  GET  /agentx/agents/:id    - Get agent`);
+    console.log(`  DEL  /agentx/agents/:id    - Delete agent`);
+    console.log(`  GET  /agentx/agents/:id/sse      - SSE stream`);
+    console.log(`  POST /agentx/agents/:id/messages - Send message`);
+    console.log(`\nReady for Storybook development!`);
+  });
+
+  // Graceful shutdown
   const shutdown = async () => {
-    console.log("\n\n🛑 Shutting down...");
-    await cleanup();
-    console.log("✅ Server stopped");
+    console.log("\nShutting down...");
+    server.close();
+    await agentx.agents.destroyAll();
+    console.log("Server stopped");
     process.exit(0);
   };
 
@@ -356,6 +250,6 @@ async function startDevServer() {
 }
 
 startDevServer().catch((error) => {
-  console.error("❌ Failed to start server:", error);
+  console.error("Failed to start server:", error);
   process.exit(1);
 });

@@ -1,13 +1,13 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { AgentStatusIndicator } from "./AgentStatusIndicator";
-import type { AgentState } from "@deepractice-ai/agentx";
+import type { AgentState, StateChange } from "@deepractice-ai/agentx-types";
 
 /**
- * Mock AgentInstance for Storybook
+ * Mock Agent for Storybook
  */
 function createMockAgent(initialState: AgentState = "idle") {
   let currentState = initialState;
-  const listeners = new Set<(state: AgentState, prevState: AgentState) => void>();
+  const listeners = new Set<(change: StateChange) => void>();
 
   return {
     get state() {
@@ -16,9 +16,9 @@ function createMockAgent(initialState: AgentState = "idle") {
     setState(newState: AgentState) {
       const prevState = currentState;
       currentState = newState;
-      listeners.forEach((cb) => cb(newState, prevState));
+      listeners.forEach((cb) => cb({ prev: prevState, current: newState }));
     },
-    onStateChange(callback: (state: AgentState, prevState: AgentState) => void) {
+    onStateChange(callback: (change: StateChange) => void) {
       listeners.add(callback);
       return () => listeners.delete(callback);
     },
@@ -26,7 +26,7 @@ function createMockAgent(initialState: AgentState = "idle") {
       console.log("[MockAgent] abort() called");
       const prevState = currentState;
       currentState = "idle";
-      listeners.forEach((cb) => cb("idle", prevState));
+      listeners.forEach((cb) => cb({ prev: prevState, current: "idle" }));
     },
   } as any;
 }

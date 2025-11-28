@@ -1,61 +1,58 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { useState, useEffect, type ReactNode } from "react";
 import { Chat } from "./Chat";
-import { SSEAgent } from "@deepractice-ai/agentx/browser";
-import type { AgentInstance } from "@deepractice-ai/agentx";
+import { createRemoteAgent } from "@deepractice-ai/agentx/client";
+import type { Agent } from "@deepractice-ai/agentx-types";
 
-const SERVER_URL = "http://localhost:5200";
+const SERVER_URL = "http://localhost:5200/agentx";
 
 /**
- * Create a session on the server
- * Returns { sessionId, sseUrl }
+ * Create an agent on the server
+ * Returns { agentId }
  */
-async function createSession(): Promise<{ sessionId: string; sseUrl: string }> {
-  const response = await fetch(`${SERVER_URL}/api/session`, {
+async function createServerAgent(): Promise<{ agentId: string }> {
+  const response = await fetch(`${SERVER_URL}/agents`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({ name: "StoryAgent" }),
   });
 
   if (!response.ok) {
-    throw new Error(`Failed to create session: ${response.status}`);
+    throw new Error(`Failed to create agent: ${response.status}`);
   }
 
   return response.json();
 }
 
 /**
- * Wrapper component to handle session creation and agent initialization
+ * Wrapper component to handle agent creation and initialization
  *
  * Flow:
- * 1. POST /api/session -> get sessionId
- * 2. Create SSEAgent with sessionId
- * 3. agent.initialize() -> GET /api/sse/{sessionId}
- * 4. Ready for chat
+ * 1. POST /agents -> get agentId
+ * 2. createRemoteAgent with agentId
+ * 3. Ready for chat
  */
-function ChatStory({ children }: { children: (agent: AgentInstance) => ReactNode }) {
-  const [agent, setAgent] = useState<AgentInstance | null>(null);
+function ChatStory({ children }: { children: (agent: Agent) => ReactNode }) {
+  const [agent, setAgent] = useState<Agent | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    let currentAgent: AgentInstance | null = null;
+    let currentAgent: Agent | null = null;
 
     async function setup() {
       try {
-        // Step 1: Create session on server
-        console.log("[Story] Creating session...");
-        const { sessionId } = await createSession();
-        console.log("[Story] Session created:", sessionId);
+        // Step 1: Create agent on server
+        console.log("[Story] Creating agent...");
+        const { agentId } = await createServerAgent();
+        console.log("[Story] Agent created:", agentId);
 
-        // Step 2: Create SSEAgent with the session ID
-        currentAgent = SSEAgent.create({
+        // Step 2: Create remote agent
+        currentAgent = createRemoteAgent({
           serverUrl: SERVER_URL,
-          sessionId,
-        } as any);
+          agentId,
+        });
 
-        // Step 3: Initialize agent (establishes SSE connection)
-        await currentAgent.initialize();
-        console.log("[Story] Agent initialized successfully");
-
+        console.log("[Story] Remote agent created successfully");
         setAgent(currentAgent);
       } catch (err) {
         console.error("[Story] Setup failed:", err);
@@ -111,7 +108,7 @@ const meta: Meta<typeof Chat> = {
     docs: {
       description: {
         component:
-          "Complete chat interface with real Agent integration. Connects to WebSocket server and streams responses from Claude API in real-time.",
+          "Complete chat interface with real Agent integration. Connects to server and streams responses from Claude API in real-time.",
       },
     },
   },
@@ -144,7 +141,7 @@ export const LiveChat: Story = {
  * Live chat with logging enabled
  *
  * Check browser console to see:
- * - SSE connection events
+ * - Connection events
  * - Message events
  * - Streaming events
  * - Error events

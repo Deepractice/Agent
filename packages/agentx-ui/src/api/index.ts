@@ -1,7 +1,10 @@
 // Public API Layer
 // This file exports all public components and utilities
 
-// Agent Components (status indicator, reactors)
+// React Hooks
+export * from "~/hooks";
+
+// Agent Components (status indicator)
 export * from "~/components/agent";
 
 // Chat Components

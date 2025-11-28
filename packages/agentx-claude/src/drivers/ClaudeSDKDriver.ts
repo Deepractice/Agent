@@ -2,26 +2,17 @@
  * ClaudeSDKDriver
  *
  * AgentDriver implementation using @anthropic-ai/claude-agent-sdk.
- * Built with defineDriver for minimal boilerplate.
- *
- * Performance Optimization:
- * - Uses Claude SDK's Streaming Input Mode (prompt: AsyncIterable)
- * - Process starts once and stays alive for entire session
- * - First message: ~6-7s (process startup)
- * - Subsequent messages: ~1-2s (3-5x faster!)
  *
  * @example
  * ```typescript
- * import { ClaudeSDKDriver } from "@deepractice-ai/agentx/drivers";
+ * import { ClaudeDriver } from "@deepractice-ai/agentx-claude";
  *
- * const agent = defineAgent({
- *   name: "Claude",
- *   driver: ClaudeSDKDriver,
- *   config: defineConfig({
- *     apiKey: { type: "string", required: true },
- *     model: { type: "string", default: "claude-3-5-sonnet-20241022" }
- *   })
+ * const MyAgent = agentx.agents.define({
+ *   name: "Assistant",
+ *   driver: ClaudeDriver,
  * });
+ *
+ * const agent = agentx.agents.create(MyAgent, { apiKey: "xxx" });
  * ```
  */
 
@@ -38,143 +29,219 @@ import {
   type SdkPluginConfig,
   type Query,
 } from "@anthropic-ai/claude-agent-sdk";
-import { StreamEventBuilder } from "@deepractice-ai/agentx-engine";
-import type { UserMessage, StreamEventType } from "@deepractice-ai/agentx-types";
-import { LoggerFactory } from "@deepractice-ai/agentx-logger";
-import { defineDriver } from "@deepractice-ai/agentx";
+import type {
+  AgentDriver,
+  AgentContext,
+  UserMessage,
+  StreamEventType,
+  MessageStartEvent,
+  MessageStopEvent,
+  MessageDeltaEvent,
+  TextContentBlockStartEvent,
+  TextContentBlockStopEvent,
+  TextDeltaEvent,
+  ToolUseContentBlockStartEvent,
+  ToolUseContentBlockStopEvent,
+  InputJsonDeltaEvent,
+  ToolCallEvent,
+  ToolResultEvent,
+} from "@deepractice-ai/agentx-types";
+import { createLogger } from "@deepractice-ai/agentx-logger";
 import { observableToAsyncIterable } from "~/utils/observableToAsyncIterable";
 import { Subject } from "rxjs";
 
-// Create logger for ClaudeSDKDriver
-const logger = LoggerFactory.getLogger("ClaudeSDKDriver");
+const logger = createLogger("ClaudeSDKDriver");
 
 /**
  * Configuration for ClaudeSDKDriver
  */
 export interface ClaudeSDKDriverConfig {
-  // ==================== Basic Configuration ====================
   apiKey?: string;
   baseUrl?: string;
   cwd?: string;
   env?: Record<string, string>;
-
-  // ==================== Model Configuration ====================
   model?: string;
   fallbackModel?: string;
   systemPrompt?: string | { type: "preset"; preset: "claude_code"; append?: string };
-
-  // ==================== Tokens Control ====================
   maxTurns?: number;
   maxThinkingTokens?: number;
-
-  // ==================== Session Management ====================
   continue?: boolean;
   resume?: string;
   forkSession?: boolean;
-
-  // ==================== Permission Control ====================
   permissionMode?: "default" | "acceptEdits" | "bypassPermissions" | "plan";
   canUseTool?: CanUseTool;
   permissionPromptToolName?: string;
-
-  // ==================== Tool Configuration ====================
   allowedTools?: string[];
   disallowedTools?: string[];
-
-  // ==================== Directory Access ====================
   additionalDirectories?: string[];
-
-  // ==================== MCP Servers ====================
   mcpServers?: Record<string, any>;
   strictMcpConfig?: boolean;
-
-  // ==================== Subagents ====================
   agents?: Record<string, any>;
-
-  // ==================== Settings Loading ====================
   settingSources?: ("user" | "project" | "local")[];
-
-  // ==================== Plugins ====================
   plugins?: SdkPluginConfig[];
-
-  // ==================== Runtime ====================
   executable?: "bun" | "deno" | "node";
   executableArgs?: string[];
   pathToClaudeCodeExecutable?: string;
-
-  // ==================== Streaming Output ====================
   includePartialMessages?: boolean;
-
-  // ==================== Callbacks ====================
   stderr?: (data: string) => void;
-
-  // ==================== Hooks ====================
   hooks?: Partial<Record<HookEvent, HookCallbackMatcher[]>>;
-
-  // ==================== Other ====================
   extraArgs?: Record<string, string | null>;
   abortController?: AbortController;
-
-  // ==================== Internal (Framework) ====================
-  sessionId?: string; // Framework session ID (for session mapping)
 }
 
 /**
- * Shared state for ClaudeSDKDriver instances (per driver definition)
+ * Driver state (per agent instance)
  */
 interface DriverState {
-  promptSubject: Subject<SDKUserMessage>; // Input: processMessage pushes SDK-formatted messages
-  responseSubject: Subject<SDKMessage>; // Output: broadcasts responses to all consumers
+  promptSubject: Subject<SDKUserMessage>;
+  responseSubject: Subject<SDKMessage>;
   claudeQuery: Query | null;
   abortController: AbortController;
-  sessionMap: Map<string, string>; // Framework sessionId -> Claude SDK session_id
+  sessionMap: Map<string, string>;
   isInitialized: boolean;
-  config: ClaudeSDKDriverConfig;
-  agentId: string;
 }
 
-// Global state storage (one per driver definition)
-const driverStates = new WeakMap<any, DriverState>();
+// State storage per agentId
+const driverStates = new Map<string, DriverState>();
 
-/**
- * Helper: Build prompt from UserMessage
- */
+// ============================================================================
+// Event Builders (inline, no external dependency)
+// ============================================================================
+
+function generateUUID(): string {
+  return crypto.randomUUID();
+}
+
+function createEventBase(agentId: string) {
+  return {
+    uuid: generateUUID(),
+    agentId,
+    timestamp: Date.now(),
+  };
+}
+
+function messageStart(agentId: string, id: string, model: string): MessageStartEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "message_start",
+    data: { message: { id, model } },
+  };
+}
+
+function messageStop(agentId: string): MessageStopEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "message_stop",
+    data: {},
+  };
+}
+
+function messageDelta(agentId: string, stopReason: string, stopSequence?: string): MessageDeltaEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "message_delta",
+    data: { delta: { stopReason: stopReason as any, stopSequence } },
+  };
+}
+
+function textContentBlockStart(agentId: string): TextContentBlockStartEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "text_content_block_start",
+    data: {},
+  };
+}
+
+function textContentBlockStop(agentId: string): TextContentBlockStopEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "text_content_block_stop",
+    data: {},
+  };
+}
+
+function textDelta(agentId: string, text: string): TextDeltaEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "text_delta",
+    data: { text },
+  };
+}
+
+function toolUseContentBlockStart(
+  agentId: string,
+  toolId: string,
+  toolName: string
+): ToolUseContentBlockStartEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "tool_use_content_block_start",
+    data: { id: toolId, name: toolName },
+  };
+}
+
+function toolUseContentBlockStop(agentId: string, toolId: string): ToolUseContentBlockStopEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "tool_use_content_block_stop",
+    data: { id: toolId },
+  };
+}
+
+function inputJsonDelta(agentId: string, partialJson: string): InputJsonDeltaEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "input_json_delta",
+    data: { partialJson },
+  };
+}
+
+function toolCall(agentId: string, toolId: string, toolName: string, input: unknown): ToolCallEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "tool_call",
+    data: { id: toolId, name: toolName, input },
+  };
+}
+
+function toolResult(agentId: string, toolId: string, content: string | any[], isError: boolean): ToolResultEvent {
+  return {
+    ...createEventBase(agentId),
+    type: "tool_result",
+    data: { toolId, content, isError },
+  };
+}
+
+// ============================================================================
+// Helpers
+// ============================================================================
+
 function buildPrompt(message: UserMessage): string {
   if (typeof message.content === "string") {
     return message.content;
   }
-
   if (Array.isArray(message.content)) {
     return message.content
       .filter((part) => part.type === "text")
       .map((part) => (part as any).text)
       .join("\n");
   }
-
   return "";
 }
 
-/**
- * Helper: Build SDKUserMessage from UserMessage
- */
 function buildSDKUserMessage(message: UserMessage, sessionId: string): SDKUserMessage {
-  const prompt = buildPrompt(message);
-
   return {
     type: "user",
-    message: {
-      role: "user",
-      content: prompt,
-    },
+    message: { role: "user", content: buildPrompt(message) },
     parent_tool_use_id: null,
     session_id: sessionId,
   };
 }
 
-/**
- * Helper: Build SDK options from config
- */
-function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortController): Options {
+function buildOptions(
+  config: ClaudeSDKDriverConfig,
+  abortController: AbortController
+): Options {
   const options: Options = {
     abortController,
     includePartialMessages: config.includePartialMessages ?? true,
@@ -182,23 +249,18 @@ function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortContr
 
   if (config.cwd) options.cwd = config.cwd;
 
-  // Build env - merge process.env, user config, and custom values
   const env: Record<string, string> = {
-    ...(process.env as Record<string, string>), // Inherit system env (PATH, etc)
-    ...config.env, // User-provided env overrides
+    ...(process.env as Record<string, string>),
+    ...config.env,
   };
-  if (config.baseUrl) {
-    env.ANTHROPIC_BASE_URL = config.baseUrl;
-  }
-  if (config.apiKey) {
-    env.ANTHROPIC_API_KEY = config.apiKey;
-  }
+  if (config.baseUrl) env.ANTHROPIC_BASE_URL = config.baseUrl;
+  if (config.apiKey) env.ANTHROPIC_API_KEY = config.apiKey;
   options.env = env;
 
-  // Use current Node.js executable (works with nvm, volta, etc)
   if (!config.executable) {
-    options.executable = process.execPath as any; // SDK accepts full path despite type definition
+    options.executable = process.execPath as any;
   }
+
   if (config.model) options.model = config.model;
   if (config.fallbackModel) options.fallbackModel = config.fallbackModel;
   if (config.systemPrompt) options.systemPrompt = config.systemPrompt;
@@ -230,142 +292,115 @@ function buildOptions(config: ClaudeSDKDriverConfig, abortController: AbortContr
   return options;
 }
 
-/**
- * Helper: Process complete assistant message content
- */
+// ============================================================================
+// SDK Message Processing
+// ============================================================================
+
 async function* processAssistantContent(
-  sdkMsg: SDKAssistantMessage,
-  builder: StreamEventBuilder
+  agentId: string,
+  sdkMsg: SDKAssistantMessage
 ): AsyncIterable<StreamEventType> {
   const content = sdkMsg.message.content;
 
-  for (let i = 0; i < content.length; i++) {
-    const block = content[i];
-
+  for (const block of content) {
     if (block.type === "text") {
-      yield builder.textContentBlockStart(i);
-      yield builder.textDelta(block.text, i);
-      yield builder.textContentBlockStop(i);
+      yield textContentBlockStart(agentId);
+      yield textDelta(agentId, block.text);
+      yield textContentBlockStop(agentId);
     } else if (block.type === "tool_use") {
-      yield builder.toolUseContentBlockStart(block.id, block.name, i);
-      yield builder.inputJsonDelta(JSON.stringify(block.input), i);
-      yield builder.toolUseContentBlockStop(block.id, i);
-      // Emit high-level tool_call event (complete tool call assembled)
-      yield builder.toolCall(block.id, block.name, block.input);
+      yield toolUseContentBlockStart(agentId, block.id, block.name);
+      yield inputJsonDelta(agentId, JSON.stringify(block.input));
+      yield toolUseContentBlockStop(agentId, block.id);
+      yield toolCall(agentId, block.id, block.name, block.input);
     }
   }
 }
 
-/**
- * Helper: Process streaming event
- */
 async function* processStreamEvent(
-  sdkMsg: SDKPartialAssistantMessage,
-  builder: StreamEventBuilder
+  agentId: string,
+  sdkMsg: SDKPartialAssistantMessage
 ): AsyncIterable<StreamEventType> {
   const event = sdkMsg.event;
 
   switch (event.type) {
     case "message_start":
-      yield builder.messageStart(event.message.id, event.message.model);
+      yield messageStart(agentId, event.message.id, event.message.model);
       break;
 
     case "content_block_start":
       if (event.content_block.type === "text") {
-        yield builder.textContentBlockStart(event.index);
+        yield textContentBlockStart(agentId);
       } else if (event.content_block.type === "tool_use") {
-        yield builder.toolUseContentBlockStart(
+        yield toolUseContentBlockStart(
+          agentId,
           event.content_block.id,
-          event.content_block.name,
-          event.index
+          event.content_block.name
         );
       }
       break;
 
     case "content_block_delta":
       if (event.delta.type === "text_delta") {
-        yield builder.textDelta(event.delta.text, event.index);
+        yield textDelta(agentId, event.delta.text);
       } else if (event.delta.type === "input_json_delta") {
-        yield builder.inputJsonDelta(event.delta.partial_json, event.index);
+        yield inputJsonDelta(agentId, event.delta.partial_json);
       }
       break;
 
     case "content_block_stop":
-      yield builder.textContentBlockStop(event.index);
-      // Note: tool_call event will be emitted by AgentMessageAssembler
-      // after it parses the complete JSON input
+      yield textContentBlockStop(agentId);
       break;
 
     case "message_delta":
       if (event.delta.stop_reason) {
-        // Claude SDK returns stop_reason as string, cast to StopReason
-        yield builder.messageDelta(
-          event.delta.stop_reason as any,
-          event.delta.stop_sequence || undefined
-        );
+        yield messageDelta(agentId, event.delta.stop_reason, event.delta.stop_sequence || undefined);
       }
       break;
 
     case "message_stop":
-      yield builder.messageStop();
-      break;
-
-    default:
+      yield messageStop(agentId);
       break;
   }
 }
 
-/**
- * Helper: Transform Claude SDK messages to AgentX Stream events
- * Returns captured Claude SDK session_id via callback
- */
 async function* transformSDKMessages(
+  agentId: string,
   sdkMessages: AsyncIterable<SDKMessage>,
-  builder: StreamEventBuilder,
   onSessionIdCaptured?: (sessionId: string) => void
 ): AsyncIterable<StreamEventType> {
-  let messageId: string | null = null;
   let hasStartedMessage = false;
 
   for await (const sdkMsg of sdkMessages) {
-    // Capture Claude SDK session_id
     if (sdkMsg.session_id && onSessionIdCaptured) {
       onSessionIdCaptured(sdkMsg.session_id);
     }
 
     switch (sdkMsg.type) {
       case "system":
-        // Ignore system messages for now
         break;
 
       case "assistant":
-        // Check if this is a synthetic error message from Claude SDK
         if (sdkMsg.message.model === "<synthetic>") {
-          // Extract error text from content
           const errorText = sdkMsg.message.content
             .filter((block: any) => block.type === "text")
             .map((block: any) => block.text)
             .join(" ");
-
-          // Throw error instead of yielding as assistant message
           throw new Error(`Claude SDK error: ${errorText}`);
         }
 
-        // Normal assistant message processing
-        messageId = sdkMsg.message.id;
-        if (!hasStartedMessage && messageId) {
-          yield builder.messageStart(messageId, sdkMsg.message.model);
+        if (!hasStartedMessage) {
+          yield messageStart(agentId, sdkMsg.message.id, sdkMsg.message.model);
           hasStartedMessage = true;
         }
 
-        yield* processAssistantContent(sdkMsg, builder);
-        yield builder.messageStop();
+        yield* processAssistantContent(agentId, sdkMsg);
+        yield messageStop(agentId);
         hasStartedMessage = false;
         break;
 
       case "stream_event":
-        yield* processStreamEvent(sdkMsg, builder);
-        if (!hasStartedMessage && sdkMsg.event.type === "message_start") {
+        yield* processStreamEvent(agentId, sdkMsg);
+        if (sdkMsg.event.type === "message_start") {
           hasStartedMessage = true;
         }
         if (sdkMsg.event.type === "message_stop") {
@@ -374,223 +409,123 @@ async function* transformSDKMessages(
         break;
 
       case "result":
-        // Check if SDK returned an error
         if (sdkMsg.subtype !== "success") {
           throw new Error(`Claude SDK error: ${sdkMsg.subtype}`);
         }
         break;
 
       case "user":
-        // Handle tool result blocks from Claude SDK
         if (sdkMsg.message && Array.isArray(sdkMsg.message.content)) {
           for (const block of sdkMsg.message.content) {
             if (block.type === "tool_result") {
-              // Tool execution result from Claude SDK
-              yield builder.toolResult(block.tool_use_id, block.content, block.is_error || false);
+              yield toolResult(agentId, block.tool_use_id, block.content, block.is_error || false);
             }
           }
         }
         break;
-
-      default:
-        logger.warn("Unknown SDK message type:", sdkMsg);
     }
   }
 }
 
-/**
- * Get or create driver state for this driver definition
- */
-function getDriverState(definition: any, config: ClaudeSDKDriverConfig): DriverState {
-  if (!driverStates.has(definition)) {
-    const state: DriverState = {
+// ============================================================================
+// Driver State Management
+// ============================================================================
+
+function getOrCreateState(agentId: string): DriverState {
+  if (!driverStates.has(agentId)) {
+    driverStates.set(agentId, {
       promptSubject: new Subject<SDKUserMessage>(),
       responseSubject: new Subject<SDKMessage>(),
       claudeQuery: null,
       abortController: new AbortController(),
       sessionMap: new Map(),
       isInitialized: false,
-      config,
-      agentId: `claude_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-    };
-    driverStates.set(definition, state);
+    });
   }
-  return driverStates.get(definition)!;
+  return driverStates.get(agentId)!;
 }
 
-/**
- * ClaudeSDKDriver - Built with defineDriver
- *
- * Uses Streaming Input Mode for optimal performance:
- * - onInit: Start Claude SDK process once
- * - sendMessage: Push messages to queue (SDK stays alive)
- * - onDestroy: Cleanup resources
- */
-export const ClaudeSDKDriver = defineDriver<ClaudeSDKDriverConfig>({
+async function initializeState(
+  state: DriverState,
+  agentId: string,
+  config: ClaudeSDKDriverConfig
+): Promise<void> {
+  if (state.isInitialized) return;
+
+  logger.info("Initializing ClaudeSDKDriver", { agentId });
+
+  const options = buildOptions(config, state.abortController);
+  const promptStream = observableToAsyncIterable(state.promptSubject);
+
+  state.claudeQuery = query({
+    prompt: promptStream,
+    options,
+  });
+
+  state.isInitialized = true;
+
+  // Background listener
+  (async () => {
+    try {
+      for await (const sdkMsg of state.claudeQuery!) {
+        state.responseSubject.next(sdkMsg);
+      }
+      state.responseSubject.complete();
+    } catch (error) {
+      logger.error("Background listener error", { error });
+      state.responseSubject.error(error);
+    }
+  })();
+
+  logger.info("ClaudeSDKDriver initialized", { agentId });
+}
+
+// ============================================================================
+// ClaudeSDKDriver
+// ============================================================================
+
+export const ClaudeSDKDriver: AgentDriver<ClaudeSDKDriverConfig> = {
   name: "ClaudeSDK",
+  description: "Claude AI SDK integration using Streaming Input Mode",
 
-  onInit: async (config) => {
-    const state = getDriverState(ClaudeSDKDriver, config);
+  async *receive(
+    message: UserMessage,
+    context: AgentContext<ClaudeSDKDriverConfig>
+  ): AsyncIterable<StreamEventType> {
+    const { agentId, ...config } = context;
+    const state = getOrCreateState(agentId);
 
-    if (state.isInitialized) {
-      logger.debug("Already initialized (process reused)");
-      return;
-    }
+    await initializeState(state, agentId, config);
 
-    logger.info("========================================");
-    logger.info("STREAMING INPUT MODE ENABLED");
-    logger.info("Claude SDK process will start ONCE and stay alive");
-    logger.info("========================================");
-    logger.info("Configuration:", {
-      model: config.model || "default",
-      baseUrl: config.baseUrl || "default",
-      cwd: config.cwd || "default",
-      permissionMode: config.permissionMode || "default",
-      maxTurns: config.maxTurns || "unlimited",
-      mcpServers: config.mcpServers ? Object.keys(config.mcpServers).join(", ") : "none",
-      systemPrompt: config.systemPrompt
-        ? typeof config.systemPrompt === "string"
-          ? config.systemPrompt.substring(0, 50) + (config.systemPrompt.length > 50 ? "..." : "")
-          : "preset"
-        : "default",
-    });
-    logger.info("========================================");
+    const sessionId = agentId;
+    const sdkUserMessage = buildSDKUserMessage(message, sessionId);
 
-    // Get stored Claude SDK session ID (if exists)
-    const frameworkSessionId = config.sessionId;
-    const claudeSessionId = frameworkSessionId
-      ? state.sessionMap.get(frameworkSessionId)
-      : undefined;
+    logger.debug("Sending message", { agentId, content: buildPrompt(message).substring(0, 80) });
+    state.promptSubject.next(sdkUserMessage);
 
-    if (claudeSessionId) {
-      logger.info(`Resuming Claude session: ${claudeSessionId}`);
-    }
-
-    // Build SDK options
-    const options = buildOptions(
-      {
-        ...config,
-        resume: claudeSessionId,
-      },
-      state.abortController
-    );
-
-    // Convert Subject to AsyncIterable for Claude SDK
-    const promptStream = observableToAsyncIterable(state.promptSubject);
-
-    // Start Claude SDK with AsyncIterable prompt (Streaming Input Mode)
-    state.claudeQuery = query({
-      prompt: promptStream,
-      options,
-    });
-
-    state.isInitialized = true;
-
-    // Start background thread to forward responses to responseSubject
-    (async () => {
-      try {
-        logger.debug("Background listener started (waiting for SDK responses)");
-        for await (const sdkMsg of state.claudeQuery!) {
-          // Capture session ID
-          if (sdkMsg.session_id && frameworkSessionId) {
-            state.sessionMap.set(frameworkSessionId, sdkMsg.session_id);
-            logger.debug(`Captured Claude session_id: ${sdkMsg.session_id}`);
-          }
-
-          // Broadcast to all subscribers
-          logger.debug(`Broadcasting SDK message (type: ${sdkMsg.type})`);
-          state.responseSubject.next(sdkMsg);
-        }
-
-        // Query completed
-        logger.info("Claude SDK query completed");
-        state.responseSubject.complete();
-      } catch (error) {
-        logger.error("Background listener error:", {
-          error: error instanceof Error ? error.message : String(error),
-        });
-        state.responseSubject.error(error);
+    const responseStream = (async function* () {
+      for await (const sdkMsg of observableToAsyncIterable(state.responseSubject)) {
+        yield sdkMsg;
+        if (sdkMsg.type === "result") break;
       }
     })();
 
-    logger.info("Streaming Input Mode initialized successfully");
-    logger.debug("Claude SDK process is now RUNNING in background");
-    logger.debug("Ready to handle messages with persistent process");
+    yield* transformSDKMessages(agentId, responseStream, (capturedSessionId) => {
+      state.sessionMap.set(agentId, capturedSessionId);
+    });
   },
+};
 
-  async *processMessage(message, config) {
-    const state = getDriverState(ClaudeSDKDriver, config);
-
-    if (!state.isInitialized || !state.claudeQuery) {
-      throw new Error("[ClaudeSDKDriver] Driver not initialized. Call onInit first.");
-    }
-
-    // 1. Normalize input to AsyncIterable
-    const messages =
-      Symbol.asyncIterator in Object(message)
-        ? (message as AsyncIterable<UserMessage>)
-        : (async function* () {
-            yield message as UserMessage;
-          })();
-
-    // 2. Create builder for this message stream
-    const builder = new StreamEventBuilder(state.agentId);
-
-    // 3. Process each message
-    for await (const msg of messages) {
-      const sessionId = config.sessionId || state.agentId;
-
-      // Build SDK user message
-      const sdkUserMessage = buildSDKUserMessage(msg, sessionId);
-      const prompt = buildPrompt(msg);
-
-      // Push to Subject (Claude SDK reads from promptSubject)
-      logger.debug("Pushing message to Subject (reusing existing process)");
-      logger.debug(`Message: ${prompt.substring(0, 80)}...`);
-      state.promptSubject.next(sdkUserMessage);
-
-      // Subscribe to responseSubject (broadcast from background thread)
-      // Auto-complete subscription after receiving result event (entire agentic flow done)
-      const responseStream = (async function* () {
-        for await (const sdkMsg of observableToAsyncIterable(state.responseSubject)) {
-          yield sdkMsg;
-
-          // Only stop after result event (entire exchange complete, including tool calls)
-          // Do NOT stop after message_stop - that's just one turn, tool calls need multiple turns
-          if (sdkMsg.type === "result") {
-            logger.debug("Result received, stopping this subscription");
-            break;
-          }
-        }
-      })();
-
-      // Transform SDK messages to Stream events
-      yield* transformSDKMessages(responseStream, builder, (capturedSessionId) => {
-        if (config.sessionId && capturedSessionId) {
-          state.sessionMap.set(config.sessionId, capturedSessionId);
-        }
-      });
-    }
-  },
-
-  onDestroy: async () => {
-    logger.info("Destroying driver (shutting down persistent process)...");
-    const state = driverStates.get(ClaudeSDKDriver);
-
-    if (state) {
-      // Complete Subjects to stop all async operations
-      state.promptSubject.complete();
-      state.responseSubject.complete();
-
-      // Abort SDK process
-      state.abortController.abort();
-
-      state.isInitialized = false;
-      driverStates.delete(ClaudeSDKDriver);
-      logger.debug("Claude SDK process terminated");
-      logger.debug("Streaming Input Mode disabled");
-    }
-
-    logger.info("Driver destroyed");
-  },
-});
+/**
+ * Cleanup driver state for an agent
+ */
+export function destroyClaudeDriver(agentId: string): void {
+  const state = driverStates.get(agentId);
+  if (state) {
+    state.promptSubject.complete();
+    state.responseSubject.complete();
+    state.abortController.abort();
+    driverStates.delete(agentId);
+    logger.info("ClaudeSDKDriver destroyed", { agentId });
+  }
+}

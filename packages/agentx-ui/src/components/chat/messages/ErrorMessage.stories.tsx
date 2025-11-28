@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ErrorMessage } from "./ErrorMessage";
-import type { ErrorMessage as ErrorMessageType } from "@deepractice-ai/agentx-types";
+import type { ErrorMessage as ErrorMessageType, AgentError } from "@deepractice-ai/agentx-types";
 
 const meta = {
   title: "Chat/ErrorMessage",
@@ -14,42 +14,47 @@ const meta = {
 export default meta;
 type Story = StoryObj<typeof meta>;
 
-// Base error template
+// Helper to create error messages with the new structure
 const createError = (
-  subtype: ErrorMessageType["subtype"],
-  severity: ErrorMessageType["severity"],
+  category: AgentError["category"],
+  code: string,
   message: string,
-  code?: string,
+  severity: AgentError["severity"] = "error",
   recoverable = true,
-  details?: unknown
+  cause?: Error
 ): ErrorMessageType => ({
   id: `error_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
   role: "error",
-  subtype,
-  severity,
-  message,
-  code,
-  recoverable,
-  details,
+  error: {
+    category,
+    code,
+    message,
+    severity,
+    recoverable,
+    cause,
+  } as AgentError,
   timestamp: Date.now(),
 });
 
 /**
- * System errors - WebSocket, network, infrastructure
+ * System errors - infrastructure, internal errors
  */
 export const SystemError: Story = {
   args: {
-    error: createError("system", "error", "WebSocket connection failed", "WS_ERROR", true),
+    error: createError("system", "INTERNAL_ERROR", "An internal error occurred"),
   },
 };
 
 export const SystemErrorWithDetails: Story = {
   args: {
-    error: createError("system", "error", "WebSocket connection failed", "WS_ERROR", true, {
-      url: "ws://localhost:5200/ws",
-      reason: "Connection refused",
-      stack: "Error: Connection refused\n  at WebSocket.connect (...)",
-    }),
+    error: createError(
+      "system",
+      "INTERNAL_ERROR",
+      "An internal error occurred",
+      "error",
+      true,
+      new Error("Connection refused")
+    ),
     showDetails: true,
   },
 };
@@ -58,11 +63,26 @@ export const FatalSystemError: Story = {
   args: {
     error: createError(
       "system",
+      "FATAL_ERROR",
+      "Failed to initialize agent",
       "fatal",
-      "Failed to reconnect after 5 attempts",
-      "WS_RECONNECT_FAILED",
       false
     ),
+  },
+};
+
+/**
+ * Network errors - connection, timeout
+ */
+export const NetworkError: Story = {
+  args: {
+    error: createError("network", "CONNECTION_FAILED", "Failed to connect to server"),
+  },
+};
+
+export const NetworkTimeoutError: Story = {
+  args: {
+    error: createError("network", "TIMEOUT", "Request timed out after 30 seconds", "error", true),
   },
 };
 
@@ -71,32 +91,40 @@ export const FatalSystemError: Story = {
  */
 export const LLMError: Story = {
   args: {
-    error: createError("llm", "error", "Rate limit exceeded", "RATE_LIMIT", true, {
-      retryAfter: 60,
-      limit: 50,
-      used: 51,
-    }),
-    showDetails: true,
+    error: createError("llm", "RATE_LIMITED", "Rate limit exceeded, please try again later"),
   },
 };
 
-export const LLMMaxTurnsError: Story = {
+export const LLMContextTooLongError: Story = {
   args: {
-    error: createError("llm", "error", "Maximum turns (25) exceeded", "MAX_TURNS", false, {
-      durationMs: 15234,
-      numTurns: 25,
-      totalCostUsd: 0.15,
-    }),
-    showDetails: true,
+    error: createError(
+      "llm",
+      "CONTEXT_TOO_LONG",
+      "Message exceeds maximum context length",
+      "error",
+      true
+    ),
+  },
+};
+
+export const LLMInvalidApiKeyError: Story = {
+  args: {
+    error: createError(
+      "llm",
+      "INVALID_API_KEY",
+      "Invalid API key provided",
+      "fatal",
+      false
+    ),
   },
 };
 
 /**
- * Agent errors - Agent logic errors
+ * Driver errors - agent driver issues
  */
-export const AgentError: Story = {
+export const DriverError: Story = {
   args: {
-    error: createError("agent", "error", "Invalid message format", "INVALID_MESSAGE", true),
+    error: createError("driver", "RECEIVE_FAILED", "Failed to process message"),
   },
 };
 
@@ -105,7 +133,25 @@ export const AgentError: Story = {
  */
 export const ValidationError: Story = {
   args: {
-    error: createError("validation", "error", "API key is required", "MISSING_API_KEY", false),
+    error: createError(
+      "validation",
+      "INVALID_MESSAGE",
+      "Message content cannot be empty",
+      "error",
+      true
+    ),
+  },
+};
+
+export const ValidationConfigError: Story = {
+  args: {
+    error: createError(
+      "validation",
+      "INVALID_CONFIG",
+      "API key is required",
+      "fatal",
+      false
+    ),
   },
 };
 
@@ -115,23 +161,11 @@ export const ValidationError: Story = {
 export const Warning: Story = {
   args: {
     error: createError(
-      "system",
-      "warning",
+      "network",
+      "CONNECTION_UNSTABLE",
       "Connection unstable, retrying...",
-      "WS_UNSTABLE",
+      "warning",
       true
     ),
-  },
-};
-
-/**
- * Unknown error
- */
-export const UnknownError: Story = {
-  args: {
-    error: createError("unknown", "error", "An unexpected error occurred", undefined, true, {
-      originalError: "TypeError: Cannot read property 'x' of undefined",
-    }),
-    showDetails: true,
   },
 };
