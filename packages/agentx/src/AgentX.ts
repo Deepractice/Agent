@@ -10,12 +10,15 @@
  * ```typescript
  * import { createAgentX } from "@deepractice-ai/agentx";
  *
- * // Local mode
+ * // Local mode (default)
  * const local = createAgentX();
  * const agent = local.agents.create(definition, config);
  *
  * // Remote mode
- * const remote = createAgentX({ serverUrl: "http://localhost:5200/agentx" });
+ * const remote = createAgentX({
+ *   mode: 'remote',
+ *   remote: { serverUrl: "http://localhost:5200/agentx" }
+ * });
  * const info = await remote.platform.getInfo();
  * ```
  */
@@ -25,11 +28,15 @@ import type {
   AgentXLocal,
   AgentXRemote,
   AgentXOptions,
-  AgentXLocalOptions,
   AgentXRemoteOptions,
+  CreateAgentX,
+  ProviderKey,
+  LoggerFactory,
 } from "@deepractice-ai/agentx-types";
+import { LoggerFactoryKey } from "@deepractice-ai/agentx-types";
 import { MemoryAgentContainer } from "@deepractice-ai/agentx-core";
 import { AgentEngine } from "@deepractice-ai/agentx-engine";
+import { setLoggerFactory } from "@deepractice-ai/agentx-logger";
 import {
   LocalAgentManager,
   LocalSessionManager,
@@ -40,9 +47,36 @@ import {
 } from "./managers";
 
 /**
+ * Provider registry for dependency injection
+ */
+class ProviderRegistry {
+  private providers = new Map<symbol, unknown>();
+
+  provide<T>(key: ProviderKey<T>, provider: T): void {
+    this.providers.set(key.id, provider);
+
+    // Special handling for built-in provider keys
+    if (key.id === LoggerFactoryKey.id) {
+      setLoggerFactory(provider as LoggerFactory);
+    }
+  }
+
+  resolve<T>(key: ProviderKey<T>): T | undefined {
+    return this.providers.get(key.id) as T | undefined;
+  }
+}
+
+/**
+ * Type guard for remote options
+ */
+function isRemoteOptions(options?: AgentXOptions): options is AgentXRemoteOptions {
+  return options?.mode === "remote";
+}
+
+/**
  * Create a Local AgentX instance
  */
-function createLocalAgentX(options: AgentXLocalOptions = {}): AgentXLocal {
+function createLocalAgentX(): AgentXLocal {
   // Create shared infrastructure
   const container = new MemoryAgentContainer();
   const engine = new AgentEngine();
@@ -52,18 +86,16 @@ function createLocalAgentX(options: AgentXLocalOptions = {}): AgentXLocal {
   const sessionManager = new LocalSessionManager();
   const agentManager = new LocalAgentManager(container, engine, errorManager);
 
-  // Register default error handler if provided
-  if (options.onError) {
-    errorManager.addHandler({
-      handle: (agentId, error) => options.onError!(agentId, error),
-    });
-  }
+  // Create provider registry
+  const registry = new ProviderRegistry();
 
   return {
     mode: "local",
     agents: agentManager,
     sessions: sessionManager,
     errors: errorManager,
+    provide: <T>(key: ProviderKey<T>, provider: T) => registry.provide(key, provider),
+    resolve: <T>(key: ProviderKey<T>) => registry.resolve(key),
   };
 }
 
@@ -76,8 +108,8 @@ function createLocalAgentX(options: AgentXLocalOptions = {}): AgentXLocal {
 function createRemoteAgentX(options: AgentXRemoteOptions): AgentXRemote {
   // Create HTTP client
   const http = createHttpClient({
-    baseUrl: options.serverUrl,
-    headers: options.headers,
+    baseUrl: options.remote.serverUrl,
+    headers: options.remote.headers,
   });
 
   // Create shared infrastructure (same as local)
@@ -90,48 +122,40 @@ function createRemoteAgentX(options: AgentXRemoteOptions): AgentXRemote {
   const sessionManager = new RemoteSessionManager(http);
   const platformManager = new PlatformManager(http);
 
+  // Create provider registry
+  const registry = new ProviderRegistry();
+
   return {
     mode: "remote",
     agents: agentManager,
     sessions: sessionManager,
     platform: platformManager,
+    provide: <T>(key: ProviderKey<T>, provider: T) => registry.provide(key, provider),
+    resolve: <T>(key: ProviderKey<T>) => registry.resolve(key),
   };
 }
 
 /**
  * Create a new AgentX instance
  *
- * @overload Create Local AgentX (no options or options without serverUrl)
- * @overload Create Remote AgentX (options with serverUrl)
+ * Factory function controlled by CreateAgentX type from agentx-types.
  *
  * @example
  * ```typescript
- * // Local mode
+ * // Local mode (default)
  * const local = createAgentX();
- *
- * // Local mode with error handler
- * const local = createAgentX({
- *   onError: (agentId, error) => Sentry.captureException(error)
- * });
+ * const local = createAgentX({ mode: 'local' });
  *
  * // Remote mode
  * const remote = createAgentX({
- *   serverUrl: "http://localhost:5200/agentx"
+ *   mode: 'remote',
+ *   remote: { serverUrl: "http://localhost:5200/agentx" }
  * });
  * ```
  */
-export function createAgentX(): AgentXLocal;
-export function createAgentX(options: AgentXLocalOptions): AgentXLocal;
-export function createAgentX(options: AgentXRemoteOptions): AgentXRemote;
-export function createAgentX(options?: AgentXOptions): AgentX;
-export function createAgentX(options?: AgentXOptions): AgentX {
-  if (options && "serverUrl" in options && options.serverUrl) {
-    return createRemoteAgentX({
-      serverUrl: options.serverUrl,
-      headers: options.headers,
-    });
+export const createAgentX: CreateAgentX = (options?: AgentXOptions): AgentX => {
+  if (isRemoteOptions(options)) {
+    return createRemoteAgentX(options);
   }
-  return createLocalAgentX({
-    onError: options?.onError,
-  });
-}
+  return createLocalAgentX();
+};

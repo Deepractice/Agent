@@ -18,7 +18,7 @@
  *
  * // Or create custom instance
  * const local = createAgentX();  // Local mode
- * const remote = createAgentX({ serverUrl: "http://..." });  // Remote mode
+ * const remote = createAgentX({ mode: 'remote', remote: { serverUrl: "http://..." } });  // Remote mode
  * ```
  *
  * @packageDocumentation
@@ -46,7 +46,7 @@ import { createAgentX } from "./AgentX";
  * agentx.errors.addHandler({ handle: (id, err) => ... });
  * ```
  */
-export const agentx: AgentXLocal = createAgentX();
+export const agentx: AgentXLocal = createAgentX() as AgentXLocal;
 
 // ===== Convenience Functions =====
 // These use the default agentx instance

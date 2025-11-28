@@ -1,20 +1,13 @@
 /**
- * LoggerProvider
+ * Logger - Standard logging interface
  *
- * Core logging interface (similar to SLF4J Logger).
- * Platform-agnostic logging facade that can be implemented by any logging library.
+ * Platform-agnostic logging interface that can be implemented
+ * by any logging library (console, pino, winston, etc.)
+ *
+ * Similar to SLF4J's Logger interface in Java.
  */
 
-/**
- * Log level enumeration
- */
-export enum LogLevel {
-  DEBUG = 0,
-  INFO = 1,
-  WARN = 2,
-  ERROR = 3,
-  SILENT = 4,
-}
+import type { LogLevel } from "./LogLevel";
 
 /**
  * Logging context metadata
@@ -22,14 +15,32 @@ export enum LogLevel {
 export type LogContext = Record<string, unknown>;
 
 /**
- * LoggerProvider interface
+ * Logger interface
  *
- * Main logging interface that all logger implementations must follow.
- * Similar to SLF4J's Logger interface.
+ * All logger implementations must follow this interface.
+ *
+ * @example
+ * ```typescript
+ * class PinoLogger implements Logger {
+ *   private pino: Pino.Logger;
+ *
+ *   constructor(name: string) {
+ *     this.pino = pino({ name });
+ *   }
+ *
+ *   get name() { return this.pino.name; }
+ *   get level() { return LogLevel.DEBUG; }
+ *
+ *   debug(message: string, context?: LogContext) {
+ *     this.pino.debug(context, message);
+ *   }
+ *   // ... other methods
+ * }
+ * ```
  */
-export interface LoggerProvider {
+export interface Logger {
   /**
-   * Logger name (class name or custom name)
+   * Logger name (typically class name or module path)
    */
   readonly name: string;
 

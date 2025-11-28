@@ -22,13 +22,16 @@
 // Main platform interfaces
 export type { AgentX, AgentXLocal, AgentXRemote } from "./AgentX";
 
-// Factory options and function signature
+// Factory function and options
 export type {
   AgentXOptions,
   AgentXLocalOptions,
   AgentXRemoteOptions,
   CreateAgentX,
-} from "./AgentXFactory";
+} from "./CreateAgentX";
+
+// Configuration types
+export type { RemoteConfig } from "./AgentXConfig";
 
 // Base Endpoint type
 export type { Endpoint, HttpMethod } from "./Endpoint";
@@ -70,3 +73,7 @@ export type {
   GetInfoEndpoint,
   GetHealthEndpoint,
 } from "./platform";
+
+// Provider types
+export type { ProviderKey } from "./ProviderKey";
+export { createProviderKey, LoggerFactoryKey } from "./ProviderKey";

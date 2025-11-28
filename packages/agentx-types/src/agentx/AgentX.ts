@@ -18,8 +18,10 @@
  * const agent = local.agents.create(definition, config);
  *
  * // Remote mode
- * const remote = createAgentX({ serverUrl: "http://..." });
- * const agent = await remote.agents.get("agent_123");
+ * const remote = createAgentX({
+ *   mode: 'remote',
+ *   remote: { serverUrl: "http://..." }
+ * });
  * const info = await remote.platform.getInfo();
  * ```
  */
@@ -28,6 +30,7 @@ import type { AgentManager } from "./agent";
 import type { ErrorManager } from "./error";
 import type { LocalSessionManager, RemoteSessionManager } from "./session";
 import type { PlatformManager } from "./platform";
+import type { ProviderKey } from "./ProviderKey";
 
 /**
  * Base AgentX interface (shared by Local and Remote)
@@ -37,6 +40,44 @@ interface AgentXBase {
    * Agent lifecycle management
    */
   readonly agents: AgentManager;
+
+  /**
+   * Register a provider
+   *
+   * Providers allow external implementations to be injected
+   * into the AgentX platform (e.g., LoggerFactory).
+   *
+   * @param key - Type-safe provider key
+   * @param provider - Provider implementation
+   *
+   * @example
+   * ```typescript
+   * import { LoggerFactoryKey } from "@deepractice-ai/agentx-types";
+   *
+   * agentx.provide(LoggerFactoryKey, {
+   *   getLogger(name) {
+   *     return new PinoLogger(name);
+   *   }
+   * });
+   * ```
+   */
+  provide<T>(key: ProviderKey<T>, provider: T): void;
+
+  /**
+   * Resolve a provider
+   *
+   * @param key - Type-safe provider key
+   * @returns Provider implementation or undefined if not registered
+   *
+   * @example
+   * ```typescript
+   * const factory = agentx.resolve(LoggerFactoryKey);
+   * if (factory) {
+   *   const logger = factory.getLogger("MyModule");
+   * }
+   * ```
+   */
+  resolve<T>(key: ProviderKey<T>): T | undefined;
 }
 
 /**

@@ -18,7 +18,10 @@ Given("a local AgentX instance", function (this: TestWorld) {
 });
 
 Given("a remote AgentX instance", function (this: TestWorld) {
-  this.agentx = createAgentX({ serverUrl: "http://localhost:5200/agentx" });
+  this.agentx = createAgentX({
+    mode: "remote",
+    remote: { serverUrl: "http://localhost:5200/agentx" },
+  });
 });
 
 // ===== Agent Creation =====

@@ -17,14 +17,6 @@ When("I call createAgentX()", function (this: TestWorld) {
   this.agentx = createAgentX();
 });
 
-When("I call createAgentX with onError handler", function (this: TestWorld) {
-  this.agentx = createAgentX({
-    onError: (agentId, error, event) => {
-      this.errorCalls.push({ agentId, error, event });
-    },
-  });
-});
-
 Then("I should get an AgentXLocal instance", function (this: TestWorld) {
   expect(this.agentx).toBeDefined();
   expect((this.agentx as AgentXLocal).mode).toBe("local");
@@ -60,21 +52,10 @@ Then("it should have errors manager", function (this: TestWorld) {
   expect(typeof local.errors.removeHandler).toBe("function");
 });
 
-Then("the error handler should be registered", function (this: TestWorld) {
-  // Error handler is registered internally, errorCalls array is ready
-  expect(this.errorCalls).toBeDefined();
-});
-
-Then("errors from agents should trigger the handler", async function (this: TestWorld) {
-  // This is a complex scenario - for now just verify setup
-  // Full integration test would need error triggering
-  expect((this.agentx as AgentXLocal).errors).toBeDefined();
-});
-
 // ===== Remote Mode =====
 
 When("I call createAgentX with serverUrl {string}", function (this: TestWorld, serverUrl: string) {
-  this.agentx = createAgentX({ serverUrl });
+  this.agentx = createAgentX({ mode: "remote", remote: { serverUrl } });
 });
 
 Then("I should get an AgentXRemote instance", function (this: TestWorld) {

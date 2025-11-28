@@ -1,49 +1,27 @@
 /**
- * ConsoleLogger
- *
- * Default console-based logger implementation.
- * Outputs formatted logs to console with timestamps and colors.
+ * ConsoleLogger - Default logger implementation
  */
 
-import { LoggerProvider, LogLevel, type LogContext } from "~/types";
+import type { Logger, LogContext } from "@deepractice-ai/agentx-types";
+import { LogLevel } from "@deepractice-ai/agentx-types";
 
-/**
- * ConsoleLogger options
- */
 export interface ConsoleLoggerOptions {
-  /**
-   * Minimum log level (default: INFO)
-   */
   level?: LogLevel;
-
-  /**
-   * Enable colored output (default: true for Node.js)
-   */
   colors?: boolean;
-
-  /**
-   * Enable timestamps (default: true)
-   */
   timestamps?: boolean;
 }
 
-/**
- * ConsoleLogger implementation
- *
- * Simple console-based logger with formatting support.
- */
-export class ConsoleLogger implements LoggerProvider {
+export class ConsoleLogger implements Logger {
   readonly name: string;
   readonly level: LogLevel;
   private readonly colors: boolean;
   private readonly timestamps: boolean;
 
-  // ANSI color codes
   private static readonly COLORS = {
-    DEBUG: "\x1b[36m", // Cyan
-    INFO: "\x1b[32m", // Green
-    WARN: "\x1b[33m", // Yellow
-    ERROR: "\x1b[31m", // Red
+    DEBUG: "\x1b[36m",
+    INFO: "\x1b[32m",
+    WARN: "\x1b[33m",
+    ERROR: "\x1b[31m",
     RESET: "\x1b[0m",
   };
 
@@ -98,18 +76,13 @@ export class ConsoleLogger implements LoggerProvider {
     return this.level <= LogLevel.ERROR;
   }
 
-  /**
-   * Core logging method
-   */
   private log(level: string, message: string, context?: LogContext): void {
     const parts: string[] = [];
 
-    // Timestamp
     if (this.timestamps) {
-      parts.push(this.formatTimestamp());
+      parts.push(new Date().toISOString());
     }
 
-    // Level (with color)
     if (this.colors) {
       const color = ConsoleLogger.COLORS[level as keyof typeof ConsoleLogger.COLORS];
       parts.push(`${color}${level.padEnd(5)}${ConsoleLogger.COLORS.RESET}`);
@@ -117,13 +90,9 @@ export class ConsoleLogger implements LoggerProvider {
       parts.push(level.padEnd(5));
     }
 
-    // Logger name
     parts.push(`[${this.name}]`);
-
-    // Message
     parts.push(message);
 
-    // Output
     const logLine = parts.join(" ");
     const consoleMethod = this.getConsoleMethod(level);
 
@@ -134,17 +103,6 @@ export class ConsoleLogger implements LoggerProvider {
     }
   }
 
-  /**
-   * Format timestamp
-   */
-  private formatTimestamp(): string {
-    const now = new Date();
-    return now.toISOString();
-  }
-
-  /**
-   * Get appropriate console method
-   */
   private getConsoleMethod(level: string): (...args: any[]) => void {
     switch (level) {
       case "DEBUG":
@@ -160,9 +118,6 @@ export class ConsoleLogger implements LoggerProvider {
     }
   }
 
-  /**
-   * Check if running in Node.js environment
-   */
   private isNodeEnvironment(): boolean {
     return typeof process !== "undefined" && process.versions?.node !== undefined;
   }

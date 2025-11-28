@@ -13,11 +13,6 @@ Feature: AgentX Factory
     And it should have sessions manager
     And it should have errors manager
 
-  Scenario: Create local AgentX with error handler
-    When I call createAgentX with onError handler
-    Then the error handler should be registered
-    And errors from agents should trigger the handler
-
   # ===== Remote Mode =====
 
   Scenario: Create remote AgentX instance

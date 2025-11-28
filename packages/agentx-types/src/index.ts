@@ -21,6 +21,9 @@ export type { AgentState } from "./AgentState";
 // Platform context (AgentX)
 export * from "./agentx";
 
+// Logger types
+export * from "./logger";
+
 // Agent contracts
 export * from "./agent";
 
