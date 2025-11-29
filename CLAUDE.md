@@ -19,6 +19,7 @@ This is a **pnpm monorepo** with Turborepo build orchestration:
 │   └── agentx-cli/       # CLI tool (@deepractice-ai/agent npm package)
 └── packages/
     ├── agentx-types/     # Type definitions (140+ files, zero dependencies)
+    ├── agentx-adk/       # Agent Development Kit (defineConfig, defineDriver, defineAgent)
     ├── agentx-logger/    # SLF4J-style logging facade
     ├── agentx-engine/    # Mealy Machine event processor
     ├── agentx-core/      # Agent runtime & session management
@@ -218,10 +219,12 @@ const filterInterceptor = async (event, next) => {
 
 ### Package Layering
 
-**Package Dependency Hierarchy** (corrected):
+**Package Dependency Hierarchy**:
 
 ```
-agentx-types (140+ type definitions, zero dependencies)
+agentx-types (140+ type definitions, ADK type declarations)
+    ↓
+agentx-adk (Agent Development Kit - defineConfig, defineDriver, defineAgent)
     ↓
 agentx-logger (SLF4J-style facade)
     ↓
@@ -240,7 +243,8 @@ agentx-ui (React components)
 
 | Layer | Package | Responsibility |
 |-------|---------|----------------|
-| **Types** | `agentx-types` | Pure type definitions, no runtime code |
+| **Types** | `agentx-types` | Pure type definitions, ADK type declarations |
+| **ADK** | `agentx-adk` | Development tools (defineConfig, defineDriver, defineAgent) |
 | **Logger** | `agentx-logger` | Logging facade with lazy initialization |
 | **Engine** | `agentx-engine` | Pure event processing (Mealy Machines) |
 | **Core** | `agentx-core` | Agent runtime, EventBus, Session management |
@@ -832,15 +836,16 @@ interface AgentPresenter {
 
 ```typescript
 import { createAgentX } from "@deepractice-ai/agentx";
-import { ClaudeSDKDriver } from "@deepractice-ai/agentx-claude";
+import { defineAgent } from "@deepractice-ai/agentx-adk";
+import { ClaudeDriver } from "@deepractice-ai/agentx-claude";
 
 // Create AgentX platform
 const agentx = createAgentX();
 
-// Define agent
+// Define agent using ADK
 const ClaudeAgent = defineAgent({
   name: "ClaudeAssistant",
-  driver: ClaudeSDKDriver,
+  driver: ClaudeDriver,
 });
 
 // Create agent instance
@@ -854,41 +859,67 @@ await agent.receive("Hello!");
 await agent.destroy();
 ```
 
-### Custom Driver
+### Custom Driver (ADK)
 
 ```typescript
-class MyDriver implements AgentDriver {
-  async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
-    // Yield Stream events
-    yield {
-      type: "message_start",
-      agentId: this.agentId,
-      messageId: "msg_1",
-      model: "my-model"
+import { defineConfig, defineDriver } from "@deepractice-ai/agentx-adk";
+
+// 1. Define config schema
+const myDriverConfig = defineConfig({
+  apiKey: {
+    type: "string",
+    description: "API key for my service",
+    required: true,
+    scope: "instance",
+  },
+  model: {
+    type: "string",
+    description: "Model name",
+    required: false,
+    scope: "definition",
+    default: "default-model",
+  },
+});
+
+// 2. Define driver
+export const MyDriver = defineDriver({
+  name: "MyDriver",
+  description: "My custom driver",
+  config: myDriverConfig,
+
+  create: (context) => {
+    return {
+      name: "MyDriver",
+
+      async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
+        const { apiKey, model } = context;
+
+        // Yield Stream events
+        yield {
+          type: "message_start",
+          agentId: context.agentId,
+          data: { message: { id: "msg_1", model } },
+        };
+
+        yield {
+          type: "text_delta",
+          agentId: context.agentId,
+          data: { text: "Hello" },
+        };
+
+        yield {
+          type: "message_stop",
+          agentId: context.agentId,
+          data: { stopReason: "end_turn" },
+        };
+      },
+
+      async destroy(): Promise<void> {
+        // Cleanup
+      },
     };
-
-    yield {
-      type: "text_delta",
-      agentId: this.agentId,
-      text: "Hello",
-      index: 0
-    };
-
-    yield {
-      type: "message_stop",
-      agentId: this.agentId,
-      stopReason: "end_turn"
-    };
-  }
-
-  abort(): void {
-    // Abort logic
-  }
-
-  async destroy(): Promise<void> {
-    // Cleanup
-  }
-}
+  },
+});
 ```
 
 ### Custom Presenter
@@ -911,7 +942,7 @@ class WebhookPresenter implements AgentPresenter {
 // Use presenter
 const agent = agentx.agents.create(
   defineAgent({
-    driver: ClaudeSDKDriver,
+    driver: ClaudeDriver,
     presenters: [new WebhookPresenter("https://example.com/webhook")],
   }),
   { apiKey: "xxx" }
@@ -1005,11 +1036,52 @@ pnpm dev --filter=@deepractice-ai/agentx-web
 - `StreamEventType`, `StateEventType`, `MessageEventType`, `TurnEventType` - Event hierarchy
 - `UserMessage`, `AssistantMessage`, `ToolCallMessage`, etc. - Message types
 - `AgentError` - Error taxonomy
+- ADK type declarations: `defineConfig`, `defineDriver`, `defineAgent`
 
 **Import Pattern:**
 ```typescript
 import type { Agent, StreamEventType } from "@deepractice-ai/agentx-types";
 ```
+
+### agentx-adk
+
+**Purpose**: Agent Development Kit - Development-time tools for Driver and Agent developers
+
+**Key Functions:**
+- `defineConfig(schema)` - Define reusable config schema with validation
+- `defineDriver(input)` - Create type-safe Driver with config schema
+- `defineAgent(input)` - Create Agent definition with type inference
+
+**Three-Layer Pattern:**
+```typescript
+// 1. Define config schema
+const myConfig = defineConfig({
+  apiKey: { type: "string", required: true, scope: "instance" },
+  model: { type: "string", required: false, scope: "definition", default: "gpt-4" },
+});
+
+// 2. Define driver with schema
+export const MyDriver = defineDriver({
+  name: "MyDriver",
+  config: myConfig,
+  create: (context) => ({ /* driver implementation */ }),
+});
+
+// 3. Define agent using driver
+export const MyAgent = defineAgent({
+  name: "MyAgent",
+  driver: MyDriver,  // Type-safe! Config inferred from MyDriver.schema
+});
+```
+
+**Import Pattern:**
+```typescript
+import { defineConfig, defineDriver, defineAgent } from "@deepractice-ai/agentx-adk";
+```
+
+**Who Uses This:**
+- Driver developers (creating new drivers like ClaudeDriver, OpenAIDriver)
+- Application developers (defining custom agents with specific configs)
 
 ### agentx-logger
 
@@ -1060,24 +1132,31 @@ import { AgentInstance } from "@deepractice-ai/agentx-core";
 
 **Key Components:**
 - `createAgentX()` - Platform factory
-- `defineAgent()` - Agent definition helper
 - Server: `createAgentXHandler()`, `SSEConnection`
 - Client: `SSEDriver`, `createRemoteAgent()`
 
 **Import Pattern:**
 ```typescript
-import { createAgentX, defineAgent } from "@deepractice-ai/agentx";
+import { createAgentX } from "@deepractice-ai/agentx";
+import { createRemoteAgent } from "@deepractice-ai/agentx/client";
 ```
+
+**Note**: `defineAgent()` has been moved to `agentx-adk` package.
 
 ### agentx-claude
 
 **Purpose**: Claude SDK driver integration (Node.js only)
 
-**Key Class:**
-- `ClaudeSDKDriver` - Wraps `@anthropic-ai/claude-agent-sdk`
+**Key Exports:**
+- `ClaudeDriver` - ADK-based driver (recommended)
+- `ClaudeSDKDriver` - Legacy class-based driver (backward compatibility)
+- `claudeConfig` - Config schema for Claude driver
 
 **Import Pattern:**
 ```typescript
+import { ClaudeDriver } from "@deepractice-ai/agentx-claude";
+
+// Legacy (backward compatibility)
 import { ClaudeSDKDriver } from "@deepractice-ai/agentx-claude";
 ```
 
@@ -1110,14 +1189,16 @@ import { Chat, UserMessage } from "@deepractice-ai/agentx-ui";
 **Package Dependency Flow:**
 
 ```
-types → logger → engine → core → agentx → claude → ui
+types → adk → logger → engine → core → agentx → claude → ui
 ```
 
 **Critical Design Decisions:**
 
-- ✅ Server forwards Stream events only (NOT assembled messages)
-- ✅ Browser has full AgentEngine (complete reassembly)
-- ✅ State is implementation detail (Mealy philosophy)
-- ✅ Errors flow through event system (not just exceptions)
-- ✅ Logger facade with lazy initialization
-- ✅ Immutable sessions and messages
+- ✅ **ADK Pattern**: Development tools (adk) separate from runtime (agentx)
+- ✅ **Server forwards Stream events only** (NOT assembled messages)
+- ✅ **Browser has full AgentEngine** (complete reassembly)
+- ✅ **State is implementation detail** (Mealy philosophy)
+- ✅ **Errors flow through event system** (not just exceptions)
+- ✅ **Logger facade with lazy initialization**
+- ✅ **defineConfig → defineDriver → defineAgent** (three-layer pattern)
+- ✅ **Immutable sessions and messages**
