@@ -25,7 +25,7 @@
   "scripts": {
     "dev": "vite",
     "dev:server": "tsx --watch dev-tools/server/dev-server.ts",
-    "dev:full": "concurrently \"pnpm dev:server\" \"pnpm storybook\"",
+    "dev:full": "concurrently \"pnpm dev:server\" \"storybook dev -p 6007\"",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
     "typecheck": "tsc --noEmit",
@@ -49,6 +49,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@deepractice-ai/agentx-adk": "workspace:*",
     "@deepractice-ai/agentx-claude": "workspace:*",
     "@storybook/addon-a11y": "^8.4.7",
     "@storybook/addon-essentials": "^8.4.7",

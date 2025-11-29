@@ -43,6 +43,9 @@ export type { ToolUseContentBlockStopEvent } from "./ToolUseContentBlockStopEven
 export type { ToolCallEvent } from "./ToolCallEvent";
 export type { ToolResultEvent } from "./ToolResultEvent";
 
+// Interrupt event
+export type { InterruptedStreamEvent } from "./InterruptedStreamEvent";
+
 /**
  * Union of all Stream events
  */
@@ -57,4 +60,5 @@ export type StreamEventType =
   | import("./InputJsonDeltaEvent").InputJsonDeltaEvent
   | import("./ToolUseContentBlockStopEvent").ToolUseContentBlockStopEvent
   | import("./ToolCallEvent").ToolCallEvent
-  | import("./ToolResultEvent").ToolResultEvent;
+  | import("./ToolResultEvent").ToolResultEvent
+  | import("./InterruptedStreamEvent").InterruptedStreamEvent;

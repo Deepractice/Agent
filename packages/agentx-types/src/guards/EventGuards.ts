@@ -11,9 +11,9 @@ import type { MessageEventType } from "~/event/message";
 import type { TurnEventType } from "~/event/turn";
 
 /**
- * State event type names
+ * State event type names (single source of truth)
  */
-const STATE_EVENT_TYPES = new Set([
+export const STATE_EVENT_TYPE_NAMES = [
   "agent_initializing",
   "agent_ready",
   "agent_destroyed",
@@ -22,28 +22,55 @@ const STATE_EVENT_TYPES = new Set([
   "conversation_thinking",
   "conversation_responding",
   "conversation_end",
+  "conversation_interrupted",
   "tool_planned",
   "tool_executing",
   "tool_completed",
   "tool_failed",
   "error_occurred",
-]);
+] as const;
+
+const STATE_EVENT_TYPES = new Set<string>(STATE_EVENT_TYPE_NAMES);
 
 /**
- * Message event type names
+ * Message event type names (single source of truth)
  */
-const MESSAGE_EVENT_TYPES = new Set([
+export const MESSAGE_EVENT_TYPE_NAMES = [
   "user_message",
   "assistant_message",
   "tool_call_message",
   "tool_result_message",
   "error_message",
-]);
+] as const;
+
+const MESSAGE_EVENT_TYPES = new Set<string>(MESSAGE_EVENT_TYPE_NAMES);
 
 /**
- * Turn event type names
+ * Turn event type names (single source of truth)
  */
-const TURN_EVENT_TYPES = new Set(["turn_request", "turn_response"]);
+export const TURN_EVENT_TYPE_NAMES = ["turn_request", "turn_response"] as const;
+
+const TURN_EVENT_TYPES = new Set<string>(TURN_EVENT_TYPE_NAMES);
+
+/**
+ * Stream event type names (single source of truth)
+ */
+export const STREAM_EVENT_TYPE_NAMES = [
+  "message_start",
+  "message_delta",
+  "message_stop",
+  "text_content_block_start",
+  "text_delta",
+  "text_content_block_stop",
+  "tool_use_content_block_start",
+  "input_json_delta",
+  "tool_use_content_block_stop",
+  "tool_call",
+  "tool_result",
+  "interrupted",
+] as const;
+
+const STREAM_EVENT_TYPES = new Set<string>(STREAM_EVENT_TYPE_NAMES);
 
 /**
  * Check if event is a StateEvent
@@ -67,13 +94,8 @@ export function isTurnEvent(event: AgentOutput): event is TurnEventType {
 }
 
 /**
- * Check if event is a StreamEvent (not State, Message, or Turn)
+ * Check if event is a StreamEvent
  */
 export function isStreamEvent(event: AgentOutput): event is StreamEventType {
-  return (
-    "type" in event &&
-    !STATE_EVENT_TYPES.has(event.type) &&
-    !MESSAGE_EVENT_TYPES.has(event.type) &&
-    !TURN_EVENT_TYPES.has(event.type)
-  );
+  return "type" in event && STREAM_EVENT_TYPES.has(event.type);
 }

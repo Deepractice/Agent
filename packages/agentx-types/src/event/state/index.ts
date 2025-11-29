@@ -28,6 +28,7 @@ export type { ConversationStartStateEvent } from "./ConversationStartStateEvent"
 export type { ConversationThinkingStateEvent } from "./ConversationThinkingStateEvent";
 export type { ConversationRespondingStateEvent } from "./ConversationRespondingStateEvent";
 export type { ConversationEndStateEvent } from "./ConversationEndStateEvent";
+export type { ConversationInterruptedStateEvent } from "./ConversationInterruptedStateEvent";
 
 // ===== Tool Lifecycle States =====
 export type { ToolPlannedStateEvent, ToolUseData } from "./ToolPlannedStateEvent";
@@ -53,6 +54,7 @@ export type StateEventType =
   | import("./ConversationThinkingStateEvent").ConversationThinkingStateEvent
   | import("./ConversationRespondingStateEvent").ConversationRespondingStateEvent
   | import("./ConversationEndStateEvent").ConversationEndStateEvent
+  | import("./ConversationInterruptedStateEvent").ConversationInterruptedStateEvent
   | import("./ToolPlannedStateEvent").ToolPlannedStateEvent
   | import("./ToolExecutingStateEvent").ToolExecutingStateEvent
   | import("./ToolCompletedStateEvent").ToolCompletedStateEvent

@@ -27,6 +27,7 @@ export type {
   ToolUseContentBlockStopEvent,
   ToolCallEvent,
   ToolResultEvent,
+  InterruptedStreamEvent,
 } from "./stream";
 
 // ===== State Layer =====
@@ -41,6 +42,7 @@ export type {
   ConversationThinkingStateEvent,
   ConversationRespondingStateEvent,
   ConversationEndStateEvent,
+  ConversationInterruptedStateEvent,
   ToolPlannedStateEvent,
   ToolUseData,
   ToolExecutingStateEvent,

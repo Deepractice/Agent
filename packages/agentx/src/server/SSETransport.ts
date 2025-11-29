@@ -4,40 +4,12 @@
  * Handles SSE connections for streaming agent events to clients.
  */
 
-import type {
-  Agent,
-  AgentOutput,
-  StreamEventType,
-  Unsubscribe,
-} from "@deepractice-ai/agentx-types";
+import type { Agent, Unsubscribe, StreamEventType } from "@deepractice-ai/agentx-types";
+import { isStreamEvent } from "@deepractice-ai/agentx-types";
 import type { TransportConnection, ConnectionState } from "./types";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 
 const logger = createLogger("agentx/SSETransport");
-
-/**
- * Stream event type names for filtering
- */
-const STREAM_EVENT_TYPES = new Set([
-  "message_start",
-  "message_delta",
-  "message_stop",
-  "text_content_block_start",
-  "text_delta",
-  "text_content_block_stop",
-  "tool_use_content_block_start",
-  "input_json_delta",
-  "tool_use_content_block_stop",
-  "tool_call",
-  "tool_result",
-]);
-
-/**
- * Check if an event is a Stream event
- */
-function isStreamEvent(event: AgentOutput): event is StreamEventType {
-  return STREAM_EVENT_TYPES.has(event.type);
-}
 
 /**
  * SSE Connection implementation

@@ -54,6 +54,10 @@ export function defineDriver<S extends ConfigSchema>(
       return this.instance.receive(message);
     }
 
+    interrupt(): void {
+      this.instance.interrupt();
+    }
+
     async destroy(): Promise<void> {
       await this.instance.destroy();
     }

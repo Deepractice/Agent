@@ -13,7 +13,6 @@
  * - on(handler): Subscribe to all events
  * - on(type, handler): Subscribe to specific event type
  * - on(types, handler): Subscribe to multiple event types
- * - abort(): System/error forced stop
  * - interrupt(): User-initiated stop
  * - destroy(): Clean up resources
  */
@@ -330,12 +329,10 @@ export interface Agent {
   intercept(interceptor: AgentInterceptor): Unsubscribe;
 
   /**
-   * Abort - System/error forced stop
-   */
-  abort(): void;
-
-  /**
    * Interrupt - User-initiated stop
+   *
+   * Stops the current operation gracefully.
+   * The agent will return to idle state.
    */
   interrupt(): void;
 

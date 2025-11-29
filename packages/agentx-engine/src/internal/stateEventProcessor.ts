@@ -30,9 +30,11 @@ import type {
   ToolUseContentBlockStartEvent,
   ToolUseContentBlockStopEvent,
   ToolCallEvent,
+  InterruptedStreamEvent,
   ConversationStartStateEvent,
   ConversationRespondingStateEvent,
   ConversationEndStateEvent,
+  ConversationInterruptedStateEvent,
   ToolPlannedStateEvent,
   ToolExecutingStateEvent,
 } from "@deepractice-ai/agentx-types";
@@ -77,6 +79,7 @@ export type StateEventProcessorOutput =
   | ConversationStartStateEvent
   | ConversationRespondingStateEvent
   | ConversationEndStateEvent
+  | ConversationInterruptedStateEvent
   | ToolPlannedStateEvent
   | ToolExecutingStateEvent;
 
@@ -131,6 +134,9 @@ export const stateEventProcessor: Processor<
 
     case "tool_call":
       return handleToolCall(context, input);
+
+    case "interrupted":
+      return handleInterrupted(context, input);
 
     default:
       // Pass through unhandled events
@@ -322,6 +328,37 @@ function handleToolCall(
 ): [StateEventProcessorContext, StateEventProcessorOutput[]] {
   // Pass through - no State Event
   return [context, []];
+}
+
+/**
+ * Handle interrupted event
+ *
+ * Emits: conversation_interrupted
+ *
+ * This event signals that the operation was interrupted by user or system.
+ * The conversation will transition back to idle state.
+ */
+function handleInterrupted(
+  context: Readonly<StateEventProcessorContext>,
+  event: InterruptedStreamEvent
+): [StateEventProcessorContext, StateEventProcessorOutput[]] {
+  logger.debug("interrupted event received", { reason: event.data.reason });
+
+  const conversationInterruptedEvent: ConversationInterruptedStateEvent = {
+    type: "conversation_interrupted",
+    uuid: generateId(),
+    agentId: event.agentId,
+    timestamp: event.timestamp,
+    transition: {
+      reason: event.data.reason,
+      trigger: "interrupted",
+    },
+    data: {
+      reason: event.data.reason,
+    },
+  };
+
+  return [context, [conversationInterruptedEvent]];
 }
 
 /**

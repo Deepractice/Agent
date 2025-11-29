@@ -365,6 +365,9 @@ importers:
         specifier: ^5.0.2
         version: 5.0.8(@types/react@18.3.26)(react@18.3.1)
     devDependencies:
+      '@deepractice-ai/agentx-adk':
+        specifier: workspace:*
+        version: link:../agentx-adk
       '@deepractice-ai/agentx-claude':
         specifier: workspace:*
         version: link:../agentx-claude

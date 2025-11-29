@@ -21,9 +21,9 @@ export type {
   PickByScope,
   RequiredFields,
   OptionalFields,
-  OverridableDefinitionFields,
-  NonOverridableDefinitionFields,
+  InstanceOverridableDefinitionFields,
   DefinitionConfig,
   InstanceConfig,
+  ContainerConfig,
   FullConfig,
 } from "./ConfigInference";

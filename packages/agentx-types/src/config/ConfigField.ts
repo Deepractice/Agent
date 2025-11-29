@@ -2,10 +2,13 @@
  * Configuration field scope
  *
  * Determines where the field can be set:
+ * - `container`: Provided by AgentX container/runtime (e.g., cwd, env, abortController)
  * - `definition`: Set in defineAgent() (agent template level)
  * - `instance`: Set in create() (agent instance level)
+ *
+ * Priority: instance > definition > container
  */
-export type ConfigScope = "definition" | "instance";
+export type ConfigScope = "container" | "definition" | "instance";
 
 /**
  * Field type
@@ -24,34 +27,27 @@ export interface ConfigFieldDefinition {
   type: FieldType;
 
   /**
-   * Scope: where this field can be set
+   * Scopes: where this field can be provided
    *
+   * Multiple scopes can be specified. Priority is always: instance > definition > container
+   *
+   * - `container`: Provided by AgentX container/runtime (automatically injected)
    * - `definition`: Set in defineAgent() (shared by all instances)
    * - `instance`: Set in create() (per-instance)
-   */
-  scope: ConfigScope;
-
-  /**
-   * Whether this definition-scope field can be overridden at instance creation
-   *
-   * Only applicable when scope is "definition".
    *
    * @example
    * ```typescript
-   * model: {
-   *   scope: "definition",
-   *   overridable: true  // Can override in create()
-   * }
+   * // Only instance can provide (e.g., apiKey)
+   * scopes: ["instance"]
    *
-   * allowedTools: {
-   *   scope: "definition",
-   *   overridable: false  // Cannot override (security policy)
-   * }
+   * // Definition provides default, instance can override
+   * scopes: ["instance", "definition"]
+   *
+   * // Only container provides (e.g., cwd, abortController)
+   * scopes: ["container"]
    * ```
-   *
-   * @default true
    */
-  overridable?: boolean;
+  scopes: ConfigScope[];
 
   /**
    * Whether field is required
@@ -67,13 +63,6 @@ export interface ConfigFieldDefinition {
    * Field description
    */
   description?: string;
-
-  /**
-   * Environment variable name to load from
-   *
-   * @example "ANTHROPIC_API_KEY"
-   */
-  fromEnv?: string;
 
   /**
    * Whether this field contains sensitive data

@@ -26,3 +26,11 @@ export {
 
 // Event guards
 export { isStateEvent, isMessageEvent, isTurnEvent, isStreamEvent } from "./EventGuards";
+
+// Event type name constants (single source of truth)
+export {
+  STATE_EVENT_TYPE_NAMES,
+  MESSAGE_EVENT_TYPE_NAMES,
+  TURN_EVENT_TYPE_NAMES,
+  STREAM_EVENT_TYPE_NAMES,
+} from "./EventGuards";

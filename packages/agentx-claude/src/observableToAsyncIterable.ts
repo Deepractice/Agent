@@ -62,17 +62,23 @@ export async function* observableToAsyncIterable<T>(observable: Observable<T>): 
       if (queue.length > 0) {
         yield queue.shift()!;
       } else if (!done) {
-        yield await new Promise<T>((res, rej) => {
-          resolve = (result) => {
-            if (result.done) {
+        // Wait for next value or completion
+        const result = await new Promise<{ value: T; done: false } | { done: true }>((res, rej) => {
+          resolve = (iterResult) => {
+            if (iterResult.done) {
               done = true;
-              res(undefined as any);
+              res({ done: true });
             } else {
-              res(result.value);
+              res({ value: iterResult.value, done: false });
             }
           };
           reject = rej;
         });
+
+        // Only yield if we got a value, not on completion
+        if (!result.done) {
+          yield result.value;
+        }
       }
     }
   } finally {

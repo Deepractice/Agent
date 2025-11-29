@@ -1,4 +1,5 @@
 import { defineConfig } from "tsup";
+import path from "path";
 
 export default defineConfig({
   entry: {
@@ -17,4 +18,9 @@ export default defineConfig({
   splitting: false,
   treeshake: true,
   target: "es2020",
+  esbuildOptions(options) {
+    options.alias = {
+      "~": path.resolve(__dirname, "./src"),
+    };
+  },
 });

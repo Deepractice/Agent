@@ -108,8 +108,10 @@ async function startDevServer() {
   // Import AgentX modules
   const { createAgentX } = await import("@deepractice-ai/agentx");
   const { createAgentXHandler } = await import("@deepractice-ai/agentx/server");
-  const { ClaudeDriver } = await import("@deepractice-ai/agentx-claude");
   const { LoggerFactoryKey } = await import("@deepractice-ai/agentx-types");
+
+  // Import agent definition
+  const { ClaudeAgent, defaultAgentConfig } = await import("./agent.js");
 
   // Create AgentX instance
   const agentx = createAgentX();
@@ -117,13 +119,6 @@ async function startDevServer() {
   // Provide custom LoggerFactory
   agentx.provide(LoggerFactoryKey, {
     getLogger: (name: string) => createFileLogger(name, logFilePath),
-  });
-
-  // Define Claude agent
-  const ClaudeAgent = agentx.agents.define({
-    name: "ClaudeAgent",
-    description: "Claude-powered assistant for UI development testing",
-    driver: ClaudeDriver,
   });
 
   // Create handler with dynamic agent creation enabled
@@ -137,8 +132,7 @@ async function startDevServer() {
   (handler as any).registerDefinition("ClaudeAgent", ClaudeAgent, {
     apiKey,
     baseUrl,
-    model: "claude-sonnet-4-20250514",
-    systemPrompt: "You are a helpful AI assistant for UI development testing.",
+    ...defaultAgentConfig,
   });
 
   // Create HTTP server

@@ -124,6 +124,12 @@ export async function* transformSDKMessages(
   };
 
   for await (const sdkMsg of sdkMessages) {
+    // Guard against undefined message (can happen when stream is aborted)
+    if (!sdkMsg) {
+      logger.debug("Received undefined message, stream likely aborted", { agentId });
+      break;
+    }
+
     // Log raw SDK message for debugging
     logger.debug("[RAW SDK MESSAGE]", {
       type: sdkMsg.type,

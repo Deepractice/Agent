@@ -70,6 +70,14 @@ export interface AgentDriver {
   receive(message: UserMessage): AsyncIterable<StreamEventType>;
 
   /**
+   * Interrupt the current operation
+   *
+   * Stops the current receive() operation gracefully.
+   * Driver should abort any ongoing requests and clean up state.
+   */
+  interrupt(): void;
+
+  /**
    * Destroy the driver and cleanup resources
    *
    * Called when the Agent is destroyed.

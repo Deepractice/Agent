@@ -11,15 +11,14 @@
  * const claudeConfig = defineConfig({
  *   apiKey: {
  *     type: "string",
- *     scope: "instance",
+ *     scopes: ["instance", "container"],
  *     required: true,
- *     fromEnv: "ANTHROPIC_API_KEY",
  *     sensitive: true,
  *     description: "Anthropic API key",
  *   },
  *   model: {
  *     type: "string",
- *     scope: "definition",
+ *     scopes: ["instance", "definition"],
  *     default: "claude-sonnet-4-20250514",
  *     description: "Model identifier",
  *   },

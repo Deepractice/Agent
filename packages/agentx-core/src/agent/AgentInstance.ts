@@ -179,6 +179,23 @@ export class AgentInstance implements Agent {
       throw new Error("[Agent] Agent has been destroyed");
     }
 
+    // Prevent concurrent receive() calls - state machine prevents concurrent operations
+    if (this.state !== "idle") {
+      logger.warn("Receive called while agent is busy", {
+        agentId: this.agentId,
+        currentState: this.state,
+      });
+      const error = this.errorClassifier.create(
+        "system",
+        "AGENT_BUSY",
+        `Agent is busy (state: ${this.state}), please wait for current operation to complete`,
+        false
+      );
+      const errorEvent = this.errorClassifier.createEvent(error);
+      this.notifyHandlers(errorEvent);
+      throw new Error(`[Agent] Agent is busy (state: ${this.state})`);
+    }
+
     const userMessage: UserMessage =
       typeof message === "string"
         ? {
@@ -204,6 +221,30 @@ export class AgentInstance implements Agent {
    */
   private async executeMiddlewareChain(message: UserMessage): Promise<void> {
     await this.middlewareChain.execute(message, (msg) => this.doReceive(msg));
+  }
+
+  /**
+   * Process a single stream event through the engine
+   *
+   * Used by:
+   * - doReceive() - normal message flow
+   * - AgentInterrupter - interrupt event injection
+   *
+   * @param streamEvent - Stream event to process
+   */
+  private processStreamEvent(streamEvent: any): void {
+    // 1. Process through engine
+    const outputs = this.engine.process(this.agentId, streamEvent);
+
+    // 2. Send outputs to presenters
+    for (const output of outputs) {
+      this.presentOutput(output);
+    }
+
+    // 3. Notify handlers (StateEvents will update StateMachine)
+    for (const output of outputs) {
+      this.notifyHandlers(output);
+    }
   }
 
   /**
@@ -239,17 +280,7 @@ export class AgentInstance implements Agent {
 
       // 2. Process each stream event through engine
       for await (const streamEvent of streamEvents) {
-        const outputs = this.engine.process(this.agentId, streamEvent);
-
-        // 3. Send outputs to presenters
-        for (const output of outputs) {
-          this.presentOutput(output);
-        }
-
-        // 4. Notify handlers (StateEvents will update StateMachine)
-        for (const output of outputs) {
-          this.notifyHandlers(output);
-        }
+        this.processStreamEvent(streamEvent);
       }
 
       logger.debug("Message processing completed", {
@@ -470,19 +501,22 @@ export class AgentInstance implements Agent {
   }
 
   /**
-   * Abort - System/error forced stop
-   */
-  abort(): void {
-    this.stateMachine.reset();
-    // TODO: Signal driver to stop
-  }
-
-  /**
    * Interrupt - User-initiated stop
+   *
+   * Stops the current operation gracefully.
+   * Flow:
+   * 1. Call driver.interrupt() to abort active requests
+   * 2. Driver yields InterruptedStreamEvent
+   * 3. Event flows through engine pipeline
+   * 4. StateEventProcessor generates conversation_interrupted
+   * 5. StateMachine transitions to idle state
+   * 6. UI receives state change notification
    */
   interrupt(): void {
-    this.stateMachine.reset();
-    // TODO: Signal driver to stop gracefully
+    logger.debug("User interrupt requested", { agentId: this.agentId, currentState: this.state });
+
+    // Simply call driver.interrupt() - driver will yield InterruptedStreamEvent
+    this.driver.interrupt();
   }
 
   /**

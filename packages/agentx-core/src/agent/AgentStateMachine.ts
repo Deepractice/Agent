@@ -119,6 +119,8 @@ export class AgentStateMachine {
         return "responding";
       case "conversation_end":
         return "idle";
+      case "conversation_interrupted":
+        return "idle"; // Return to idle on interrupt
 
       // Tool lifecycle
       case "tool_planned":

@@ -26,9 +26,6 @@
  * @packageDocumentation
  */
 
-// ==================== Modern ADK-based Driver ====================
+// ==================== ADK-based Driver ====================
 export { ClaudeDriver } from "./ClaudeDriver";
 export { claudeSDKConfig as claudeConfig } from "./ClaudeConfig";
-
-// ==================== Legacy (Backward Compatibility) ====================
-export { ClaudeSDKDriver } from "./drivers/ClaudeSDKDriver";

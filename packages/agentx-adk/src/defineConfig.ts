@@ -50,15 +50,42 @@ function generateMarkdownDocs(schema: ConfigSchema): string {
   lines.push("# Configuration");
   lines.push("");
 
-  // Group by scope
+  // Group by primary scope (first scope in array)
+  const containerFields: [string, ConfigFieldDefinition][] = [];
   const definitionFields: [string, ConfigFieldDefinition][] = [];
   const instanceFields: [string, ConfigFieldDefinition][] = [];
 
   for (const [key, field] of Object.entries(schema)) {
-    if (field.scope === "definition") {
+    const primaryScope = field.scopes[0];
+    if (primaryScope === "container") {
+      containerFields.push([key, field]);
+    } else if (primaryScope === "definition") {
       definitionFields.push([key, field]);
     } else {
       instanceFields.push([key, field]);
+    }
+  }
+
+  // Container scope
+  if (containerFields.length > 0) {
+    lines.push("## Container Configuration");
+    lines.push("");
+    lines.push("Provided by AgentX container/runtime (automatically injected):");
+    lines.push("");
+
+    for (const [key, field] of containerFields) {
+      lines.push(`### \`${key}\``);
+      lines.push("");
+      if (field.description) {
+        lines.push(field.description);
+        lines.push("");
+      }
+      lines.push(`- **Type**: \`${field.type}\``);
+      lines.push(`- **Scopes**: ${field.scopes.join(", ")}`);
+      if (field.default !== undefined) {
+        lines.push(`- **Default**: \`${JSON.stringify(field.default)}\``);
+      }
+      lines.push("");
     }
   }
 
@@ -77,15 +104,13 @@ function generateMarkdownDocs(schema: ConfigSchema): string {
         lines.push("");
       }
       lines.push(`- **Type**: \`${field.type}\``);
+      lines.push(`- **Scopes**: ${field.scopes.join(", ")}`);
       lines.push(`- **Required**: ${field.required ? "Yes" : "No"}`);
-      if (field.overridable) {
-        lines.push("- **Overridable**: Yes (can be overridden at instance creation)");
+      if (field.scopes.includes("instance")) {
+        lines.push("- **Can override at instance**: Yes");
       }
       if (field.default !== undefined) {
         lines.push(`- **Default**: \`${JSON.stringify(field.default)}\``);
-      }
-      if (field.fromEnv) {
-        lines.push(`- **Environment Variable**: \`${field.fromEnv}\``);
       }
       lines.push("");
     }
@@ -106,12 +131,10 @@ function generateMarkdownDocs(schema: ConfigSchema): string {
         lines.push("");
       }
       lines.push(`- **Type**: \`${field.type}\``);
+      lines.push(`- **Scopes**: ${field.scopes.join(", ")}`);
       lines.push(`- **Required**: ${field.required ? "Yes" : "No"}`);
       if (field.default !== undefined) {
         lines.push(`- **Default**: \`${JSON.stringify(field.default)}\``);
-      }
-      if (field.fromEnv) {
-        lines.push(`- **Environment Variable**: \`${field.fromEnv}\``);
       }
       if (field.sensitive) {
         lines.push("- **Sensitive**: Yes (should not be logged)");

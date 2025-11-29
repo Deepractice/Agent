@@ -118,7 +118,7 @@ export function AgentStatusIndicator({
   const spinners = ["●", "●", "●", "○"];
 
   const handleAbort = () => {
-    agent.abort();
+    agent.interrupt();
   };
 
   if (!isLoading) {

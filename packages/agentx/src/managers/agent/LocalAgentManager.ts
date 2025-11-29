@@ -17,6 +17,7 @@ import { AgentInstance, createAgentContext } from "@deepractice-ai/agentx-core";
 import type { AgentEngine } from "@deepractice-ai/agentx-engine";
 import type { ErrorManager } from "../error/ErrorManager";
 import { createLogger } from "@deepractice-ai/agentx-logger";
+import { mergeAgentConfig } from "~/config/AgentConfigMerger";
 
 const logger = createLogger("agentx/LocalAgentManager");
 
@@ -39,8 +40,12 @@ export class LocalAgentManager implements IAgentManager {
   ): Agent {
     logger.debug("Creating agent", { definitionName: definition.name });
 
-    // Create context
-    const agentContext = createAgentContext(config);
+    // Merge configuration: definition.config + instanceConfig
+    // Container-level config (env vars, cwd, etc.) can be added here if needed
+    const mergedConfig = mergeAgentConfig(definition, config);
+
+    // Create context with merged config
+    const agentContext = createAgentContext(mergedConfig);
 
     // Create agent instance
     const agent = new AgentInstance(definition, agentContext, this.engine);

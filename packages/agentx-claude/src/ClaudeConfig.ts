@@ -2,6 +2,8 @@
  * ClaudeSDKDriver Configuration Schema
  *
  * Defines the user-facing configuration for ClaudeSDKDriver using ADK.
+ *
+ * Configuration priority: instance > definition > container
  */
 
 import { defineConfig } from "@deepractice-ai/agentx-adk";
@@ -10,31 +12,45 @@ import { defineConfig } from "@deepractice-ai/agentx-adk";
  * Claude SDK Driver configuration schema
  */
 export const claudeSDKConfig = defineConfig({
+  // ==================== Authentication & Connection ====================
+
   /**
    * Anthropic API key
    *
    * Required for authentication with Anthropic's API.
-   * Can be provided via ANTHROPIC_API_KEY environment variable.
+   * Container can provide via process.env.ANTHROPIC_API_KEY.
    */
   apiKey: {
     type: "string",
-    scope: "instance",
+    scopes: ["instance", "container"],
     required: true,
-    fromEnv: "ANTHROPIC_API_KEY",
     sensitive: true,
     description: "Anthropic API key for authentication",
   },
 
   /**
+   * Anthropic API base URL
+   *
+   * Custom API endpoint (e.g., for relay servers).
+   * Container can provide via process.env.ANTHROPIC_BASE_URL.
+   */
+  baseUrl: {
+    type: "string",
+    scopes: ["instance", "container"],
+    description: "Anthropic API base URL for custom endpoints",
+  },
+
+  // ==================== Model Configuration ====================
+
+  /**
    * Claude model identifier
    *
    * Defaults to claude-sonnet-4-20250514.
-   * Can be overridden at instance creation.
+   * Can be set at definition or overridden at instance creation.
    */
   model: {
     type: "string",
-    scope: "definition",
-    overridable: true,
+    scopes: ["instance", "definition"],
     default: "claude-sonnet-4-20250514",
     description: "Claude model identifier",
   },
@@ -47,58 +63,104 @@ export const claudeSDKConfig = defineConfig({
    */
   systemPrompt: {
     type: "string",
-    scope: "definition",
-    overridable: true,
+    scopes: ["instance", "definition"],
     description: "System prompt for the agent",
   },
 
+  // ==================== Conversation Control ====================
+
   /**
-   * Maximum output tokens
+   * Maximum conversation turns
    *
-   * Limits the length of the AI's response.
+   * Limits the number of turns to prevent infinite loops.
    */
-  maxTokens: {
+  maxTurns: {
     type: "number",
-    scope: "definition",
-    overridable: true,
-    default: 4096,
-    description: "Maximum number of tokens in the response",
+    scopes: ["instance", "definition"],
+    default: 25,
+    description: "Maximum conversation turns before stopping",
   },
 
   /**
-   * Temperature (0.0 - 1.0)
+   * Maximum thinking tokens
    *
-   * Controls randomness in responses.
-   * Lower values are more deterministic.
+   * Maximum tokens allocated for extended thinking process.
    */
-  temperature: {
+  maxThinkingTokens: {
     type: "number",
-    scope: "definition",
-    overridable: true,
-    description: "Sampling temperature (0.0 - 1.0)",
+    scopes: ["instance", "definition"],
+    description: "Maximum tokens for extended thinking",
+  },
+
+  // ==================== Permission Control ====================
+
+  /**
+   * Permission mode
+   *
+   * Controls how tool execution permissions are handled.
+   */
+  permissionMode: {
+    type: "string",
+    scopes: ["instance", "definition"],
+    default: "default",
+    description: "Permission mode: default, acceptEdits, bypassPermissions, or plan",
+  },
+
+  // ==================== Container-provided Configuration ====================
+
+  /**
+   * Current working directory
+   *
+   * Provided by AgentX container/runtime.
+   */
+  cwd: {
+    type: "string",
+    scopes: ["container"],
+    description: "Current working directory (provided by container)",
   },
 
   /**
-   * Top-p sampling
+   * Environment variables
    *
-   * Alternative to temperature for controlling randomness.
+   * Provided by AgentX container/runtime.
    */
-  topP: {
-    type: "number",
-    scope: "definition",
-    overridable: true,
-    description: "Top-p sampling parameter",
+  env: {
+    type: "object",
+    scopes: ["container"],
+    description: "Environment variables (provided by container)",
   },
 
   /**
-   * Top-k sampling
+   * Abort controller
    *
-   * Limits the number of tokens considered for each step.
+   * Provided by AgentX container/runtime for cancellation.
    */
-  topK: {
-    type: "number",
-    scope: "definition",
-    overridable: true,
-    description: "Top-k sampling parameter",
+  abortController: {
+    type: "object",
+    scopes: ["container"],
+    description: "Abort controller for cancellation (provided by container)",
+  },
+
+  /**
+   * JavaScript executable
+   *
+   * Provided by AgentX container/runtime.
+   */
+  executable: {
+    type: "string",
+    scopes: ["container"],
+    description: "JavaScript runtime executable (provided by container)",
+  },
+
+  /**
+   * Include partial messages
+   *
+   * Whether to include partial/streaming message events.
+   */
+  includePartialMessages: {
+    type: "boolean",
+    scopes: ["container"],
+    default: true,
+    description: "Include partial message events in stream",
   },
 } as const);

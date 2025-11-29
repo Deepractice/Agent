@@ -22,25 +22,8 @@
  */
 
 import type { UserMessage, StreamEventType } from "@deepractice-ai/agentx-types";
+import { STREAM_EVENT_TYPE_NAMES } from "@deepractice-ai/agentx-types";
 import { defineConfig, defineDriver } from "@deepractice-ai/agentx-adk";
-
-/**
- * Stream event types that we listen for
- */
-const STREAM_EVENT_TYPES = [
-  "message_start",
-  "message_delta",
-  "message_stop",
-  "text_content_block_start",
-  "text_delta",
-  "text_content_block_stop",
-  "tool_use_content_block_start",
-  "input_json_delta",
-  "tool_use_content_block_stop",
-  "tool_call",
-  "tool_result",
-  "error_message",
-] as const;
 
 /**
  * Persistent SSE connection manager
@@ -106,7 +89,7 @@ class PersistentSSEConnection {
     };
 
     // Listen for all stream event types
-    for (const eventType of STREAM_EVENT_TYPES) {
+    for (const eventType of STREAM_EVENT_TYPE_NAMES) {
       this.eventSource.addEventListener(eventType, handleEvent as any);
     }
 
@@ -215,20 +198,20 @@ const sseConfig = defineConfig({
     type: "string",
     description: "Server base URL (e.g., http://localhost:5200/agentx)",
     required: true,
-    scope: "instance",
+    scopes: ["instance"],
   },
   agentId: {
     type: "string",
     description: "Agent ID on the server",
     required: true,
-    scope: "instance",
+    scopes: ["instance"],
   },
   headers: {
     type: "object",
     description:
       "Optional request headers (for auth, etc.). Note: EventSource doesn't support custom headers natively. For auth, consider using cookies or URL params.",
     required: false,
-    scope: "instance",
+    scopes: ["instance"],
   },
 });
 
@@ -277,6 +260,22 @@ export const SSEDriver = defineDriver({
 
         // 3. Yield events from persistent SSE connection
         yield* connection.createIterator();
+      },
+
+      interrupt(): void {
+        const { serverUrl, agentId, headers = {} } = context;
+
+        // Call server interrupt endpoint (fire-and-forget)
+        const interruptUrl = `${serverUrl}/agents/${agentId}/interrupt`;
+        fetch(interruptUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...headers,
+          },
+        }).catch(() => {
+          // Ignore errors - interrupt is best-effort
+        });
       },
 
       async destroy(): Promise<void> {
