@@ -27,11 +27,6 @@ import {
   type SDKMessage,
   type SDKUserMessage,
   type SDKPartialAssistantMessage,
-  type Options,
-  type CanUseTool,
-  type HookEvent,
-  type HookCallbackMatcher,
-  type SdkPluginConfig,
   type Query,
 } from "@anthropic-ai/claude-agent-sdk";
 import type {
@@ -52,46 +47,10 @@ import type {
 } from "@deepractice-ai/agentx-types";
 import { createLogger } from "@deepractice-ai/agentx-logger";
 import { observableToAsyncIterable } from "~/utils/observableToAsyncIterable";
+import { buildOptions } from "./ClaudeSDKOptions";
 import { Subject } from "rxjs";
 
 const logger = createLogger("ClaudeSDKDriver");
-
-/**
- * Configuration for ClaudeSDKDriver
- */
-export interface ClaudeSDKDriverConfig {
-  apiKey?: string;
-  baseUrl?: string;
-  cwd?: string;
-  env?: Record<string, string>;
-  model?: string;
-  fallbackModel?: string;
-  systemPrompt?: string | { type: "preset"; preset: "claude_code"; append?: string };
-  maxTurns?: number;
-  maxThinkingTokens?: number;
-  continue?: boolean;
-  resume?: string;
-  forkSession?: boolean;
-  permissionMode?: "default" | "acceptEdits" | "bypassPermissions" | "plan";
-  canUseTool?: CanUseTool;
-  permissionPromptToolName?: string;
-  allowedTools?: string[];
-  disallowedTools?: string[];
-  additionalDirectories?: string[];
-  mcpServers?: Record<string, any>;
-  strictMcpConfig?: boolean;
-  agents?: Record<string, any>;
-  settingSources?: ("user" | "project" | "local")[];
-  plugins?: SdkPluginConfig[];
-  executable?: "bun" | "deno" | "node";
-  executableArgs?: string[];
-  pathToClaudeCodeExecutable?: string;
-  includePartialMessages?: boolean;
-  stderr?: (data: string) => void;
-  hooks?: Partial<Record<HookEvent, HookCallbackMatcher[]>>;
-  extraArgs?: Record<string, string | null>;
-  abortController?: AbortController;
-}
 
 // ============================================================================
 // Event Builders (inline, no external dependency)
@@ -212,60 +171,6 @@ function buildSDKUserMessage(message: UserMessage, sessionId: string): SDKUserMe
     parent_tool_use_id: null,
     session_id: sessionId,
   };
-}
-
-function buildOptions(
-  config: ClaudeSDKDriverConfig,
-  abortController: AbortController
-): Options {
-  const options: Options = {
-    abortController,
-    includePartialMessages: config.includePartialMessages ?? true,
-  };
-
-  if (config.cwd) options.cwd = config.cwd;
-
-  const env: Record<string, string> = {
-    ...(process.env as Record<string, string>),
-    ...config.env,
-  };
-  if (config.baseUrl) env.ANTHROPIC_BASE_URL = config.baseUrl;
-  if (config.apiKey) env.ANTHROPIC_API_KEY = config.apiKey;
-  options.env = env;
-
-  if (!config.executable) {
-    options.executable = process.execPath as any;
-  }
-
-  if (config.model) options.model = config.model;
-  if (config.fallbackModel) options.fallbackModel = config.fallbackModel;
-  if (config.systemPrompt) options.systemPrompt = config.systemPrompt;
-  if (config.maxTurns) options.maxTurns = config.maxTurns;
-  if (config.maxThinkingTokens) options.maxThinkingTokens = config.maxThinkingTokens;
-  if (config.continue !== undefined) options.continue = config.continue;
-  if (config.resume) options.resume = config.resume;
-  if (config.forkSession) options.forkSession = config.forkSession;
-  if (config.permissionMode) options.permissionMode = config.permissionMode;
-  if (config.canUseTool) options.canUseTool = config.canUseTool;
-  if (config.permissionPromptToolName)
-    options.permissionPromptToolName = config.permissionPromptToolName;
-  if (config.allowedTools) options.allowedTools = config.allowedTools;
-  if (config.disallowedTools) options.disallowedTools = config.disallowedTools;
-  if (config.additionalDirectories) options.additionalDirectories = config.additionalDirectories;
-  if (config.mcpServers) options.mcpServers = config.mcpServers;
-  if (config.strictMcpConfig !== undefined) options.strictMcpConfig = config.strictMcpConfig;
-  if (config.agents) options.agents = config.agents;
-  if (config.settingSources) options.settingSources = config.settingSources;
-  if (config.plugins) options.plugins = config.plugins;
-  if (config.executable) options.executable = config.executable;
-  if (config.executableArgs) options.executableArgs = config.executableArgs;
-  if (config.pathToClaudeCodeExecutable)
-    options.pathToClaudeCodeExecutable = config.pathToClaudeCodeExecutable;
-  if (config.stderr) options.stderr = config.stderr;
-  if (config.hooks) options.hooks = config.hooks;
-  if (config.extraArgs) options.extraArgs = config.extraArgs;
-
-  return options;
 }
 
 // ============================================================================
@@ -432,12 +337,14 @@ async function* transformSDKMessages(
  *
  * Each instance is bound to a single Agent and manages its own
  * connection to the Claude SDK.
+ *
+ * Accepts any config via AgentContext and adapts it to Claude SDK Options internally.
  */
 export class ClaudeSDKDriver implements AgentDriver {
   readonly name = "ClaudeSDK";
   readonly description = "Claude AI SDK integration using Streaming Input Mode";
 
-  private readonly context: AgentContext<ClaudeSDKDriverConfig>;
+  private readonly context: AgentContext;
   private readonly promptSubject: Subject<SDKUserMessage>;
   private readonly responseSubject: Subject<SDKMessage>;
   private readonly abortController: AbortController;
@@ -445,7 +352,7 @@ export class ClaudeSDKDriver implements AgentDriver {
   private claudeQuery: Query | null = null;
   private isInitialized = false;
 
-  constructor(context: AgentContext<ClaudeSDKDriverConfig>) {
+  constructor(context: AgentContext) {
     this.context = context;
     this.promptSubject = new Subject<SDKUserMessage>();
     this.responseSubject = new Subject<SDKMessage>();
@@ -461,10 +368,11 @@ export class ClaudeSDKDriver implements AgentDriver {
   private async initialize(): Promise<void> {
     if (this.isInitialized) return;
 
-    const { agentId, ...config } = this.context;
+    const agentId = this.context.agentId;
     logger.info("Initializing ClaudeSDKDriver", { agentId });
 
-    const options = buildOptions(config, this.abortController);
+    // Convert AgentContext to Claude SDK Options
+    const options = buildOptions(this.context, this.abortController);
     const promptStream = observableToAsyncIterable(this.promptSubject);
 
     this.claudeQuery = query({
@@ -530,7 +438,9 @@ export class ClaudeSDKDriver implements AgentDriver {
   }
 
   /**
-   * Create a configured driver class with custom options
+   * Create a configured driver class with custom default options
+   *
+   * Allows pre-configuring driver defaults that will be merged with user config.
    *
    * @example
    * ```typescript
@@ -543,16 +453,14 @@ export class ClaudeSDKDriver implements AgentDriver {
    * });
    * ```
    */
-  static withConfig(
-    extraConfig: Partial<ClaudeSDKDriverConfig>
-  ): DriverClass<ClaudeSDKDriverConfig> {
+  static withConfig(extraConfig: Partial<Record<string, unknown>>): DriverClass {
     return class ConfiguredClaudeSDKDriver extends ClaudeSDKDriver {
-      constructor(context: AgentContext<ClaudeSDKDriverConfig>) {
+      constructor(context: AgentContext) {
         // Merge extra config with context config
         const mergedContext = {
           ...context,
           ...extraConfig,
-        };
+        } as AgentContext;
         super(mergedContext);
       }
     };

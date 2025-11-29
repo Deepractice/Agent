@@ -28,8 +28,8 @@
 
 // ==================== Driver ====================
 export { ClaudeSDKDriver as ClaudeDriver } from "./drivers/ClaudeSDKDriver";
-export type { ClaudeSDKDriverConfig as ClaudeDriverConfig } from "./drivers/ClaudeSDKDriver";
+export type { ClaudeSDKOptions as ClaudeDriverConfig } from "./drivers/ClaudeSDKOptions";
 
 // Legacy exports (deprecated, use ClaudeDriver instead)
 export { ClaudeSDKDriver } from "./drivers/ClaudeSDKDriver";
-export type { ClaudeSDKDriverConfig } from "./drivers/ClaudeSDKDriver";
+export type { ClaudeSDKOptions as ClaudeSDKDriverConfig } from "./drivers/ClaudeSDKOptions";
