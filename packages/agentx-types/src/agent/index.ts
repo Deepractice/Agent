@@ -1,24 +1,48 @@
 /**
- * Agent Domain Types
+ * Agent Contract Layer
  *
- * All types related to AI agent's internal world:
- * - Agent data structure
- * - Messages (how agent communicates)
- * - MCP tools (agent capabilities)
- * - LLM configuration (agent's brain)
- * - Type guards (type safety)
+ * All interfaces and types defining the Agent system contracts.
+ * Implementation is in @deepractice-ai/agentx-core.
  */
 
-export type { Agent } from "./Agent";
+// Core interface
+export type {
+  Agent,
+  StateChange,
+  StateChangeHandler,
+  EventHandlerMap,
+  ReactHandlerMap,
+} from "./Agent";
 
-// Message types
-export * from "./message";
+// Driver & Presenter
+export type { AgentDriver, DriverClass } from "./AgentDriver";
+export type { AgentPresenter } from "./AgentPresenter";
 
-// MCP types
-export * from "./mcp";
+// Definition & Container
+export type { AgentDefinition } from "./AgentDefinition";
+export type { AgentContainer } from "./AgentContainer";
 
-// LLM types
-export * from "./llm";
+// Context
+export type { AgentContext, AgentContextBase } from "./AgentContext";
 
-// Type guards
-export * from "./guards";
+// Output
+export type { AgentOutput } from "./AgentOutput";
+
+// Lifecycle & State
+export type { AgentLifecycle } from "./AgentLifecycle";
+
+// Event handling
+export type { AgentEventHandler, Unsubscribe } from "./AgentEventHandler";
+
+// Middleware & Interceptor
+export type { AgentMiddleware, AgentMiddlewareNext } from "./AgentMiddleware";
+export type { AgentInterceptor, AgentInterceptorNext } from "./AgentInterceptor";
+
+// Event Bus
+export type {
+  EventHandler,
+  SubscribeOptions,
+  EventProducer,
+  EventConsumer,
+  AgentEventBus,
+} from "./AgentEventBus";

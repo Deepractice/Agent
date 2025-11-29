@@ -1,54 +1,31 @@
 /**
  * @deepractice-ai/agentx-logger
  *
- * SLF4J-style logging facade for AgentX with decorator support.
+ * SLF4J-style logging facade for AgentX.
  *
  * @example
  * ```typescript
- * import { Logger, LoggerFactory, LogLevel } from "@deepractice-ai/agentx-logger";
+ * import { createLogger } from "@deepractice-ai/agentx-logger";
  *
- * // Decorator style (recommended)
- * class MyService {
- *   @Logger()
- *   private logger!: LoggerProvider;
- *
- *   doSomething() {
- *     this.logger.info("Hello from MyService");
- *   }
- * }
- *
- * // Factory style (SLF4J-like)
- * class MyOtherService {
- *   private logger = LoggerFactory.getLogger(MyOtherService);
- *
- *   doSomething() {
- *     this.logger.info("Hello from factory");
- *   }
- * }
- *
- * // Configure globally
- * LoggerFactory.configure({
- *   defaultLevel: LogLevel.DEBUG,
- *   consoleOptions: { colors: true }
- * });
+ * const logger = createLogger("MyModule");
+ * logger.info("Hello");
+ * logger.debug("Debug info", { context: "data" });
  * ```
- *
- * @packageDocumentation
  */
 
-// ==================== Types ====================
-export type { LoggerProvider, LogContext } from "./types";
-export { LogLevel } from "./types";
+// Re-export types from agentx-types
+export { LogLevel } from "@deepractice-ai/agentx-types";
+export type {
+  Logger,
+  LogContext,
+  LoggerFactory as LoggerFactoryInterface,
+} from "@deepractice-ai/agentx-types";
 
-// ==================== Core Implementations ====================
-export { ConsoleLogger } from "./core";
-export type { ConsoleLoggerOptions } from "./core";
-export { NoOpLogger } from "./core";
-export { LoggerFactory } from "./core";
-export type { LoggerFactoryConfig } from "./core";
-
-// ==================== API ====================
-export { Logger } from "./api";
-export type { LoggerOptions } from "./api";
-export { createLogger } from "./api";
-export type { CreateLoggerOptions } from "./api";
+// Core exports
+export { ConsoleLogger, type ConsoleLoggerOptions } from "./ConsoleLogger";
+export {
+  LoggerFactory,
+  type LoggerFactoryConfig,
+  setLoggerFactory,
+  createLogger,
+} from "./LoggerFactory";

@@ -9,10 +9,12 @@ export default {
   safelist: [
     // Semantic color patterns
     {
-      pattern: /^(bg|text|border|ring)-(background|foreground|card|popover|primary|secondary|muted|accent|destructive|success|warning|info)(-foreground)?$/,
+      pattern:
+        /^(bg|text|border|ring)-(background|foreground|card|popover|primary|secondary|muted|accent|destructive|success|warning|info)(-foreground)?$/,
     },
     {
-      pattern: /^(hover|focus|active):(bg|text|border)-(background|foreground|card|popover|primary|secondary|muted|accent|destructive)(-foreground)?$/,
+      pattern:
+        /^(hover|focus|active):(bg|text|border)-(background|foreground|card|popover|primary|secondary|muted|accent|destructive)(-foreground)?$/,
     },
   ],
   theme: {

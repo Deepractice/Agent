@@ -1,17 +1,16 @@
 /**
  * AgentX Web Server
  *
- * Simple HTTP + WebSocket server:
- * - WebSocket server for AI agent communication (using agentx-framework)
- * - Static file serving (production only)
+ * Uses createSSEServer from agentx with static file serving fallback
  */
 
-import { createWebSocketServer, ClaudeAgent } from "@deepractice-ai/agentx-framework";
+import { ClaudeAgent } from "@deepractice-ai/agentx-sdk-claude";
 import { dirname, join, extname } from "path";
 import { fileURLToPath } from "url";
 import { readFile, stat } from "fs/promises";
 import type { IncomingMessage, ServerResponse } from "http";
 import { mcpServers } from "./mcp.js";
+import { createAgentServer } from "@deepractice-ai/agentx/server";
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -102,8 +101,15 @@ async function startServer() {
   // Agent runtime configuration (AGENT_*)
   const workDir = process.env.AGENT_WORK_DIR;
   const systemPrompt = process.env.AGENT_SYSTEM_PROMPT || "You are a helpful AI assistant.";
-  const maxTurns = process.env.AGENT_MAX_TURNS ? parseInt(process.env.AGENT_MAX_TURNS, 10) : undefined;
-  const permissionMode = (process.env.AGENT_PERMISSION_MODE as "default" | "acceptEdits" | "bypassPermissions" | "plan") || "bypassPermissions";
+  const maxTurns = process.env.AGENT_MAX_TURNS
+    ? parseInt(process.env.AGENT_MAX_TURNS, 10)
+    : undefined;
+  const permissionMode =
+    (process.env.AGENT_PERMISSION_MODE as
+      | "default"
+      | "acceptEdits"
+      | "bypassPermissions"
+      | "plan") || "bypassPermissions";
 
   // Validate required environment variables
   if (!apiKey) {
@@ -142,55 +148,53 @@ async function startServer() {
   console.log(`   Working Directory: ${workDir}`);
   console.log(`   Permission Mode: ${permissionMode}`);
   if (systemPrompt !== "You are a helpful AI assistant.") {
-    console.log(`   System Prompt: ${systemPrompt.substring(0, 50)}${systemPrompt.length > 50 ? "..." : ""}`);
+    console.log(
+      `   System Prompt: ${systemPrompt.substring(0, 50)}${systemPrompt.length > 50 ? "..." : ""}`
+    );
   }
   if (maxTurns !== undefined) {
     console.log(`   Max Turns: ${maxTurns}`);
   }
   console.log();
 
-  // Create WebSocket Server using agentx-framework
-  const wsServer = createWebSocketServer({
-    // Agent definition
-    agentDefinition: ClaudeAgent,
+  // Agent config
+  const agentConfig = {
+    apiKey,
+    baseUrl,
+    model,
+    cwd: workDir,
+    systemPrompt,
+    maxTurns,
+    permissionMode,
+    mcpServers: Object.keys(mcpServers).length > 0 ? mcpServers : undefined,
+  };
 
-    // Agent config factory
-    createAgentConfig: () => ({
-      apiKey,
-      baseUrl,
-      model,
-      cwd: workDir,
-      systemPrompt,
-      maxTurns,
-      permissionMode,
-      mcpServers: Object.keys(mcpServers).length > 0 ? mcpServers : undefined,
-    }),
-
-    // Server configuration
+  // Create agent server with static file fallback
+  const server = createAgentServer(ClaudeAgent, {
     port: PORT,
     host: HOST,
-    path: "/ws",
-
-    // Static file serving (production only)
-    onRequest: isDev ? undefined : serveStaticFile,
+    config: agentConfig,
+    fallbackHandler: !isDev ? serveStaticFile : undefined,
   });
 
-  console.log(`✅ WebSocket Server: ws://${HOST}:${PORT}/ws`);
+  await server.start();
+
+  console.log(`✅ SSE Endpoint: http://${HOST}:${PORT}/api/sse/:sessionId`);
   console.log();
   console.log("💡 Ready!");
   if (isDev) {
     console.log("   Frontend: http://localhost:5173 (Vite dev server)");
-    console.log("   Backend:  ws://localhost:5200/ws (WebSocket only)");
+    console.log("   Backend:  http://localhost:5200 (API only)");
   } else {
     console.log(`   Frontend: http://localhost:${PORT}`);
-    console.log(`   WebSocket: ws://localhost:${PORT}/ws`);
+    console.log(`   API:      http://localhost:${PORT}/api`);
   }
   console.log();
 
   // Graceful shutdown
   const shutdown = async () => {
     console.log("\n\n🛑 Shutting down...");
-    await wsServer.close();
+    await server.stop();
     console.log("✅ Server stopped");
     process.exit(0);
   };

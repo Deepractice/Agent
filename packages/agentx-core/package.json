@@ -1,7 +1,7 @@
 {
   "name": "@deepractice-ai/agentx-core",
   "version": "0.1.0",
-  "description": "Core implementation for AgentX ecosystem - Platform-agnostic business logic",
+  "description": "Core implementations for AgentX ecosystem - Session management and agent registry",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -20,18 +20,18 @@
   "scripts": {
     "build": "tsup",
     "dev": "tsup --watch",
-    "clean": "rm -rf dist test-results",
+    "clean": "rm -rf dist",
     "typecheck": "tsc --noEmit",
     "test": "vitest run",
-    "test:watch": "vitest",
-    "test:ui": "vitest --ui"
+    "test:watch": "vitest"
   },
   "keywords": [
     "ai",
     "agent",
     "core",
+    "session",
+    "registry",
     "agentx",
-    "claude",
     "deepractice"
   ],
   "author": "Deepractice AI Team",
@@ -45,7 +45,7 @@
   },
   "homepage": "https://github.com/Deepractice/Agent#readme",
   "dependencies": {
-    "@deepractice-ai/agentx-event": "workspace:*",
+    "@deepractice-ai/agentx-engine": "workspace:*",
     "@deepractice-ai/agentx-logger": "workspace:*",
     "@deepractice-ai/agentx-types": "workspace:*",
     "rxjs": "^7.8.2"
@@ -53,10 +53,9 @@
   "devDependencies": {
     "@deepracticex/vitest-cucumber": "^1.4.3",
     "@types/node": "^24.9.2",
-    "@vitest/ui": "^3.2.4",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",
-    "vitest": "^3.2.4"
+    "vitest": "^3.2.3"
   },
   "publishConfig": {
     "access": "public"

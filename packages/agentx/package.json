@@ -1,0 +1,77 @@
+{
+  "name": "@deepractice-ai/agentx",
+  "version": "0.1.0",
+  "description": "Define, Run, Scale AI Agents - The Open Source Agent Platform",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./server": {
+      "types": "./dist/server/index.d.ts",
+      "import": "./dist/server/index.js",
+      "require": "./dist/server/index.cjs"
+    },
+    "./server/adapters": {
+      "types": "./dist/server/adapters/index.d.ts",
+      "import": "./dist/server/adapters/index.js",
+      "require": "./dist/server/adapters/index.cjs"
+    },
+    "./server/adapters/express": {
+      "types": "./dist/server/adapters/express.d.ts",
+      "import": "./dist/server/adapters/express.js",
+      "require": "./dist/server/adapters/express.cjs"
+    },
+    "./server/adapters/hono": {
+      "types": "./dist/server/adapters/hono.d.ts",
+      "import": "./dist/server/adapters/hono.js",
+      "require": "./dist/server/adapters/hono.cjs"
+    },
+    "./server/adapters/next": {
+      "types": "./dist/server/adapters/next.d.ts",
+      "import": "./dist/server/adapters/next.js",
+      "require": "./dist/server/adapters/next.cjs"
+    },
+    "./client": {
+      "types": "./dist/client/index.d.ts",
+      "import": "./dist/client/index.js",
+      "require": "./dist/client/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist test-results",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "dependencies": {
+    "@deepractice-ai/agentx-adk": "workspace:*",
+    "@deepractice-ai/agentx-core": "workspace:*",
+    "@deepractice-ai/agentx-engine": "workspace:*",
+    "@deepractice-ai/agentx-logger": "workspace:*",
+    "@deepractice-ai/agentx-types": "workspace:*",
+    "ky": "^1.14.0"
+  },
+  "devDependencies": {
+    "@deepracticex/vitest-cucumber": "^1.4.3",
+    "@types/node": "^24.9.2",
+    "@vitest/ui": "^3.2.4",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

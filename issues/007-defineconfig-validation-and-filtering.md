@@ -48,12 +48,15 @@ const validatedConfig = defineConfig.create(userConfig);
 // All other fields filtered out
 
 // Approach 2: Explicit "passthrough" option
-config: defineConfig({
-  apiKey: { type: "string", required: true },
-  model: { type: "string" },
-}, {
-  strict: true  // Only allow defined fields
-})
+config: defineConfig(
+  {
+    apiKey: { type: "string", required: true },
+    model: { type: "string" },
+  },
+  {
+    strict: true, // Only allow defined fields
+  }
+);
 ```
 
 ## Root Cause
@@ -120,8 +123,8 @@ create: (input: Partial<InferConfig<TSchema>>) => {
 ```typescript
 export function defineConfig<TSchema extends ConfigSchema>(
   schema: TSchema,
-  options?: { strict?: boolean }  // Default: false for backward compatibility
-): DefinedConfig<TSchema>
+  options?: { strict?: boolean } // Default: false for backward compatibility
+): DefinedConfig<TSchema>;
 ```
 
 ## Impact
@@ -129,6 +132,7 @@ export function defineConfig<TSchema extends ConfigSchema>(
 **Breaking Change**: Yes, if we enforce strict filtering by default.
 
 **Migration Path**:
+
 1. Add all currently-used fields to `ClaudeAgent` schema (already done in latest code)
 2. Update other agents to include all fields in their schemas
 3. Enable strict filtering

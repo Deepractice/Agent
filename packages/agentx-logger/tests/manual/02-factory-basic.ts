@@ -36,6 +36,6 @@ dbLogger.debug("Connection pool size: 10");
 // Run tests
 const paymentService = new PaymentService();
 paymentService.processPayment(99.99);
-paymentService.refundPayment(50.00);
+paymentService.refundPayment(50.0);
 
 console.log("\n✅ Test 2 passed\n");

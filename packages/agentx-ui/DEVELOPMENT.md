@@ -5,6 +5,7 @@
 **We develop UI components in a REAL environment, not with mocked data.**
 
 This means:
+
 - ✅ Real WebSocket connections to actual Claude API
 - ✅ Real streaming responses
 - ✅ Real error handling
@@ -45,6 +46,7 @@ pnpm dev:server
 ```
 
 This starts:
+
 - WebSocket Server on `ws://localhost:5200/ws`
 - Connected to real Claude API
 - With logging enabled for debugging
@@ -52,6 +54,7 @@ This starts:
 - WebSocket clients auto-reconnect on restart
 
 **Output:**
+
 ```
 🚀 Starting AgentX Development Server...
 
@@ -76,6 +79,7 @@ pnpm storybook
 ```
 
 This starts:
+
 - Storybook on `http://localhost:6006`
 - Hot Module Replacement (HMR) enabled
 - All components available for testing
@@ -139,19 +143,19 @@ export const WithLogging = () => {
   const [agent] = useState(() =>
     createAgent(
       {
-        wsUrl: 'ws://localhost:5200/ws',
+        wsUrl: "ws://localhost:5200/ws",
         sessionId: `story-debug-${Date.now()}`,
       },
       {
         enableLogging: true,
-        loggerTag: 'Story',
-        logLevel: 'debug',
+        loggerTag: "Story",
+        logLevel: "debug",
       }
     )
-  )
+  );
 
   // Component implementation...
-}
+};
 ```
 
 ### Real Chat Example
@@ -224,24 +228,28 @@ export const LiveChat = () => {
 ## 🎨 Benefits of This Approach
 
 ### 1. **Real Behavior**
+
 - See actual streaming speed
 - Experience real network delays
 - Catch edge cases (connection drops, timeouts)
 - Test with actual Claude responses (not predictable mocks)
 
 ### 2. **Immediate Feedback**
+
 - UI responds to real events
 - See actual error messages
 - Test loading states naturally
 - Validate UX with real data
 
 ### 3. **E2E Validation**
+
 - Full stack working together
 - WebSocket protocol verified
 - Event handling tested
 - Integration issues caught early
 
 ### 4. **Better Developer Experience**
+
 - No need to maintain mock data
 - Stories reflect production behavior
 - Easier to debug (real logs)
@@ -259,27 +267,27 @@ ANTHROPIC_API_KEY=sk-ant-xxx
 
 ### Server Configuration
 
-Edit `server/dev-server.ts` to customize:
+Edit `dev-tools/server/dev-server.ts` to customize:
 
 ```typescript
 const agent = createAgent(
   {
     apiKey: process.env.ANTHROPIC_API_KEY!,
-    model: 'claude-sonnet-4-20250514',
-    systemPrompt: 'Custom system prompt for testing',
+    model: "claude-sonnet-4-20250514",
+    systemPrompt: "Custom system prompt for testing",
   },
   {
-    enableLogging: true,    // Show request/response logs
-    prettyLogs: true,       // Colored output
-    logLevel: 'debug',      // Verbose logging
+    enableLogging: true, // Show request/response logs
+    prettyLogs: true, // Colored output
+    logLevel: "debug", // Verbose logging
   }
-)
+);
 
 const wsServer = createWebSocketServer({
   agent,
-  port: 5200,              // WebSocket port
-  host: '0.0.0.0',        // Bind address
-})
+  port: 5200, // WebSocket port
+  host: "0.0.0.0", // Bind address
+});
 ```
 
 ## 🐛 Debugging
@@ -302,8 +310,8 @@ Enable logging in your story:
 ```typescript
 const agent = createAgent(config, {
   enableLogging: true,
-  logLevel: 'debug',
-})
+  logLevel: "debug",
+});
 ```
 
 Browser console will show:
@@ -317,6 +325,7 @@ Browser console will show:
 ### Monitor WebSocket Traffic
 
 Use browser DevTools → Network → WS to inspect:
+
 - Connection status
 - Message payloads
 - Timing information
@@ -347,32 +356,36 @@ Test error handling with real errors:
 
 ```typescript
 export const WithErrors = () => {
-  const [agent] = useState(() => createAgent({
-    wsUrl: 'ws://localhost:9999/ws',  // Wrong port → connection error
-    sessionId: 'error-test',
-  }))
+  const [agent] = useState(() =>
+    createAgent({
+      wsUrl: "ws://localhost:9999/ws", // Wrong port → connection error
+      sessionId: "error-test",
+    })
+  );
 
   // Component will receive real connection errors
-}
+};
 ```
 
 ### 3. Reconnection Testing
 
 ```typescript
 export const Reconnection = () => {
-  const [agent] = useState(() => createAgent(
-    {
-      wsUrl: 'ws://localhost:5200/ws',
-      sessionId: 'reconnect-test',
-    },
-    {
-      reconnect: true,
-      maxReconnectAttempts: 5,
-    }
-  ))
+  const [agent] = useState(() =>
+    createAgent(
+      {
+        wsUrl: "ws://localhost:5200/ws",
+        sessionId: "reconnect-test",
+      },
+      {
+        reconnect: true,
+        maxReconnectAttempts: 5,
+      }
+    )
+  );
 
   // Test: Stop server, restart, watch reconnection
-}
+};
 ```
 
 ## 🎯 Best Practices
@@ -398,13 +411,15 @@ export const Reconnection = () => {
 Real API testing costs money. To minimize costs:
 
 1. **Use cheaper models for UI testing**:
+
    ```typescript
-   model: 'claude-haiku-3-5-20241022'  // Faster + cheaper
+   model: "claude-haiku-3-5-20241022"; // Faster + cheaper
    ```
 
 2. **Limit response length**:
+
    ```typescript
-   systemPrompt: 'Be concise. Max 2 sentences.'
+   systemPrompt: "Be concise. Max 2 sentences.";
    ```
 
 3. **Test locally**: Use local stories, not deployed Storybook
@@ -434,6 +449,7 @@ pnpm dev:full
 ```
 
 Then:
+
 1. Open http://localhost:6006
 2. Navigate to your story
 3. Interact with REAL AI
@@ -443,11 +459,13 @@ Then:
 ## 🎉 Why This is Awesome
 
 Traditional approach:
+
 ```
 Write component → Mock data → Test → Deploy → Find bugs in production
 ```
 
 Our approach:
+
 ```
 Write component → Real data → Everything works → Deploy with confidence
 ```

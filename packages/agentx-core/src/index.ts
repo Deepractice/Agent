@@ -1,31 +1,55 @@
 /**
- * AgentX Core
+ * @deepractice-ai/agentx-core
  *
- * Core implementation of the AgentX ecosystem with layered architecture.
- * Provides interfaces (SPI contracts) and facade API for system-internal use.
+ * Core implementations for AgentX.
  *
- * Architecture:
- * ```
- * index.ts (this file)
- *     ↓
- *     ├─→ interfaces/ (SPI contracts - for implementers)
- *     └─→ facade/ (system-internal API - for framework)
- *             ↓
- *         core/ (implementation - not exported)
- *             ├── agent/ (AgentServiceImpl, AgentEngine, EventBus, driver, reactor)
- *             └── environment/ (session management)
- * ```
- *
- * For platform-specific usage, use:
- * - @deepractice-ai/agentx-framework (Node.js and Browser)
+ * This package provides internal implementations.
+ * For public API, use @deepractice-ai/agentx instead.
  *
  * @packageDocumentation
  */
 
-// ==================== Interfaces (SPI Contracts) ====================
-// Export interfaces for third-party implementations
-export * from "./interfaces";
+// ===== Agent Implementations =====
+export {
+  // Types (re-exported from @deepractice-ai/agentx-types)
+  type Agent,
+  type AgentContext,
+  type AgentContextBase,
+  type AgentDriver,
+  type AgentPresenter,
+  type AgentDefinition,
+  type AgentLifecycle,
+  type AgentEventHandler,
+  type AgentEventType,
+  type Unsubscribe,
+  type AgentContainer,
+  type AgentOutput,
+  // Classes (implementations)
+  AgentInstance,
+  MemoryAgentContainer,
+  // Functions
+  generateAgentId,
+  createAgentContext,
+} from "./agent";
 
-// ==================== Facade API ====================
-// Export facade layer - used by agentx-framework
-export * from "./facade";
+// ===== Session =====
+export {
+  // Types
+  type Message,
+  type MessageRole,
+  type Session,
+  type SessionRepository,
+  type SessionQueryOptions,
+  // Classes
+  MemorySessionRepository,
+  // Functions
+  createMessage,
+  fromTypesMessage,
+  generateSessionId,
+  createSession,
+  associateAgent,
+  disassociateAgent,
+  addMessage,
+  getMessagesByAgent,
+  clearMessages,
+} from "./session";

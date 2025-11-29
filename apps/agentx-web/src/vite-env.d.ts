@@ -1,12 +1,12 @@
 /// <reference types="vite/client" />
 
 // CSS module declarations
-declare module '*.css' {
+declare module "*.css" {
   const content: Record<string, string>;
   export default content;
 }
 
-declare module '@deepractice-ai/agentx-ui/globals.css' {
+declare module "@deepractice-ai/agentx-ui/globals.css" {
   const content: Record<string, string>;
   export default content;
 }

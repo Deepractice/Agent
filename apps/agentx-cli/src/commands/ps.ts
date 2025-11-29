@@ -22,9 +22,8 @@ async function psAction() {
     const pidStr = pid ? String(pid) : "-";
 
     // Format name with padding
-    const name = agent.name.length > 16
-      ? agent.name.substring(0, 13) + "..."
-      : agent.name.padEnd(16);
+    const name =
+      agent.name.length > 16 ? agent.name.substring(0, 13) + "..." : agent.name.padEnd(16);
 
     const statusColor = status === "running" ? "running" : "stopped";
 
@@ -32,6 +31,4 @@ async function psAction() {
   }
 }
 
-export const psCommand = new Command("ps")
-  .description("List running agents")
-  .action(psAction);
+export const psCommand = new Command("ps").description("List running agents").action(psAction);

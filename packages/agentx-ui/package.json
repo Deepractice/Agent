@@ -5,10 +5,10 @@
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.js",
-  "types": "./dist/index.d.ts",
+  "types": "./dist/src/index.d.ts",
   "exports": {
     ".": {
-      "types": "./dist/index.d.ts",
+      "types": "./dist/src/index.d.ts",
       "import": "./dist/index.js",
       "default": "./dist/index.js"
     },
@@ -24,7 +24,7 @@
   ],
   "scripts": {
     "dev": "vite",
-    "dev:server": "tsx --watch server/dev-server.ts",
+    "dev:server": "tsx --watch dev-tools/server/dev-server.ts",
     "dev:full": "concurrently \"pnpm dev:server\" \"pnpm storybook\"",
     "build": "tsc && vite build",
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0",
@@ -34,7 +34,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
-    "@deepractice-ai/agentx-framework": "workspace:*",
+    "@deepractice-ai/agentx": "workspace:*",
     "@deepractice-ai/agentx-types": "workspace:*",
     "allotment": "^1.20.4",
     "class-variance-authority": "^0.7.1",
@@ -49,6 +49,7 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
+    "@deepractice-ai/agentx-claude": "workspace:*",
     "@storybook/addon-a11y": "^8.4.7",
     "@storybook/addon-essentials": "^8.4.7",
     "@storybook/addon-interactions": "^8.4.7",

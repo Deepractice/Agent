@@ -123,11 +123,11 @@ class MyService {
 import { LogLevel } from "@deepractice-ai/agentx-logger";
 
 // Available levels
-LogLevel.DEBUG   // 0 - Most verbose
-LogLevel.INFO    // 1 - Default
-LogLevel.WARN    // 2
-LogLevel.ERROR   // 3
-LogLevel.SILENT  // 4 - No logs
+LogLevel.DEBUG; // 0 - Most verbose
+LogLevel.INFO; // 1 - Default
+LogLevel.WARN; // 2
+LogLevel.ERROR; // 3
+LogLevel.SILENT; // 4 - No logs
 ```
 
 ## Advanced Usage
@@ -171,10 +171,18 @@ class PinoLogger implements LoggerProvider {
     }
   }
 
-  isDebugEnabled(): boolean { return this.level <= LogLevel.DEBUG; }
-  isInfoEnabled(): boolean { return this.level <= LogLevel.INFO; }
-  isWarnEnabled(): boolean { return this.level <= LogLevel.WARN; }
-  isErrorEnabled(): boolean { return this.level <= LogLevel.ERROR; }
+  isDebugEnabled(): boolean {
+    return this.level <= LogLevel.DEBUG;
+  }
+  isInfoEnabled(): boolean {
+    return this.level <= LogLevel.INFO;
+  }
+  isWarnEnabled(): boolean {
+    return this.level <= LogLevel.WARN;
+  }
+  isErrorEnabled(): boolean {
+    return this.level <= LogLevel.ERROR;
+  }
 }
 
 // Configure factory to use custom implementation

@@ -1,4 +1,11 @@
-import { useState, useRef, useEffect, type FormEvent, type KeyboardEvent, type ChangeEvent } from "react";
+import {
+  useState,
+  useRef,
+  useEffect,
+  type FormEvent,
+  type KeyboardEvent,
+  type ChangeEvent,
+} from "react";
 
 export interface ChatInputProps {
   /**

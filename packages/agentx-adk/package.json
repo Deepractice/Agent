@@ -1,0 +1,55 @@
+{
+  "name": "@deepractice-ai/agentx-adk",
+  "version": "0.1.0",
+  "description": "Agent Development Kit - Tools for building AgentX drivers and agents",
+  "keywords": [
+    "agentx",
+    "adk",
+    "agent",
+    "driver",
+    "development-kit",
+    "ai",
+    "claude"
+  ],
+  "author": "Deepractice AI",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deepractice-ai/agentx.git",
+    "directory": "packages/agentx-adk"
+  },
+  "type": "module",
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist .turbo node_modules",
+    "typecheck": "tsc --noEmit",
+    "lint": "eslint src --max-warnings 0",
+    "format": "prettier --write \"src/**/*.ts\"",
+    "format:check": "prettier --check \"src/**/*.ts\""
+  },
+  "dependencies": {
+    "@deepractice-ai/agentx-types": "workspace:*"
+  },
+  "devDependencies": {
+    "tsup": "^8.3.5",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

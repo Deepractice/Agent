@@ -1,46 +1,43 @@
 import { useEffect, useState } from "react";
-import { WebSocketBrowserAgent } from "@deepractice-ai/agentx-framework/browser";
-import type { AgentService } from "@deepractice-ai/agentx-framework/browser";
+import { createRemoteAgent } from "./agent";
+import type { Agent } from "@deepractice-ai/agentx";
 import { Chat } from "@deepractice-ai/agentx-ui";
 
 export default function App() {
-  const [agent, setAgent] = useState<AgentService | null>(null);
+  const [agent, setAgent] = useState<Agent | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    // Create agent with WebSocket connection
+    // Create agent with SSE connection
     // In development, connect to localhost:5200
-    // In production, use same host with proper protocol (ws/wss based on page protocol)
+    // In production, use same host
     const isDev = import.meta.env.DEV;
-    const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
-    const wsUrl = isDev ? "ws://localhost:5200/ws" : `${wsProtocol}//${window.location.host}/ws`;
+    const serverUrl = isDev ? "http://localhost:5200" : window.location.origin;
 
-    // Create WebSocket browser agent
+    // Create SSE browser agent
     const sessionId = `session-${Date.now()}`;
 
-    const agentInstance = WebSocketBrowserAgent.create({
-      url: wsUrl,
-      sessionId,
-    } as any);
-
-    // Initialize agent and connect
-    agentInstance
-      .initialize()
-      .then(() => {
-        console.log("✅ Agent connected");
-        setAgent(agentInstance);
-      })
-      .catch((err) => {
-        console.error("❌ Failed to initialize agent:", err);
-        setError("Failed to connect to agent server");
+    try {
+      const agentInstance = createRemoteAgent({
+        serverUrl,
+        agentId: sessionId,
       });
 
-    // Cleanup on unmount
-    return () => {
-      if (agent) {
-        agent.destroy();
-      }
-    };
+      // Agent is ready immediately after creation
+      agentInstance.onReady(() => {
+        console.log("✅ Agent connected");
+      });
+
+      setAgent(agentInstance);
+
+      // Cleanup on unmount
+      return () => {
+        agentInstance.destroy();
+      };
+    } catch (err) {
+      console.error("❌ Failed to create agent:", err);
+      setError("Failed to connect to agent server");
+    }
   }, []);
 
   if (error) {

@@ -195,6 +195,7 @@ tool_result {
 ```
 
 **Why Both?**
+
 - Low-level events: Granular control, streaming feedback
 - High-level events: Clean abstraction, easy to consume
 
@@ -345,6 +346,7 @@ Claude SDK → stream_event (message_stop)
 **Location**: `packages/agentx-framework/src/drivers/ClaudeSDKDriver.ts`
 
 **Responsibilities**:
+
 - Transform Claude SDK messages → AgentX Stream events
 - Handle `type: "user"` messages containing `tool_result` blocks
 - Emit high-level events: `tool_call`, `tool_result`
@@ -372,11 +374,7 @@ async function* transformSDKMessages(sdkMessages, builder) {
       for (const block of sdkMsg.message.content) {
         if (block.type === "tool_result") {
           // ✨ High-level event: tool execution result
-          yield builder.toolResult(
-            block.tool_use_id,
-            block.content,
-            block.is_error || false
-          );
+          yield builder.toolResult(block.tool_use_id, block.content, block.is_error || false);
         }
       }
     }
@@ -389,6 +387,7 @@ async function* transformSDKMessages(sdkMessages, builder) {
 **Location**: `packages/agentx-core/src/AgentMessageAssembler.ts`
 
 **Responsibilities**:
+
 - Accumulate stream deltas → complete messages
 - Parse tool input JSON
 - Emit `tool_call` event (for streaming scenarios)
@@ -434,6 +433,7 @@ private onToolUseContentBlockStop() {
 **Location**: `packages/agentx-core/src/AgentExchangeTracker.ts`
 
 **Responsibilities**:
+
 - Track request-response exchange pairs
 - Detect exchange completion via `stopReason === "end_turn"`
 - Emit `exchange_response` event
@@ -473,6 +473,7 @@ private completeExchange(completedAt: number) {
 **Location**: `packages/agentx-ui/src/components/chat/Chat.tsx`
 
 **Responsibilities**:
+
 - Listen to events via `agent.react()`
 - Manage UI state (loading, streaming, messages)
 - Update `ToolUseMessage.toolResult` on `tool_result` event
@@ -489,28 +490,30 @@ const unsubscribe = agent.react({
   // ✨ Update ToolResult when execution completes
   onToolResult(event: ToolResultEvent) {
     const { toolId, content, isError } = event.data;
-    setMessages((prev) => prev.map((msg) => {
-      if (msg.role === "tool-use" && msg.toolCall.id === toolId) {
-        return {
-          ...msg,
-          toolResult: {
-            ...msg.toolResult,
-            output: {
-              type: isError ? "error-text" : "text",
-              value: typeof content === "string" ? content : JSON.stringify(content)
-            }
-          }
-        };
-      }
-      return msg;
-    }));
+    setMessages((prev) =>
+      prev.map((msg) => {
+        if (msg.role === "tool-use" && msg.toolCall.id === toolId) {
+          return {
+            ...msg,
+            toolResult: {
+              ...msg.toolResult,
+              output: {
+                type: isError ? "error-text" : "text",
+                value: typeof content === "string" ? content : JSON.stringify(content),
+              },
+            },
+          };
+        }
+        return msg;
+      })
+    );
   },
 
   // ✨ Hide loading ONLY when exchange completes (not on assistant_message)
   onExchangeResponse(_event: ExchangeResponseEvent) {
     setIsLoading(false);
     setStreaming("");
-  }
+  },
 });
 ```
 
@@ -525,6 +528,7 @@ const unsubscribe = agent.react({
 **Solution**: Add high-level events that signal "tool call is ready" and "tool result is available".
 
 **Benefits**:
+
 - Clean abstraction for consumers (don't need to parse JSON deltas)
 - Easy to add middleware (e.g., permission checks before execution)
 - Decoupled from streaming implementation details
@@ -532,6 +536,7 @@ const unsubscribe = agent.react({
 ### 2. Why Use `exchange_response` Instead of `message_stop`?
 
 **Problem**: In agentic flows, there are **multiple** `message_stop` events:
+
 ```
 First message_stop  ← Tool decision (NOT the end!)
 Tool execution...
@@ -539,6 +544,7 @@ Second message_stop ← Final response (end of exchange)
 ```
 
 If we close loading on first `message_stop`, user sees:
+
 ```
 User: "你的目录有什么"
   ↓ Thinking...
@@ -552,6 +558,7 @@ Assistant: "这是你的目录内容..."
 **Solution**: Use `exchange_response` which only emits when `stopReason === "end_turn"`.
 
 **Benefits**:
+
 - Loading indicator stays visible during entire exchange
 - User always sees feedback ("Thinking...")
 - Semantically correct (exchange = user request + complete response)
@@ -564,13 +571,14 @@ Assistant: "这是你的目录内容..."
 
 ```typescript
 export type StopReason =
-  | "end_turn"      // Natural conversation end
-  | "tool_use"      // Model wants to use a tool
-  | "max_tokens"    // Reached token limit
+  | "end_turn" // Natural conversation end
+  | "tool_use" // Model wants to use a tool
+  | "max_tokens" // Reached token limit
   | "stop_sequence"; // Custom stop sequence
 ```
 
 **Benefits**:
+
 - TypeScript catches typos at compile time
 - Auto-completion in IDEs
 - Clear documentation of all possible values
@@ -578,12 +586,14 @@ export type StopReason =
 ### 4. Why Update `ToolUseMessage` Instead of Creating New Message?
 
 **Problem**: When `tool_result` event arrives, we could:
+
 - Option A: Create a new `ToolResultMessage`
 - Option B: Update existing `ToolUseMessage.toolResult`
 
 **Solution**: Option B (update existing).
 
 **Rationale**:
+
 - Tool call + result are semantically **one action** from user's view
 - Simpler UI (one expandable component instead of two separate messages)
 - Matches Claude's mental model (tool use is atomic)
@@ -646,11 +656,13 @@ packages/agentx-ui/src/components/chat/
 ### Manual Testing
 
 1. **Start dev server**:
+
    ```bash
    pnpm dev
    ```
 
 2. **Send tool-triggering message**:
+
    ```
    "你的目录有什么"
    "Run ls -la command"
@@ -667,6 +679,7 @@ packages/agentx-ui/src/components/chat/
 ### Debug Logs
 
 **Server logs**:
+
 ```
 [ClaudeSDKDriver] Processing user message with tool_result
 [AgentMessageAssembler] Emitting tool_call event
@@ -675,6 +688,7 @@ packages/agentx-ui/src/components/chat/
 ```
 
 **Browser console**:
+
 ```
 [Chat] conversation_start
 [Chat] tool_use_message: msg_xxx
@@ -707,6 +721,7 @@ onExchangeResponse(event) {
 ```
 
 **Expected order**:
+
 ```
 1. tool_call Bash
 2. tool_use_message Bash
@@ -778,12 +793,14 @@ The Tool Calling Architecture in AgentX Framework is built on **4 event layers**
 4. **Exchange Layer**: Multi-turn conversation tracking (`exchange_response`)
 
 **Key Design Principles**:
+
 - **Decoupling**: Each layer has clear responsibilities
 - **Type Safety**: TypeScript types for all events and data structures
 - **Extensibility**: Easy to add middleware, permission checks, caching
 - **Developer Experience**: High-level events hide complexity from consumers
 
 This architecture enables:
+
 - ✅ Real-time streaming with instant feedback
 - ✅ Multi-turn agentic conversations
 - ✅ Tool execution with result display
@@ -793,6 +810,7 @@ This architecture enables:
 ---
 
 **Related Files**:
+
 - [StopReason.ts](../packages/agentx-event/src/types/StopReason.ts)
 - [ToolCallEvent.ts](../packages/agentx-event/src/stream/ToolCallEvent.ts)
 - [ToolResultEvent.ts](../packages/agentx-event/src/stream/ToolResultEvent.ts)

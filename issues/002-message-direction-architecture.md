@@ -24,7 +24,7 @@ Message events are being sent in **wrong directions**, causing:
 // WebSocketReactor.ts - WRONG!
 export const WebSocketReactor = defineReactor<WebSocketReactorConfig>({
   // ...
-  onUserMessage: (e, cfg) => sendEvent(cfg.ws, e),  // ❌ Echoes back to client!
+  onUserMessage: (e, cfg) => sendEvent(cfg.ws, e), // ❌ Echoes back to client!
   onAssistantMessage: (e, cfg) => sendEvent(cfg.ws, e),
   // ...
 });
@@ -33,6 +33,7 @@ export const WebSocketReactor = defineReactor<WebSocketReactorConfig>({
 ### Symptom Logs
 
 **Server logs show message explosion**:
+
 ```
 [AgentService.send] Message: 你好
 [AgentService.send] Total messages: 1
@@ -52,30 +53,33 @@ export const WebSocketReactor = defineReactor<WebSocketReactorConfig>({
 ### Message Direction Categories
 
 #### 1. **Unidirectional: Client → Server** (Request)
+
 These events originate from client and should **NOT** be echoed back:
 
-| Event | Direction | Current Bug | Fix |
-|-------|-----------|-------------|-----|
-| `user` (WebSocket message) | Client → Server | ✅ Correct | Keep |
+| Event                           | Direction           | Current Bug                | Fix                              |
+| ------------------------------- | ------------------- | -------------------------- | -------------------------------- |
+| `user` (WebSocket message)      | Client → Server     | ✅ Correct                 | Keep                             |
 | `user_message` (internal event) | ~~Server → Client~~ | ❌ **WRONG - causes loop** | **Remove from WebSocketReactor** |
 
 **Reason**: Client already knows what it sent - no need for server confirmation.
 
 #### 2. **Unidirectional: Server → Client** (Response)
+
 These events originate from server and should be sent to client:
 
-| Event | Direction | Current | Status |
-|-------|-----------|---------|--------|
-| `text_delta` | Server → Client | ✅ | Correct |
-| `message_start` | Server → Client | ✅ | Correct |
-| `message_stop` | Server → Client | ✅ | Correct |
-| `assistant_message` | Server → Client | ✅ | Correct |
-| `tool_use_message` | Server → Client | ✅ | Correct |
-| `error_message` | Server → Client | ✅ | Correct |
+| Event               | Direction       | Current | Status  |
+| ------------------- | --------------- | ------- | ------- |
+| `text_delta`        | Server → Client | ✅      | Correct |
+| `message_start`     | Server → Client | ✅      | Correct |
+| `message_stop`      | Server → Client | ✅      | Correct |
+| `assistant_message` | Server → Client | ✅      | Correct |
+| `tool_use_message`  | Server → Client | ✅      | Correct |
+| `error_message`     | Server → Client | ✅      | Correct |
 
 **Reason**: Client needs these to display AI responses.
 
 #### 3. **Bidirectional Events** (Avoid if possible)
+
 Events that could flow in both directions - **design smell**, should be avoided:
 
 Currently: **None** ✅
@@ -207,28 +211,32 @@ ws.addEventListener("message", (event: MessageEvent) => {
 ## Design Principles
 
 ### 1. **Unidirectional Data Flow**
+
 - Client sends **requests** (user input)
 - Server sends **responses** (AI output)
 - **No echo/reflection** of requests back to sender
 
 ### 2. **Event Ownership**
+
 Each event has a clear **owner** and **direction**:
 
-| Event Type | Owner | Direction |
-|------------|-------|-----------|
-| User input | Client | Client → Server |
-| AI responses | Server | Server → Client |
-| Errors | Server | Server → Client |
+| Event Type    | Owner  | Direction       |
+| ------------- | ------ | --------------- |
+| User input    | Client | Client → Server |
+| AI responses  | Server | Server → Client |
+| Errors        | Server | Server → Client |
 | State changes | Server | Server → Client |
 
 ### 3. **Separation of Concerns**
 
 **WebSocket Message Types** (Protocol Layer):
+
 - `{ type: "user", message: {...} }` - Client → Server
 - `{ type: "clear" }` - Client → Server
 - `{ type: "destroy" }` - Client → Server
 
 **Internal Events** (Application Layer):
+
 - `user_message` - Internal to server (NOT sent to client)
 - `assistant_message` - Server → Client
 - `text_delta` - Server → Client
@@ -266,23 +274,19 @@ describe('WebSocketReactor', () => {
 ### Integration Tests
 
 ```typescript
-describe('Message Flow', () => {
-  it('should handle user message without echo', async () => {
+describe("Message Flow", () => {
+  it("should handle user message without echo", async () => {
     const client = createTestClient();
     const messages: any[] = [];
 
-    client.on('message', (msg) => messages.push(msg));
+    client.on("message", (msg) => messages.push(msg));
 
     await client.send("你好");
     await wait(100);
 
     // Should receive only server responses, not echo
-    expect(messages).not.toContainEqual(
-      expect.objectContaining({ type: 'user_message' })
-    );
-    expect(messages).toContainEqual(
-      expect.objectContaining({ type: 'assistant_message' })
-    );
+    expect(messages).not.toContainEqual(expect.objectContaining({ type: "user_message" }));
+    expect(messages).toContainEqual(expect.objectContaining({ type: "assistant_message" }));
   });
 });
 ```
@@ -331,12 +335,14 @@ This principle applies to ALL distributed systems, not just our agent framework.
 If we need to sync user messages across devices in the future:
 
 **Option 1**: Dedicated sync channel
+
 ```typescript
 // Separate event type for sync (not echo)
 { type: "message_synced", source: "device-2", message: {...} }
 ```
 
 **Option 2**: Explicit acknowledgment
+
 ```typescript
 client.send("你好", { requireAck: true });
 // Server responds with ACK, not echo
@@ -357,18 +363,20 @@ client.send("你好", { requireAck: true });
 The current fix (client adds user messages locally) has architectural issues:
 
 **Current Flow**:
+
 ```typescript
 // Client (UI layer)
 const handleSend = async (text: string) => {
   // ❌ UI layer manages state
   const userMessage = { id: generateId(), content: text };
-  setMessages(prev => [...prev, userMessage]);
+  setMessages((prev) => [...prev, userMessage]);
 
   await agent.send(text);
 };
 ```
 
 **Problems**:
+
 1. ❌ **UI is not pure presentation** - contains business logic
 2. ❌ **Dual ID generation** - client and server generate different IDs
 3. ❌ **Multi-device sync difficulties** - each client has its own local state
@@ -378,9 +386,11 @@ const handleSend = async (text: string) => {
 ### Proposed: Pure Reactor-Driven Architecture
 
 **Core Principle**:
+
 > "前端只是显示层，所有状态变更都通过 Reactor 事件驱动，不管是发送还是接收"
 
 **Ideal Flow**:
+
 ```typescript
 // Client (pure presentation layer)
 const handleSend = async (text: string) => {
@@ -474,6 +484,7 @@ Result: Both use (ID: s1) ✅
    - Easier to implement features like "jump to message"
 
 4. **✅ Multi-device Sync Ready**
+
    ```typescript
    // Device 1: Send message
    await agent.send("你好");
@@ -497,14 +508,16 @@ Result: Both use (ID: s1) ✅
 ### Trade-offs
 
 **Cons**:
+
 - ⚠️ **Network latency** - User sees message after server round-trip (~50-200ms)
 - ⚠️ **Loading state needed** - Must show "sending..." feedback
 
 **Mitigation**:
+
 ```typescript
 const handleSend = async (text: string) => {
-  setIsLoading(true);  // Show loading indicator
-  setOptimisticMessage(text);  // Optional: show grayed-out preview
+  setIsLoading(true); // Show loading indicator
+  setOptimisticMessage(text); // Optional: show grayed-out preview
 
   await agent.send(text);
 
@@ -514,6 +527,7 @@ const handleSend = async (text: string) => {
 ```
 
 **Pros outweigh cons** for:
+
 - Multi-user applications
 - Multi-device sync
 - Offline-first apps (future)
@@ -525,19 +539,22 @@ const handleSend = async (text: string) => {
 **IMPORTANT**: The infinite loop was NOT caused by "server echoing user_message"!
 
 **Real root cause**:
+
 1. ✅ **Persistent WebSocket + repeated event listener binding** (Fixed)
 2. ❌ ~~Server echoing caused loop~~ (This was NOT the issue)
 
 **Proof**:
+
 - Multiple `addEventListener("message")` on same WebSocket
 - Each handler triggered for every message
 - Exponential growth: 1, 2, 4, 8, 16... listeners
 
 **Fix**:
+
 ```typescript
 // Use global single handler + message queues
 function setupGlobalMessageHandler(ws: WebSocket) {
-  if ((ws as any).__hasGlobalHandler) return;  // ✅ Only once
+  if ((ws as any).__hasGlobalHandler) return; // ✅ Only once
 
   ws.addEventListener("message", globalHandler);
   (ws as any).__hasGlobalHandler = true;
@@ -545,6 +562,7 @@ function setupGlobalMessageHandler(ws: WebSocket) {
 ```
 
 **Conclusion**:
+
 > Server can safely send `user_message` back to client, as long as WebSocketDriver doesn't re-trigger send.
 
 ### Implementation Plan
@@ -552,6 +570,7 @@ function setupGlobalMessageHandler(ws: WebSocket) {
 **Phase 1: Restore Reactor-Driven Flow** (Recommended for next iteration)
 
 1. **Restore** `onUserMessage` in WebSocketReactor
+
    ```diff
    // WebSocketReactor.ts
    - // onUserMessage: NOT forwarded
@@ -559,6 +578,7 @@ function setupGlobalMessageHandler(ws: WebSocket) {
    ```
 
 2. **Remove** local message adding in client
+
    ```diff
    // Chat.tsx
    const handleSend = async (text: string) => {
@@ -569,6 +589,7 @@ function setupGlobalMessageHandler(ws: WebSocket) {
    ```
 
 3. **Restore** `onUserMessage` callback in client
+
    ```diff
    // Chat.tsx
    + onUserMessage(event: UserMessageEvent) {
@@ -580,6 +601,7 @@ function setupGlobalMessageHandler(ws: WebSocket) {
    ```
 
 4. **Add** loading states for UX
+
    ```typescript
    const handleSend = async (text: string) => {
      setIsLoading(true);
@@ -604,12 +626,14 @@ function setupGlobalMessageHandler(ws: WebSocket) {
 ### Decision Criteria
 
 **Choose Local-First if**:
+
 - ❌ Single-user, single-device only
 - ❌ Never need message sync
 - ❌ Don't care about consistent IDs
 - ❌ Willing to maintain dual state logic
 
 **Choose Reactor-Driven if** (✅ Recommended):
+
 - ✅ Multi-user or multi-device support
 - ✅ Need server as source of truth
 - ✅ Want consistent architecture

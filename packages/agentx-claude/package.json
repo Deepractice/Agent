@@ -1,0 +1,43 @@
+{
+  "name": "@deepractice-ai/agentx-claude",
+  "version": "0.1.0",
+  "description": "Claude Driver for AgentX - Node.js only",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@anthropic-ai/claude-agent-sdk": "^0.1.30",
+    "@deepractice-ai/agentx-adk": "workspace:*",
+    "@deepractice-ai/agentx-core": "workspace:*",
+    "@deepractice-ai/agentx-engine": "workspace:*",
+    "@deepractice-ai/agentx": "workspace:*",
+    "@deepractice-ai/agentx-logger": "workspace:*",
+    "@deepractice-ai/agentx-types": "workspace:*",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

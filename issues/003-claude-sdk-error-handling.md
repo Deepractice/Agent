@@ -15,11 +15,13 @@ When Claude SDK encounters an error (e.g., invalid API key), the error message i
 ### User Impact
 
 Users see confusing messages like:
+
 ```
 Agent: Invalid API key · Fix external API key
 ```
 
 Instead of a proper error display with:
+
 - Red error styling
 - Error icon
 - Clear indication that this is an error, not a response
@@ -29,11 +31,13 @@ Instead of a proper error display with:
 ## Reproduction Steps
 
 1. Configure system with **invalid API key** in `.env.test`:
+
    ```bash
    ANTHROPIC_API_KEY=invalid_key_here
    ```
 
 2. Start dev server:
+
    ```bash
    pnpm dev:server
    ```
@@ -95,6 +99,7 @@ Instead of a proper error display with:
 ```
 
 **Result**: User sees TWO messages:
+
 1. ❌ "Invalid API key" as Assistant message (WRONG)
 2. ✅ "Claude Code process exited with code 1" as Error message (CORRECT)
 
@@ -140,14 +145,15 @@ try {
   const result = query({ prompt, options });
 
   // 7. Transform SDK messages to Stream events
-  yield* transformSDKMessages(result, builder);  // ❌ Already yielded error as normal message
+  yield * transformSDKMessages(result, builder); // ❌ Already yielded error as normal message
 } catch (error) {
   console.error("[ClaudeSDKDriver] Error during SDK query:", error);
-  throw error;  // ❌ Only re-throws, doesn't handle the misidentified message
+  throw error; // ❌ Only re-throws, doesn't handle the misidentified message
 }
 ```
 
 **Issue**:
+
 - Claude SDK yields error content as normal `assistant` message type before throwing
 - Driver blindly transforms all SDK messages without checking for error patterns
 - By the time we catch the exception, the wrong message is already emitted
@@ -175,7 +181,7 @@ function isErrorMessage(content: string): boolean {
     /service unavailable/i,
   ];
 
-  return errorPatterns.some(pattern => pattern.test(content));
+  return errorPatterns.some((pattern) => pattern.test(content));
 }
 
 // Modify transformSDKMessages
@@ -208,11 +214,13 @@ async function* transformSDKMessages(
 ```
 
 **Pros**:
+
 - Fast to implement
 - Catches errors before they're emitted as assistant messages
 - No changes needed to Reactor layer
 
 **Cons**:
+
 - Requires maintaining error pattern list
 - May miss new error formats
 
@@ -252,10 +260,12 @@ private async handleUserMessage(event: UserMessageEvent): Promise<void> {
 ```
 
 **Pros**:
+
 - Generic solution, works for all error types
 - Doesn't require error pattern matching
 
 **Cons**:
+
 - Requires new event type `retract_message`
 - More complex implementation
 - UI needs to handle message retraction
@@ -267,10 +277,12 @@ private async handleUserMessage(event: UserMessageEvent): Promise<void> {
 Report to Anthropic that SDK should emit error events instead of normal messages when failing.
 
 **Pros**:
+
 - Proper fix at source
 - Benefits all SDK users
 
 **Cons**:
+
 - Out of our control
 - Takes time
 - May not be considered a bug by Anthropic
@@ -287,6 +299,7 @@ Report to Anthropic that SDK should emit error events instead of normal messages
 4. Let existing error handling in DriverReactor catch it
 
 **Implementation checklist**:
+
 - [ ] Add error pattern detection helper
 - [ ] Modify `transformSDKMessages` to check for errors
 - [ ] Extract helper for text content extraction
@@ -317,18 +330,18 @@ ANTHROPIC_API_KEY=invalid pnpm dev:server
 ### Unit Tests
 
 ```typescript
-describe('ClaudeSDKDriver error handling', () => {
-  it('should detect invalid API key error', () => {
+describe("ClaudeSDKDriver error handling", () => {
+  it("should detect invalid API key error", () => {
     const content = "Invalid API key · Fix external API key";
     expect(isErrorMessage(content)).toBe(true);
   });
 
-  it('should detect rate limit error', () => {
+  it("should detect rate limit error", () => {
     const content = "Rate limit exceeded. Please try again later.";
     expect(isErrorMessage(content)).toBe(true);
   });
 
-  it('should not flag normal responses as errors', () => {
+  it("should not flag normal responses as errors", () => {
     const content = "Hello! How can I help you today?";
     expect(isErrorMessage(content)).toBe(false);
   });
@@ -338,20 +351,18 @@ describe('ClaudeSDKDriver error handling', () => {
 ### Integration Tests
 
 ```typescript
-describe('Error message display', () => {
-  it('should show API key error with error styling', async () => {
+describe("Error message display", () => {
+  it("should show API key error with error styling", async () => {
     // Mock Claude SDK to return error
     mockClaudeSDK.query.mockReturnValue(
-      asyncIterator([
-        { type: 'assistant', message: { content: 'Invalid API key' } }
-      ])
+      asyncIterator([{ type: "assistant", message: { content: "Invalid API key" } }])
     );
 
     await agent.send("test");
 
-    const events = capturedEvents.filter(e => e.type === 'error_message');
+    const events = capturedEvents.filter((e) => e.type === "error_message");
     expect(events).toHaveLength(1);
-    expect(events[0].data.message).toContain('Invalid API key');
+    expect(events[0].data.message).toContain("Invalid API key");
   });
 });
 ```
@@ -369,6 +380,7 @@ describe('Error message display', () => {
 **Severity**: High
 
 **Affected users**: All users when:
+
 - Using invalid/expired API keys
 - Hitting rate limits
 - Experiencing service outages

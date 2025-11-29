@@ -33,15 +33,15 @@ agentx run -w . -p 8080 -d
 
 **Options:**
 
-| Option | Description | Default |
-|--------|-------------|---------|
-| `-w, --work-dir <dir>` | Working directory for agent (required) | - |
-| `--name <name>` | Agent name | `agent_<timestamp>` |
-| `-p, --port <port>` | Port to listen on | `5200` |
-| `-h, --host <host>` | Host to bind to | `0.0.0.0` |
-| `-d, --detach` | Run in background | `false` |
-| `--env-file <file>` | Environment file path | `.env.local` |
-| `--model <model>` | Model name | From env |
+| Option                 | Description                            | Default             |
+| ---------------------- | -------------------------------------- | ------------------- |
+| `-w, --work-dir <dir>` | Working directory for agent (required) | -                   |
+| `--name <name>`        | Agent name                             | `agent_<timestamp>` |
+| `-p, --port <port>`    | Port to listen on                      | `5200`              |
+| `-h, --host <host>`    | Host to bind to                        | `0.0.0.0`           |
+| `-d, --detach`         | Run in background                      | `false`             |
+| `--env-file <file>`    | Environment file path                  | `.env.local`        |
+| `--model <model>`      | Model name                             | From env            |
 
 ### List Agents
 
@@ -52,6 +52,7 @@ agentx ps
 ```
 
 Output:
+
 ```
 NAME              PORT    STATUS      PID     WORK_DIR
 my-agent          5200    running     12345   /home/user/projects
@@ -104,6 +105,7 @@ AGENT_PERMISSION_MODE=bypassPermissions
 ```
 
 **Required variables:**
+
 - `AGENTX_API_KEY` - Anthropic API key
 - `AGENTX_BASE_URL` - API base URL
 

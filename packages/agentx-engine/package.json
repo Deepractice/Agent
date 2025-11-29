@@ -1,0 +1,63 @@
+{
+  "name": "@deepractice-ai/agentx-engine",
+  "version": "0.1.0",
+  "description": "Runtime engine for AgentX ecosystem - Core event processing and state management",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist test-results",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "test:ui": "vitest --ui"
+  },
+  "keywords": [
+    "ai",
+    "agent",
+    "engine",
+    "runtime",
+    "agentx",
+    "claude",
+    "deepractice"
+  ],
+  "author": "Deepractice AI Team",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Deepractice/Agent.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Deepractice/Agent/issues"
+  },
+  "homepage": "https://github.com/Deepractice/Agent#readme",
+  "dependencies": {
+    "@deepractice-ai/agentx-logger": "workspace:*",
+    "@deepractice-ai/agentx-types": "workspace:*"
+  },
+  "devDependencies": {
+    "@deepracticex/vitest-cucumber": "^1.4.3",
+    "@types/node": "^24.9.2",
+    "@vitest/ui": "^3.2.4",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3",
+    "vitest": "^3.2.4"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

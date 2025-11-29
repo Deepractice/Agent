@@ -6,7 +6,7 @@ import { Command } from "commander";
 import { config as loadEnv } from "dotenv";
 import { resolve, join, extname, dirname } from "path";
 import { fileURLToPath } from "url";
-import { createWebSocketServer, ClaudeAgent } from "@deepractice-ai/agentx-framework";
+import { createWebSocketServer, ClaudeAgent } from "@deepractice-ai/agentx";
 import { readFile, stat, open } from "fs/promises";
 import type { IncomingMessage, ServerResponse } from "http";
 import { execaNode } from "execa";
@@ -131,10 +131,14 @@ async function startDetached(options: RunOptions, agentName: string): Promise<vo
   // Build arguments for daemon process
   const args = [
     "run",
-    "-w", workDir,
-    "--name", agentName,
-    "-p", options.port,
-    "-h", options.host,
+    "-w",
+    workDir,
+    "--name",
+    agentName,
+    "-p",
+    options.port,
+    "-h",
+    options.host,
     "--_daemon",
   ];
   if (options.envFile) {
@@ -207,8 +211,15 @@ async function startForeground(options: RunOptions, agentName: string): Promise<
 
   // Agent runtime configuration
   const systemPrompt = process.env.AGENT_SYSTEM_PROMPT || "You are a helpful AI assistant.";
-  const maxTurns = process.env.AGENT_MAX_TURNS ? parseInt(process.env.AGENT_MAX_TURNS, 10) : undefined;
-  const permissionMode = (process.env.AGENT_PERMISSION_MODE as "default" | "acceptEdits" | "bypassPermissions" | "plan") || "bypassPermissions";
+  const maxTurns = process.env.AGENT_MAX_TURNS
+    ? parseInt(process.env.AGENT_MAX_TURNS, 10)
+    : undefined;
+  const permissionMode =
+    (process.env.AGENT_PERMISSION_MODE as
+      | "default"
+      | "acceptEdits"
+      | "bypassPermissions"
+      | "plan") || "bypassPermissions";
 
   // Validate required configuration
   if (!apiKey) {

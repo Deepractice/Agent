@@ -17,16 +17,11 @@ import { stopCommand } from "./commands/stop";
 
 const program = new Command();
 
-program
-  .name("agentx")
-  .description("CLI tool for managing AgentX agents")
-  .version("0.1.0");
+program.name("agentx").description("CLI tool for managing AgentX agents").version("0.1.0");
 
 // Default domain: agent
 // agentx run = agentx agent run
-const agentCommand = program
-  .command("agent")
-  .description("Agent management commands");
+const agentCommand = program.command("agent").description("Agent management commands");
 
 // Register commands under agent domain
 agentCommand.addCommand(runCommand);

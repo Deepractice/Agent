@@ -37,6 +37,9 @@
     "clean": "rm -rf dist",
     "test:manual": "tsx tests/manual"
   },
+  "dependencies": {
+    "@deepractice-ai/agentx-types": "workspace:*"
+  },
   "devDependencies": {
     "@types/node": "^22.19.1",
     "tsup": "^8.5.0",

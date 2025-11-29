@@ -1,9 +1,33 @@
+/**
+ * ChatMessageList - Display a scrollable list of chat messages
+ *
+ * Features:
+ * - Auto-scroll to bottom on new messages
+ * - Empty state (welcome screen)
+ * - Streaming message display
+ * - Responsive max-width container
+ *
+ * Note: Loading/status indicator is now handled by AgentStatusIndicator component.
+ *
+ * @example
+ * ```tsx
+ * <ChatMessageList
+ *   messages={messages}
+ *   streamingText={currentStream}
+ * />
+ * ```
+ */
+
 import { useRef, useEffect } from "react";
-import type { Message } from "@deepractice-ai/agentx-types";
-import { UserMessage } from "./UserMessage";
-import { AssistantMessage } from "./AssistantMessage";
-import { ToolUseMessage } from "./ToolUseMessage";
-import { SystemMessage } from "./SystemMessage";
+import type {
+  Message,
+  ToolCallMessage as ToolCallMessageType,
+  ToolResultMessage as ToolResultMessageType,
+} from "@deepractice-ai/agentx-types";
+import { UserMessage } from "./messages/UserMessage";
+import { AssistantMessage } from "./messages/AssistantMessage";
+import { ToolUseMessage } from "./messages/ToolUseMessage";
+import { SystemMessage } from "./messages/SystemMessage";
 
 export interface ChatMessageListProps {
   /**
@@ -17,42 +41,67 @@ export interface ChatMessageListProps {
   streamingText?: string;
 
   /**
-   * Whether agent is loading/thinking
-   */
-  isLoading?: boolean;
-
-  /**
    * Custom className
    */
   className?: string;
 }
 
 /**
- * ChatMessageList - Display a scrollable list of chat messages
- *
- * Features:
- * - Auto-scroll to bottom on new messages
- * - Empty state (welcome screen)
- * - Loading indicator
- * - Streaming message display
- * - Responsive max-width container
- *
- * @example
- * ```tsx
- * <ChatMessageList
- *   messages={messages}
- *   streamingText={currentStream}
- *   isLoading={isThinking}
- * />
- * ```
+ * Grouped tool message - combines tool-call and tool-result
  */
-export function ChatMessageList({
-  messages,
-  streamingText,
-  isLoading = false,
-  className = "",
-}: ChatMessageListProps) {
+interface GroupedToolMessage {
+  type: "tool-use";
+  toolCall: ToolCallMessageType;
+  toolResult?: ToolResultMessageType;
+  timestamp: number;
+}
+
+/**
+ * Group tool messages by toolCallId
+ *
+ * Combines ToolCallMessage and ToolResultMessage into unified ToolUse groups.
+ * This improves UX by showing the complete tool lifecycle in one component.
+ */
+function groupToolMessages(messages: Message[]): (Message | GroupedToolMessage)[] {
+  const toolCallMap = new Map<string, ToolCallMessageType>();
+  const toolResultMap = new Map<string, ToolResultMessageType>();
+  const otherMessages: Message[] = [];
+
+  // Separate tool messages from other messages
+  for (const msg of messages) {
+    if (msg.subtype === "tool-call") {
+      toolCallMap.set(msg.toolCall.id, msg);
+    } else if (msg.subtype === "tool-result") {
+      toolResultMap.set(msg.toolCallId, msg);
+    } else {
+      otherMessages.push(msg);
+    }
+  }
+
+  // Create grouped tool messages
+  const groupedToolMessages: GroupedToolMessage[] = [];
+  for (const [toolCallId, toolCall] of toolCallMap.entries()) {
+    groupedToolMessages.push({
+      type: "tool-use",
+      toolCall,
+      toolResult: toolResultMap.get(toolCallId),
+      timestamp: toolCall.timestamp,
+    });
+  }
+
+  // Combine and sort by timestamp
+  return [...otherMessages, ...groupedToolMessages].sort((a, b) => a.timestamp - b.timestamp);
+}
+
+export function ChatMessageList({ messages, streamingText, className = "" }: ChatMessageListProps) {
   const messagesEndRef = useRef<HTMLDivElement>(null);
+
+  // Sort messages by timestamp to ensure correct order
+  // (events may arrive out of order due to async processing)
+  const sortedMessages = [...messages].sort((a, b) => a.timestamp - b.timestamp);
+
+  // Group tool messages (tool-call + tool-result) for unified display
+  const groupedMessages = groupToolMessages(sortedMessages);
 
   // Auto-scroll to bottom when messages change
   useEffect(() => {
@@ -62,7 +111,7 @@ export function ChatMessageList({
   }, [messages.length, streamingText]);
 
   // Empty state - Welcome screen
-  if (messages.length === 0 && !isLoading && !streamingText) {
+  if (messages.length === 0 && !streamingText) {
     return (
       <div className={`flex-1 flex items-center justify-center ${className}`}>
         <div className="text-center px-4">
@@ -80,15 +129,26 @@ export function ChatMessageList({
   return (
     <div className={`flex-1 overflow-y-auto overflow-x-hidden relative ${className}`}>
       <div className="max-w-4xl mx-auto px-4 py-3 sm:py-4 space-y-3 sm:space-y-4">
-        {/* Existing messages - route by role */}
-        {messages.map((msg) => {
-          switch (msg.role) {
+        {/* Render grouped messages */}
+        {groupedMessages.map((item) => {
+          // Handle grouped tool messages
+          if ("type" in item && item.type === "tool-use") {
+            return (
+              <ToolUseMessage
+                key={item.toolCall.id}
+                toolCall={item.toolCall}
+                toolResult={item.toolResult}
+              />
+            );
+          }
+
+          // Handle regular messages
+          const msg = item as Message;
+          switch (msg.subtype) {
             case "user":
               return <UserMessage key={msg.id} message={msg} />;
             case "assistant":
               return <AssistantMessage key={msg.id} message={msg} />;
-            case "tool-use":
-              return <ToolUseMessage key={msg.id} message={msg} />;
             case "system":
               return <SystemMessage key={msg.id} message={msg} />;
             default:
@@ -102,37 +162,12 @@ export function ChatMessageList({
             message={{
               id: "streaming",
               role: "assistant",
+              subtype: "assistant",
               content: streamingText,
               timestamp: Date.now(),
             }}
             isStreaming
           />
-        )}
-
-        {/* Loading indicator (only if no streaming text) */}
-        {isLoading && !streamingText && (
-          <div className="chat-message assistant">
-            <div className="w-full">
-              <div className="flex items-center space-x-3 mb-2">
-                <div className="w-8 h-8 rounded-full flex items-center justify-center text-2xl flex-shrink-0">
-                  🤖
-                </div>
-                <div className="text-sm font-medium text-gray-900 dark:text-white">Agent</div>
-              </div>
-              <div className="w-full text-sm text-gray-500 dark:text-gray-400 pl-3 sm:pl-0">
-                <div className="flex items-center space-x-1">
-                  <div className="animate-pulse">●</div>
-                  <div className="animate-pulse" style={{ animationDelay: "0.2s" }}>
-                    ●
-                  </div>
-                  <div className="animate-pulse" style={{ animationDelay: "0.4s" }}>
-                    ●
-                  </div>
-                  <span className="ml-2">Thinking...</span>
-                </div>
-              </div>
-            </div>
-          </div>
         )}
 
         {/* Scroll anchor */}

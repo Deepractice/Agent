@@ -1,16 +1,5 @@
 import type { Preview } from "@storybook/react";
 import "../src/styles/globals.css";
-import { LoggerFactory, LogLevel } from "../src/utils/WebSocketLogger";
-
-// Configure frontend logger to send logs to backend
-LoggerFactory.configure({
-  wsUrl: "ws://localhost:5201",
-  defaultLevel: LogLevel.DEBUG,
-});
-
-// Test log
-const testLogger = LoggerFactory.getLogger("Storybook");
-testLogger.info("Storybook preview loaded");
 
 const preview: Preview = {
   parameters: {
