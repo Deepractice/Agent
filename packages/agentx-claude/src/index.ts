@@ -3,33 +3,32 @@
  *
  * Claude Driver for AgentX - Node.js only
  *
- * This package provides the ClaudeDriver which wraps @anthropic-ai/claude-agent-sdk.
- * Use with defineAgent() from @deepractice-ai/agentx to create Claude-powered agents.
- *
  * @example
  * ```typescript
- * import { defineAgent, createAgent } from "@deepractice-ai/agentx"
- * import { ClaudeDriver } from "@deepractice-ai/agentx-claude"
+ * import { defineAgent } from "@deepractice-ai/agentx-adk";
+ * import { createAgentX } from "@deepractice-ai/agentx";
+ * import { ClaudeDriver } from "@deepractice-ai/agentx-claude";
  *
  * const MyAgent = defineAgent({
  *   name: "Assistant",
  *   driver: ClaudeDriver,
- *   configSchema: {
- *     apiKey: { type: "string", required: true },
- *     model: { type: "string", default: "claude-sonnet-4-20250514" },
+ *   config: {
+ *     model: "claude-sonnet-4-20250514",
  *   },
- * })
+ * });
  *
- * const agent = createAgent(MyAgent, { apiKey: process.env.ANTHROPIC_API_KEY })
+ * const agentx = createAgentX();
+ * const agent = agentx.agents.create(MyAgent, {
+ *   apiKey: process.env.ANTHROPIC_API_KEY,
+ * });
  * ```
  *
  * @packageDocumentation
  */
 
-// ==================== Driver ====================
-export { ClaudeSDKDriver as ClaudeDriver } from "./drivers/ClaudeSDKDriver";
-export type { ClaudeSDKOptions as ClaudeDriverConfig } from "./drivers/ClaudeSDKOptions";
+// ==================== Modern ADK-based Driver ====================
+export { ClaudeDriver } from "./ClaudeDriver";
+export { claudeSDKConfig as claudeConfig } from "./ClaudeConfig";
 
-// Legacy exports (deprecated, use ClaudeDriver instead)
+// ==================== Legacy (Backward Compatibility) ====================
 export { ClaudeSDKDriver } from "./drivers/ClaudeSDKDriver";
-export type { ClaudeSDKOptions as ClaudeSDKDriverConfig } from "./drivers/ClaudeSDKOptions";

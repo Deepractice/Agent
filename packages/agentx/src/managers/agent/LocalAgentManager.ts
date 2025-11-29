@@ -12,7 +12,7 @@ import type {
   AgentContainer,
   AgentContext,
   ErrorMessageEvent,
-  DefineAgentInput,
+  DriverClass,
 } from "@deepractice-ai/agentx-types";
 import { AgentInstance, createAgentContext } from "@deepractice-ai/agentx-core";
 import type { AgentEngine } from "@deepractice-ai/agentx-engine";
@@ -32,37 +32,16 @@ export class LocalAgentManager implements IAgentManager {
   ) {}
 
   /**
-   * Define an agent
-   */
-  define<TConfig extends Record<string, unknown>>(
-    input: DefineAgentInput<TConfig>
-  ): AgentDefinition<TConfig> {
-    if (!input.name) {
-      throw new Error("[AgentManager.define] name is required");
-    }
-    if (!input.driver) {
-      throw new Error("[AgentManager.define] driver is required");
-    }
-
-    return Object.freeze({
-      name: input.name,
-      description: input.description,
-      driver: input.driver,
-      presenters: input.presenters,
-    });
-  }
-
-  /**
    * Create a new agent instance
    */
-  create<TConfig extends Record<string, unknown>>(
-    definition: AgentDefinition<TConfig>,
-    config: TConfig
+  create<TDriver extends DriverClass>(
+    definition: AgentDefinition<TDriver>,
+    config: Record<string, unknown>
   ): Agent {
     logger.debug("Creating agent", { definitionName: definition.name });
 
     // Create context
-    const agentContext: AgentContext<TConfig> = createAgentContext(config);
+    const agentContext = createAgentContext(config);
 
     // Create agent instance
     const agent = new AgentInstance(definition, agentContext, this.engine);

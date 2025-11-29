@@ -75,21 +75,28 @@ export interface AgentXRemoteOptions {
 export type AgentXOptions = AgentXLocalOptions | AgentXRemoteOptions;
 
 // ============================================================================
-// Function Signature - Authoritative API
+// Function Declaration - Authoritative API
 // ============================================================================
 
 /**
- * createAgentX - Factory function signature
+ * createAgentX - Factory function for creating AgentX instances
  *
  * This is the authoritative API definition.
- * The agentx package must export a function matching this signature:
+ * The agentx package must implement this function exactly.
  *
+ * @param options - AgentX creation options (local or remote mode)
+ * @returns AgentX instance
+ *
+ * @example
  * ```typescript
- * import type { CreateAgentX } from "@deepractice-ai/agentx-types";
+ * // Local mode (default)
+ * const agentx = createAgentX();
  *
- * export const createAgentX: CreateAgentX = (options) => {
- *   // implementation
- * };
+ * // Remote mode
+ * const agentx = createAgentX({
+ *   mode: 'remote',
+ *   remote: { serverUrl: 'http://localhost:5200/agentx' }
+ * });
  * ```
  */
-export type CreateAgentX = (options?: AgentXOptions) => AgentX;
+export declare function createAgentX(options?: AgentXOptions): AgentX;

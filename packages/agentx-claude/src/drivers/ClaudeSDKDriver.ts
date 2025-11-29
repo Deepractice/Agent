@@ -46,7 +46,7 @@ import type {
   ToolResultEvent,
 } from "@deepractice-ai/agentx-types";
 import { createLogger } from "@deepractice-ai/agentx-logger";
-import { observableToAsyncIterable } from "~/utils/observableToAsyncIterable";
+import { observableToAsyncIterable } from "../observableToAsyncIterable";
 import { buildOptions } from "./ClaudeSDKOptions";
 import { Subject } from "rxjs";
 

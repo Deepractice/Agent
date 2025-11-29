@@ -62,7 +62,7 @@ export type {
 export { AgentXApiError } from "./types";
 
 // SSE Driver (core building block)
-export { SSEDriver, type SSEDriverConfig } from "./SSEDriver";
+export { SSEDriver } from "./SSEDriver";
 
 // Remote Agent Factory
 export { createRemoteAgent, type CreateRemoteAgentOptions } from "./createRemoteAgent";

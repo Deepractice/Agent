@@ -6,46 +6,23 @@
  *
  * @example
  * ```typescript
- * import { createAgent, defineAgent } from "@deepractice-ai/agentx";
- * import { SSEDriver } from "@deepractice-ai/agentx/client";
+ * import { createRemoteAgent } from "@deepractice-ai/agentx/client";
  *
- * const agent = createAgent(
- *   defineAgent({ name: "RemoteAgent", driver: SSEDriver }),
- *   { serverUrl: "http://localhost:5200/agentx", agentId: "agent_123" }
- * );
+ * const agent = createRemoteAgent({
+ *   serverUrl: "http://localhost:5200/agentx",
+ *   agentId: "agent_123"
+ * });
  *
- * agent.on((event) => {
- *   // Receives ASSEMBLED events: assistant_message, tool_call_message, tool_result_message, etc.
- *   console.log(event);
+ * agent.on("assistant_message", (event) => {
+ *   console.log(event.data.content);
  * });
  *
  * await agent.receive("Hello!");
  * ```
  */
 
-import type { AgentDriver, AgentContext, DriverClass, UserMessage, StreamEventType } from "@deepractice-ai/agentx-types";
-
-/**
- * SSEDriver configuration (passed via AgentContext)
- */
-export interface SSEDriverConfig {
-  /**
-   * Server base URL (e.g., "http://localhost:5200/agentx")
-   */
-  serverUrl: string;
-
-  /**
-   * Agent ID on the server
-   */
-  agentId: string;
-
-  /**
-   * Optional request headers (for auth, etc.)
-   * Note: EventSource doesn't support custom headers natively.
-   * For auth, consider using cookies or URL params.
-   */
-  headers?: Record<string, string>;
-}
+import type { UserMessage, StreamEventType } from "@deepractice-ai/agentx-types";
+import { defineConfig, defineDriver } from "@deepractice-ai/agentx-adk";
 
 /**
  * Stream event types that we listen for
@@ -232,90 +209,80 @@ class PersistentSSEConnection {
 }
 
 /**
- * SSEDriver - Connects to remote AgentX server via SSE
- *
- * This driver:
- * 1. Establishes persistent SSE connection on first use
- * 2. Sends messages to server via HTTP POST
- * 3. Yields stream events from the persistent connection
- * 4. Supports multi-turn conversations (tool calls)
- *
- * The SSE connection remains open across multiple receive() calls,
- * enabling proper tool call flows where Claude responds → calls tool → continues responding.
+ * SSEDriver configuration schema
  */
-export class SSEDriver implements AgentDriver {
-  readonly name = "SSEDriver";
-  readonly description = "Browser SSE driver for connecting to remote AgentX server";
+const sseConfig = defineConfig({
+  serverUrl: {
+    type: "string",
+    description: "Server base URL (e.g., http://localhost:5200/agentx)",
+    required: true,
+    scope: "instance",
+  },
+  agentId: {
+    type: "string",
+    description: "Agent ID on the server",
+    required: true,
+    scope: "instance",
+  },
+  headers: {
+    type: "object",
+    description: "Optional request headers (for auth, etc.). Note: EventSource doesn't support custom headers natively. For auth, consider using cookies or URL params.",
+    required: false,
+    scope: "instance",
+  },
+});
 
-  private readonly context: AgentContext<SSEDriverConfig>;
-  private connection: PersistentSSEConnection | null = null;
+/**
+ * SSEDriver - ADK-based driver for browser SSE connections
+ */
+export const SSEDriver = defineDriver({
+  name: "SSEDriver",
+  description: "Browser SSE driver for connecting to remote AgentX server",
+  config: sseConfig,
 
-  constructor(context: AgentContext<SSEDriverConfig>) {
-    this.context = context;
+  create: (context) => {
+    let connection: PersistentSSEConnection | null = null;
 
-    if (!context.serverUrl) {
-      throw new Error("[SSEDriver] serverUrl is required in context");
-    }
-    if (!context.agentId) {
-      throw new Error("[SSEDriver] agentId is required in context");
-    }
-  }
+    return {
+      name: "SSEDriver",
 
-  async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
-    const { serverUrl, agentId, headers = {} } = this.context;
+      async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
+        const { serverUrl, agentId, headers = {} } = context;
 
-    // 1. Ensure SSE connection is established
-    if (!this.connection) {
-      this.connection = new PersistentSSEConnection(serverUrl, agentId);
-      this.connection.connect();
-    }
+        // 1. Ensure SSE connection is established
+        if (!connection) {
+          connection = new PersistentSSEConnection(serverUrl, agentId);
+          connection.connect();
+        }
 
-    // 2. Send message to server via HTTP POST
-    const messageUrl = `${serverUrl}/agents/${agentId}/messages`;
-    const response = await fetch(messageUrl, {
-      method: "POST",
-      headers: {
-        "Content-Type": "application/json",
-        ...headers,
+        // 2. Send message to server via HTTP POST
+        const messageUrl = `${serverUrl}/agents/${agentId}/messages`;
+        const response = await fetch(messageUrl, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            ...headers,
+          },
+          body: JSON.stringify({
+            content: typeof message.content === "string" ? message.content : message.content,
+          }),
+        });
+
+        if (!response.ok) {
+          const errorBody = (await response.json().catch(() => ({}))) as {
+            error?: { message?: string };
+          };
+          throw new Error(errorBody.error?.message || `HTTP ${response.status}`);
+        }
+
+        // 3. Yield events from persistent SSE connection
+        yield* connection.createIterator();
       },
-      body: JSON.stringify({
-        content: typeof message.content === "string" ? message.content : message.content,
-      }),
-    });
 
-    if (!response.ok) {
-      const errorBody = (await response.json().catch(() => ({}))) as {
-        error?: { message?: string };
-      };
-      throw new Error(errorBody.error?.message || `HTTP ${response.status}`);
-    }
-
-    // 3. Yield events from persistent SSE connection
-    // Each receive() call gets its own iterator that completes on message_stop,
-    // but the underlying SSE connection stays open for future calls
-    yield* this.connection.createIterator();
-  }
-
-  async destroy(): Promise<void> {
-    // Close the persistent SSE connection
-    if (this.connection) {
-      this.connection.close();
-      this.connection = null;
-    }
-  }
-
-  /**
-   * Create a configured driver class with custom options
-   */
-  static withConfig(extraConfig: Partial<SSEDriverConfig>): DriverClass<SSEDriverConfig> {
-    return class ConfiguredSSEDriver extends SSEDriver {
-      constructor(context: AgentContext<SSEDriverConfig>) {
-        const mergedContext = {
-          ...context,
-          ...extraConfig,
-        };
-        super(mergedContext);
-      }
+      async destroy(): Promise<void> {
+        connection?.close();
+        connection = null;
+      },
     };
-  }
-}
+  },
+});

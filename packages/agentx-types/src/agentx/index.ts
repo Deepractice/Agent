@@ -9,10 +9,12 @@
  * - Remote (AgentXRemote): Operations via network
  *
  * API Design:
- * - agentx.agents.* - Agent lifecycle (define, create, get, destroy)
+ * - agentx.agents.* - Agent lifecycle (create, get, destroy) [Runtime only]
  * - agentx.errors.* - Error handling (Local only)
  * - agentx.sessions.* - Session management
  * - agentx.platform.* - Platform info (Remote only)
+ *
+ * Note: Agent definition is done via defineAgent from @deepractice-ai/agentx-adk
  *
  * Structure:
  * - *Manager: TypeScript API interface
@@ -27,8 +29,8 @@ export type {
   AgentXOptions,
   AgentXLocalOptions,
   AgentXRemoteOptions,
-  CreateAgentX,
-} from "./CreateAgentX";
+} from "./createAgentX";
+export { createAgentX } from "./createAgentX";
 
 // Configuration types
 export type { RemoteConfig } from "./AgentXConfig";
@@ -39,7 +41,6 @@ export type { Endpoint, HttpMethod } from "./Endpoint";
 // Agent module (Manager + Endpoints)
 export type {
   AgentManager,
-  DefineAgentInput,
   AgentInfo,
   ListAgentsResponse,
   CreateAgentRequest,

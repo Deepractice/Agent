@@ -29,7 +29,6 @@ import type {
   AgentXRemote,
   AgentXOptions,
   AgentXRemoteOptions,
-  CreateAgentX,
   ProviderKey,
   LoggerFactory,
 } from "@deepractice-ai/agentx-types";
@@ -150,8 +149,6 @@ function createRemoteAgentX(options: AgentXRemoteOptions): AgentXRemote {
 /**
  * Create a new AgentX instance
  *
- * Factory function controlled by CreateAgentX type from agentx-types.
- *
  * @example
  * ```typescript
  * // Local mode (default)
@@ -165,9 +162,9 @@ function createRemoteAgentX(options: AgentXRemoteOptions): AgentXRemote {
  * });
  * ```
  */
-export const createAgentX: CreateAgentX = (options?: AgentXOptions): AgentX => {
+export function createAgentX(options?: AgentXOptions): AgentX {
   if (isRemoteOptions(options)) {
     return createRemoteAgentX(options);
   }
   return createLocalAgentX();
-};
+}

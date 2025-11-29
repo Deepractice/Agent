@@ -59,9 +59,9 @@ export const agentx: AgentXLocal = createAgentX() as AgentXLocal;
  * const agent = createAgent(MyAgent, { apiKey: "xxx" });
  * ```
  */
-export function createAgent<TConfig extends Record<string, unknown>>(
-  definition: AgentDefinition<TConfig>,
-  config: TConfig
+export function createAgent<TDriver extends import("@deepractice-ai/agentx-types").DriverClass>(
+  definition: AgentDefinition<TDriver>,
+  config: Record<string, unknown>
 ): Agent {
   return agentx.agents.create(definition, config);
 }
@@ -98,23 +98,6 @@ export function destroyAll(): Promise<void> {
 
 export { createAgentX } from "./AgentX";
 
-// ===== Define API =====
-
-export { defineAgent, type DefineAgentOptions, type DefinedAgent } from "./defineAgent";
-
-// ===== Config Schema =====
-
-export {
-  type ConfigSchema,
-  type FieldDefinition,
-  type FieldType,
-  type InferConfig,
-  validateConfig,
-  applyDefaults,
-  processConfig,
-  ConfigValidationError,
-} from "./ConfigSchema";
-
 // ===== Re-export Types from @deepractice-ai/agentx-types =====
 
 export type {
@@ -125,10 +108,8 @@ export type {
   AgentXOptions,
   AgentXLocalOptions,
   AgentXRemoteOptions,
-  CreateAgentX,
   // Agent module
   AgentManager,
-  DefineAgentInput,
   // Error module
   ErrorManager,
   ErrorHandler,

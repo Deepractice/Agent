@@ -1,19 +1,23 @@
 /**
- * AgentManager - Agent lifecycle management
+ * AgentManager - Agent lifecycle management (Runtime API)
  *
- * TypeScript API for agent operations (agentx.agents.*)
+ * TypeScript API for runtime agent operations (agentx.agents.*)
+ *
+ * Note: Agent definition is done via defineAgent from @deepractice-ai/agentx-adk
  *
  * @example
  * ```typescript
- * const agentx = createAgentX();
+ * import { defineAgent } from "@deepractice-ai/agentx-adk";
+ * import { createAgentX } from "@deepractice-ai/agentx";
  *
- * // Define agent
- * const MyAgent = agentx.agents.define({
+ * // Define agent (development time)
+ * const MyAgent = defineAgent({
  *   name: "MyAssistant",
  *   driver: myDriver,
  * });
  *
- * // Create instance
+ * // Create instance (runtime)
+ * const agentx = createAgentX();
  * const agent = agentx.agents.create(MyAgent, config);
  *
  * // Get / List / Destroy
@@ -26,35 +30,17 @@
 import type { Agent } from "~/agent/Agent";
 import type { AgentDefinition } from "~/agent/AgentDefinition";
 import type { DriverClass } from "~/agent/AgentDriver";
-import type { AgentPresenter } from "~/agent/AgentPresenter";
 
 /**
- * Input for defining an agent
- */
-export interface DefineAgentInput<TConfig = Record<string, unknown>> {
-  name: string;
-  description?: string;
-  driver: DriverClass<TConfig>;
-  presenters?: AgentPresenter[];
-}
-
-/**
- * Agent lifecycle management interface
+ * Agent lifecycle management interface (Runtime only)
  */
 export interface AgentManager {
   /**
-   * Define an agent
+   * Create a new agent instance from definition
    */
-  define<TConfig extends Record<string, unknown>>(
-    input: DefineAgentInput<TConfig>
-  ): AgentDefinition<TConfig>;
-
-  /**
-   * Create a new agent instance
-   */
-  create<TConfig extends Record<string, unknown>>(
-    definition: AgentDefinition<TConfig>,
-    config: TConfig
+  create<TDriver extends DriverClass>(
+    definition: AgentDefinition<TDriver>,
+    config: Record<string, unknown>
   ): Agent;
 
   /**

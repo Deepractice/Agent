@@ -13,11 +13,17 @@
 
 import type { DriverClass } from "./AgentDriver";
 import type { AgentPresenter } from "./AgentPresenter";
+import type { ConfigSchema, DefinitionConfig } from "~/config";
 
 /**
  * AgentDefinition - Static agent definition
+ *
+ * Defines the template for creating agent instances.
+ * Configuration is split into two scopes:
+ * - Definition-scope: Set here in the template (shared by all instances)
+ * - Instance-scope: Set when creating each instance (per-instance)
  */
-export interface AgentDefinition<TConfig = Record<string, unknown>> {
+export interface AgentDefinition<TDriver extends DriverClass = DriverClass> {
   /**
    * Agent name (identifier)
    */
@@ -42,17 +48,46 @@ export interface AgentDefinition<TConfig = Record<string, unknown>> {
    *   driver: ClaudeDriver,
    * });
    *
-   * // With configuration (closure pattern)
+   * // With schema - type-safe config
    * defineAgent({
    *   name: "MyAgent",
-   *   driver: ClaudeDriver.withConfig({ model: "xxx" }),
+   *   driver: ClaudeDriver,  // has static schema
+   *   config: {
+   *     systemPrompt: "...",  // ✅ definition scope
+   *     model: "sonnet",      // ✅ definition scope
+   *     apiKey: "xxx",        // ❌ type error! instance scope
+   *   },
    * });
    * ```
    */
-  driver: DriverClass<TConfig>;
+  driver: TDriver;
 
   /**
    * Output presenters (optional)
    */
   presenters?: AgentPresenter[];
+
+  /**
+   * Definition-level configuration
+   *
+   * Fields set here are shared by all instances created from this definition.
+   * Type is automatically inferred from the driver's schema (if available).
+   * Only fields with scope: "definition" can be set here.
+   *
+   * @example
+   * ```typescript
+   * const ClaudeAgent = defineAgent({
+   *   driver: ClaudeSDKDriver,
+   *   config: {
+   *     // Type-safe: only definition-scope fields allowed
+   *     systemPrompt: "You are a code reviewer",
+   *     model: "claude-sonnet-4-5",
+   *     allowedTools: ["Read", "Grep"],
+   *   },
+   * });
+   * ```
+   */
+  config?: TDriver extends { schema: infer S extends ConfigSchema }
+    ? DefinitionConfig<S>
+    : Record<string, unknown>;
 }

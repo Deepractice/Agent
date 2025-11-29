@@ -5,7 +5,7 @@
  * - AgentEndpoint: HTTP API contracts
  */
 
-export type { AgentManager, DefineAgentInput } from "./AgentManager";
+export type { AgentManager } from "./AgentManager";
 
 // Endpoint types
 export type {

@@ -42,6 +42,7 @@
 import type { StreamEventType } from "~/event";
 import type { UserMessage } from "~/message";
 import type { AgentContext } from "./AgentContext";
+import type { ConfigSchema } from "~/config";
 
 /**
  * AgentDriver interface
@@ -89,13 +90,27 @@ export interface AgentDriver {
  *   driver: ClaudeDriver,
  * });
  *
- * // With configuration - use closure pattern
- * defineAgent({
- *   name: "MyAgent",
- *   driver: ClaudeDriver.withConfig({ model: "claude-sonnet-4-5-20250929" }),
- * });
+ * // With schema - driver declares its config structure
+ * class ClaudeDriver implements AgentDriver {
+ *   static schema = {
+ *     systemPrompt: { type: "string", scope: "definition" },
+ *     apiKey: { type: "string", scope: "instance", required: true },
+ *     // ...
+ *   } as const satisfies ConfigSchema;
+ * }
  * ```
  */
-export type DriverClass<TConfig = Record<string, unknown>> = new (
-  context: AgentContext<TConfig>
-) => AgentDriver;
+export interface DriverClass<TConfig = Record<string, unknown>> {
+  /**
+   * Constructor
+   */
+  new (context: AgentContext<TConfig>): AgentDriver;
+
+  /**
+   * Optional configuration schema
+   *
+   * If provided, enables type-safe config in defineAgent and create.
+   * The schema declares what configuration the driver accepts.
+   */
+  schema?: ConfigSchema;
+}

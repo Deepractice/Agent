@@ -31,9 +31,10 @@
  * ```
  */
 
-import type { Agent, AgentDefinition } from "@deepractice-ai/agentx-types";
+import type { Agent } from "@deepractice-ai/agentx-types";
+import { defineAgent } from "@deepractice-ai/agentx-adk";
 import { createAgentX } from "../AgentX";
-import { SSEDriver, type SSEDriverConfig } from "./SSEDriver";
+import { SSEDriver } from "./SSEDriver";
 
 /**
  * Options for creating a remote agent
@@ -58,11 +59,11 @@ export interface CreateRemoteAgentOptions {
 /**
  * Pre-defined agent definition for remote connections
  */
-const RemoteAgentDefinition: AgentDefinition<SSEDriverConfig> = {
+const RemoteAgentDefinition = defineAgent({
   name: "RemoteAgent",
   description: "Browser-side agent that connects to remote AgentX server via SSE",
   driver: SSEDriver,
-};
+});
 
 /**
  * Create a remote agent that connects to an AgentX server
