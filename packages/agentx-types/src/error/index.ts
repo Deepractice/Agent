@@ -3,15 +3,45 @@
  *
  * Defines the error type system for AgentX.
  *
- * Architecture:
- * - BaseAgentError: Common fields for all errors
- * - Category-specific errors: DriverError, LLMError, NetworkError, etc.
- * - AgentError: Union type of all error categories
+ * ## Design Decision: Structured Error Taxonomy
  *
- * Design Principles:
- * - Category: The "layer" where the error occurred
- * - Code: The specific error type within that category
- * - Type Safety: Category and code combinations are constrained
+ * Errors are classified by category (WHERE) and code (WHAT):
+ *
+ * | Category     | Examples                              | Recovery |
+ * |--------------|---------------------------------------|----------|
+ * | driver       | INIT_FAILED, INVALID_CONFIG           | Maybe    |
+ * | llm          | API_ERROR, RATE_LIMITED, OVERLOADED   | Retry    |
+ * | network      | TIMEOUT, CONNECTION_REFUSED           | Retry    |
+ * | validation   | INVALID_MESSAGE, MISSING_REQUIRED     | Fix input|
+ * | system       | OUT_OF_MEMORY, INTERNAL_ERROR         | No       |
+ *
+ * ## Design Decision: Severity Levels
+ *
+ * Three severity levels for error handling:
+ * - **fatal**: System cannot continue, requires restart
+ * - **error**: Operation failed, but system can continue
+ * - **warning**: Potential issue, operation may succeed
+ *
+ * ## Design Decision: Recoverability Flag
+ *
+ * `recoverable: boolean` indicates whether retry makes sense:
+ * - `true`: Transient error, retry may succeed (rate limit, timeout)
+ * - `false`: Permanent error, retry will fail (invalid config)
+ *
+ * ## Why Not Use Native Error?
+ *
+ * AgentError is a plain object, not an Error class, because:
+ * 1. **Serializable**: Can be sent via SSE, stored in JSON
+ * 2. **Type-safe**: Discriminated union enables precise handling
+ * 3. **Cross-platform**: Works in Node.js, Browser, Edge
+ *
+ * ```typescript
+ * // Native Error is not serializable
+ * JSON.stringify(new Error("fail")) // "{}"
+ *
+ * // AgentError is fully serializable
+ * JSON.stringify(agentError) // "{ category: ..., code: ..., message: ... }"
+ * ```
  */
 
 // Base

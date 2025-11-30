@@ -4,217 +4,269 @@
 
 ## Overview
 
-`agentx-types` is a **pure TypeScript type library** that defines the domain models for building AI agents. It provides the foundational data structures for messages, LLM interactions, sessions, and Model Context Protocol (MCP) integration.
+`agentx-types` is a **pure TypeScript type library** (137+ files, zero dependencies) that defines the complete type system for building event-driven AI agents.
 
 **Key Characteristics:**
 
-- **Zero runtime dependencies** - Pure TypeScript types
+- **Zero runtime dependencies** - Pure TypeScript types (except type guards)
 - **Platform-agnostic** - Works in Node.js, Browser, and Edge runtimes
 - **Contract-first design** - Single source of truth for data structures
-- **Type-safe** - Discriminated unions with type guards
-- **Well-documented** - Every type includes JSDoc comments
-- **Domain-driven** - Clear separation between Agent's internal world and external environment
+- **4-Layer Event Architecture** - Stream → State → Message → Turn
+- **Well-documented** - Every type includes JSDoc comments with design decisions
 
 ## Installation
 
 ```bash
-npm install @deepractice-ai/agentx-types
-# or
 pnpm add @deepractice-ai/agentx-types
-# or
-yarn add @deepractice-ai/agentx-types
 ```
 
 ---
 
-## 🌍 Domain Architecture
+## Architecture Overview
 
-The library is organized into **two major domains**:
-
-```
-agentx-types/
-│
-├── agent/              # Agent's Internal World
-│   ├── Agent.ts        # Agent data structure
-│   ├── message/        # How agent communicates (messages, content)
-│   ├── mcp/            # Agent's capabilities (tools, resources, prompts)
-│   ├── llm/            # Agent's brain (LLM config, requests, responses)
-│   └── guards/         # Type safety (runtime type guards)
-│
-└── environment/        # Agent's External World
-    └── session/        # 1-to-1 conversation snapshot
-        └── Session.ts
-```
-
-### Why Two Domains?
-
-Think of it like a human in a room:
-
-- **Agent Domain** = Human's internal world
-  - How they think (LLM)
-  - How they communicate (Messages)
-  - What tools they can use (MCP)
-  - Their identity (Agent)
-
-- **Environment Domain** = The external room
-  - Session: The conversation space where agent operates
-  - Channel (future): Broadcast spaces (1-to-many)
-  - Group (future): Collaboration spaces (many-to-many)
-
-**Key Insight:**
-
-- Session is a **snapshot** (data) that can be saved/restored
-- Agent is a **runtime instance** that reads the snapshot and operates
-- Session doesn't belong to Agent - Agent loads Session to "revive"
-
----
-
-## 📦 Import Paths
-
-### Before (Old - Don't Use)
-
-```typescript
-import { Message } from "@deepractice-ai/agentx-types/message";
-import { Session } from "@deepractice-ai/agentx-types/session";
-```
-
-### After (New - Use This)
-
-```typescript
-// Agent domain (internal world)
-import { Message } from "@deepractice-ai/agentx-types/agent/message";
-import { McpTool } from "@deepractice-ai/agentx-types/agent/mcp";
-import { LLMConfig } from "@deepractice-ai/agentx-types/agent/llm";
-
-// Environment domain (external world)
-import { Session } from "@deepractice-ai/agentx-types/environment/session";
-
-// Or import everything from root
-import { Message, Session, Agent } from "@deepractice-ai/agentx-types";
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                        agentx-types (137+ files)                    │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────┐  │
+│  │   agent/    │  │   event/    │  │  message/   │  │   llm/    │  │
+│  │  11 files   │  │  44 files   │  │  13 files   │  │  7 files  │  │
+│  │             │  │             │  │             │  │           │  │
+│  │ Agent       │  │ 4-Layer     │  │ Message     │  │ Provider  │  │
+│  │ Driver      │  │ Events      │  │ Content     │  │ Config    │  │
+│  │ Presenter   │  │             │  │ Parts       │  │ Request   │  │
+│  │ Middleware  │  │             │  │             │  │ Response  │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └───────────┘  │
+│                                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────┐  │
+│  │   agentx/   │  │    mcp/     │  │    adk/     │  │  error/   │  │
+│  │  17 files   │  │   7 files   │  │   4 files   │  │  7 files  │  │
+│  │             │  │             │  │             │  │           │  │
+│  │ Platform    │  │ Tool        │  │ defineAgent │  │ AgentError│  │
+│  │ Manager     │  │ Resource    │  │ defineDriver│  │ Category  │  │
+│  │ Endpoint    │  │ Prompt      │  │ defineConfig│  │ Severity  │  │
+│  └─────────────┘  └─────────────┘  └─────────────┘  └───────────┘  │
+│                                                                     │
+│  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                 │
+│  │  session/   │  │   logger/   │  │  config/    │                 │
+│  │   2 files   │  │   4 files   │  │   3 files   │                 │
+│  └─────────────┘  └─────────────┘  └─────────────┘                 │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
 ```
 
 ---
 
-## 🤖 Agent Domain
+## Module Reference
 
-### 1. Agent (Data Structure)
+### Core Contracts (`agent/`)
 
-The complete data structure of an AI agent (pure data, no runtime state).
+Agent runtime interfaces - the core contracts for building agents.
+
+| Type               | Description                                            |
+| ------------------ | ------------------------------------------------------ |
+| `Agent`            | Agent instance interface (receive, on, react, destroy) |
+| `AgentDriver`      | Message processor contract (receive → StreamEvent)     |
+| `AgentPresenter`   | Side-effect handler (logging, monitoring, webhooks)    |
+| `AgentMiddleware`  | Incoming message interceptor (before driver)           |
+| `AgentInterceptor` | Outgoing event interceptor (after engine)              |
+| `AgentContext`     | Runtime context (agentId, config, session)             |
+| `AgentDefinition`  | Agent blueprint (name, driver, presenters)             |
+| `AgentContainer`   | Agent instance storage                                 |
 
 ```typescript
-import { Agent } from "@deepractice-ai/agentx-types";
+import type { Agent, AgentDriver, AgentPresenter } from "@deepractice-ai/agentx-types";
 
+// Driver: Process messages, yield stream events
+interface AgentDriver {
+  receive(message: UserMessage): AsyncIterable<StreamEventType>;
+  abort(): void;
+  destroy(): Promise<void>;
+}
+
+// Agent: High-level interface
 interface Agent {
-  id: string;
-  name: string;
-  description?: string;
-  createdAt: number;
-  version?: string;
-  tags?: string[];
-  [key: string]: unknown; // Extension point
+  readonly id: string;
+  receive(input: string | UserMessage): Promise<void>;
+  on<T extends AgentEventType["type"]>(type: T, handler: Handler<T>): Unsubscribe;
+  react(handlers: EventHandlers): Unsubscribe;
+  destroy(): Promise<void>;
 }
-```
-
-**Example:**
-
-```typescript
-const agent: Agent = {
-  id: "agent-001",
-  name: "Code Review Assistant",
-  description: "Helps review code and suggest improvements",
-  createdAt: Date.now(),
-  version: "1.0.0",
-  tags: ["coding", "review"],
-};
 ```
 
 ---
 
-### 2. Message Types
+### Event System (`event/`) - 4-Layer Architecture
 
-Messages are how agents communicate. Discriminated union based on `role` field.
+The heart of AgentX - a hierarchical event system for real-time AI interactions.
+
+```text
+┌─────────────────────────────────────────────────────────────────────┐
+│                        Event Flow                                   │
+├─────────────────────────────────────────────────────────────────────┤
+│                                                                     │
+│  Driver.receive()                                                   │
+│       │                                                             │
+│       ▼ yields                                                      │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ L1: Stream Layer (real-time, incremental)                   │   │
+│  │ message_start → text_delta* → tool_call → message_stop      │   │
+│  └────────────────────────────┬────────────────────────────────┘   │
+│                               │ Mealy Machine assembles             │
+│                               ▼                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ L2: State Layer (state transitions)                         │   │
+│  │ conversation_start → thinking → responding → conversation_end│   │
+│  └────────────────────────────┬────────────────────────────────┘   │
+│                               │                                     │
+│                               ▼                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ L3: Message Layer (complete messages)                       │   │
+│  │ user_message, assistant_message, tool_call_message          │   │
+│  └────────────────────────────┬────────────────────────────────┘   │
+│                               │                                     │
+│                               ▼                                     │
+│  ┌─────────────────────────────────────────────────────────────┐   │
+│  │ L4: Turn Layer (analytics)                                  │   │
+│  │ turn_request → turn_response (duration, cost, tokens)       │   │
+│  └─────────────────────────────────────────────────────────────┘   │
+│                                                                     │
+└─────────────────────────────────────────────────────────────────────┘
+```
+
+#### Design Decision: Why 4 Layers?
+
+Each layer serves a different consumer:
+
+| Layer       | Consumer                          | Purpose                         |
+| ----------- | --------------------------------- | ------------------------------- |
+| **Stream**  | UI (typewriter effect)            | Real-time incremental updates   |
+| **State**   | State machine, loading indicators | Track agent lifecycle           |
+| **Message** | Chat history, persistence         | Complete conversation records   |
+| **Turn**    | Analytics, billing                | Usage metrics and cost tracking |
+
+#### Stream Layer Events (L1)
+
+Real-time incremental events during streaming response.
 
 ```typescript
-import { Message, UserMessage, AssistantMessage } from "@deepractice-ai/agentx-types";
+import type {
+  StreamEventType,
+  TextDeltaEvent,
+  ToolCallEvent,
+  MessageStopEvent,
+} from "@deepractice-ai/agentx-types";
 
+// Text streaming flow
+// 1. MessageStartEvent
+// 2. TextContentBlockStartEvent
+// 3. TextDeltaEvent (repeated) ← append to build complete text
+// 4. TextContentBlockStopEvent
+// 5. MessageDeltaEvent
+// 6. MessageStopEvent
+
+// Tool use flow
+// 1. MessageStartEvent
+// 2. ToolUseContentBlockStartEvent
+// 3. InputJsonDeltaEvent (repeated) ← concatenate to build JSON
+// 4. ToolUseContentBlockStopEvent
+// 5. ToolCallEvent ← complete tool call ready
+// 6. ToolResultEvent ← after execution
+```
+
+#### State Layer Events (L2)
+
+State machine transitions for agent lifecycle.
+
+```typescript
+import type {
+  StateEventType,
+  ConversationStartStateEvent,
+  ToolPlannedStateEvent,
+  ConversationEndStateEvent,
+} from "@deepractice-ai/agentx-types";
+
+// Agent lifecycle: agent_initializing → agent_ready → agent_destroyed
+// Conversation: conversation_queued → conversation_start → conversation_thinking
+//               → conversation_responding → conversation_end
+// Tool: tool_planned → tool_executing → tool_completed/tool_failed
+```
+
+#### Message Layer Events (L3)
+
+Complete message events for chat history.
+
+```typescript
+import type {
+  MessageEventType,
+  UserMessageEvent,
+  AssistantMessageEvent,
+  ToolCallMessageEvent,
+} from "@deepractice-ai/agentx-types";
+
+// UserMessageEvent - user sent a message
+// AssistantMessageEvent - AI completed a response
+// ToolCallMessageEvent - AI requested tool execution
+// ToolResultMessageEvent - tool execution completed
+```
+
+#### Turn Layer Events (L4)
+
+Analytics events for complete request-response cycles.
+
+```typescript
+import type { TurnRequestEvent, TurnResponseEvent } from "@deepractice-ai/agentx-types";
+
+interface TurnResponseEvent {
+  type: "turn_response";
+  turnId: string;
+  data: {
+    assistantMessage: AssistantMessage;
+    durationMs: number;
+    usage?: { input: number; output: number };
+    costUsd?: number;
+  };
+}
+```
+
+#### Design Decision: ErrorEvent is Independent
+
+Error is NOT part of Message or the 4-layer hierarchy because:
+
+1. **Not conversation content** - Errors are system notifications
+2. **SSE transport** - Errors need special handling for transmission
+3. **UI-specific rendering** - Error display differs from messages
+
+```typescript
+import type { ErrorEvent } from "@deepractice-ai/agentx-types";
+
+// ErrorEvent travels via SSE alongside StreamEvents
+// Browser receives and displays error UI
+```
+
+---
+
+### Message Types (`message/`)
+
+Role-based message system with multi-modal content support.
+
+```typescript
+import type {
+  Message,
+  UserMessage,
+  AssistantMessage,
+  ToolCallMessage,
+  ToolResultMessage,
+} from "@deepractice-ai/agentx-types";
+
+// Discriminated union by `subtype` field
 type Message =
-  | UserMessage // role: "user"
-  | AssistantMessage // role: "assistant"
-  | SystemMessage // role: "system"
-  | ToolUseMessage // role: "tool-use"
-  | ErrorMessage; // role: "error"
-```
-
-#### UserMessage
-
-Messages sent by users. Supports text, images, and files.
-
-```typescript
-interface UserMessage {
-  id: string;
-  role: "user";
-  content: string | Array<TextPart | ImagePart | FilePart>;
-  timestamp: number;
-  parentId?: string; // For threading
-}
-```
-
-**Example:**
-
-```typescript
-const textMessage: UserMessage = {
-  id: "msg-001",
-  role: "user",
-  content: "Hello!",
-  timestamp: Date.now(),
-};
-
-const multiModalMessage: UserMessage = {
-  id: "msg-002",
-  role: "user",
-  content: [
-    { type: "text", text: "What's in this image?" },
-    { type: "image", data: "base64...", mediaType: "image/png" },
-  ],
-  timestamp: Date.now(),
-};
-```
-
-#### AssistantMessage
-
-Messages generated by AI assistants. Can include thinking, tool calls, and rich content.
-
-```typescript
-interface AssistantMessage {
-  id: string;
-  role: "assistant";
-  content: string | Array<TextPart | ThinkingPart | ToolCallPart | FilePart>;
-  timestamp: number;
-  parentId?: string;
-  usage?: TokenUsage; // Token consumption stats
-}
-```
-
-**Example:**
-
-```typescript
-const response: AssistantMessage = {
-  id: "msg-003",
-  role: "assistant",
-  content: "I'm doing well!",
-  timestamp: Date.now(),
-  usage: { input: 10, output: 8 },
-};
-
-const responseWithThinking: AssistantMessage = {
-  id: "msg-004",
-  role: "assistant",
-  content: [
-    { type: "thinking", reasoning: "Analyzing the request..." },
-    { type: "text", text: "Here's my answer." },
-  ],
-  timestamp: Date.now(),
-};
+  | UserMessage // subtype: "user"
+  | AssistantMessage // subtype: "assistant"
+  | SystemMessage // subtype: "system"
+  | ToolCallMessage // subtype: "tool-call"
+  | ToolResultMessage; // subtype: "tool-result"
 ```
 
 #### Content Parts
@@ -222,6 +274,8 @@ const responseWithThinking: AssistantMessage = {
 Multi-modal content through `ContentPart` types:
 
 ```typescript
+import type { ContentPart, TextPart, ImagePart, ToolCallPart } from "@deepractice-ai/agentx-types";
+
 type ContentPart =
   | TextPart // { type: "text", text: string }
   | ThinkingPart // { type: "thinking", reasoning: string }
@@ -233,407 +287,246 @@ type ContentPart =
 
 ---
 
-### 3. MCP (Model Context Protocol)
+### Platform API (`agentx/`)
 
-Agent's capabilities: tools, resources, and prompts.
-
-#### MCP Tools
+AgentX platform contracts - the application context for agent management.
 
 ```typescript
-import { McpTool } from "@deepractice-ai/agentx-types/agent/mcp";
+import type {
+  AgentX,
+  AgentXLocal,
+  AgentXRemote,
+  AgentManager,
+  SessionManager,
+} from "@deepractice-ai/agentx-types";
+
+// Two modes: Local (in-memory) and Remote (via network)
+interface AgentXLocal {
+  readonly mode: "local";
+  readonly agents: AgentManager;
+  readonly sessions: LocalSessionManager;
+  readonly errors: ErrorManager;
+}
+
+interface AgentXRemote {
+  readonly mode: "remote";
+  readonly agents: AgentManager;
+  readonly sessions: RemoteSessionManager;
+  readonly platform: PlatformManager;
+}
+```
+
+#### HTTP Endpoint Contracts
+
+Type-safe HTTP API definitions using `Endpoint` type:
+
+```typescript
+import type {
+  Endpoint,
+  ListAgentsEndpoint,
+  CreateAgentEndpoint,
+} from "@deepractice-ai/agentx-types";
+
+// Endpoint<Method, Path, Input, Output>
+interface ListAgentsEndpoint extends Endpoint<"GET", "/agents", void, ListAgentsResponse> {}
+interface CreateAgentEndpoint
+  extends Endpoint<"POST", "/agents", CreateAgentRequest, CreateAgentResponse> {}
+```
+
+---
+
+### ADK Types (`adk/`)
+
+Agent Development Kit type declarations for `defineAgent`, `defineDriver`, `defineConfig`.
+
+```typescript
+import type {
+  DefineAgentInput,
+  DefineDriverInput,
+  ConfigSchema,
+} from "@deepractice-ai/agentx-types";
+
+// Config field definition
+interface ConfigFieldDefinition {
+  type: "string" | "number" | "boolean" | "object" | "array";
+  description?: string;
+  required?: boolean;
+  default?: unknown;
+  scope: "definition" | "instance";
+}
+
+// Schema for driver/agent config
+type ConfigSchema = Record<string, ConfigFieldDefinition>;
+```
+
+---
+
+### LLM Types (`llm/`)
+
+Language model abstractions for stateless inference.
+
+```typescript
+import type { LLMConfig, LLMRequest, LLMResponse, StopReason } from "@deepractice-ai/agentx-types";
+
+interface LLMConfig {
+  model: string;
+  temperature?: number;
+  maxTokens?: number;
+  maxThinkingTokens?: number;
+}
+
+type StopReason = "end_turn" | "max_tokens" | "tool_use" | "stop_sequence" | "error";
+```
+
+---
+
+### MCP Types (`mcp/`)
+
+Model Context Protocol - tools, resources, and prompts.
+
+```typescript
+import type {
+  McpTool,
+  McpResource,
+  McpPrompt,
+  McpTransportConfig,
+} from "@deepractice-ai/agentx-types";
 
 interface McpTool {
   name: string;
   description?: string;
-  inputSchema: JsonSchema; // JSON Schema for parameters
+  inputSchema: JsonSchema;
 }
-```
 
-**Example:**
-
-```typescript
-const weatherTool: McpTool = {
-  name: "get_weather",
-  description: "Get weather for a city",
-  inputSchema: {
-    type: "object",
-    properties: {
-      city: { type: "string", description: "City name" },
-    },
-    required: ["city"],
-  },
-};
-```
-
-#### MCP Resources
-
-```typescript
-interface McpResource {
-  uri: string;
-  name: string;
-  description?: string;
-  mimeType?: string;
-}
-```
-
-#### MCP Prompts
-
-```typescript
-interface McpPrompt {
-  name: string;
-  description?: string;
-  arguments?: McpPromptArgument[];
-}
+type McpTransportConfig =
+  | McpStdioTransport // Local process
+  | McpSseTransport // SSE connection
+  | McpHttpTransport // HTTP requests
+  | McpSdkTransport; // In-process SDK
 ```
 
 ---
 
-### 4. LLM Configuration
+### Error Types (`error/`)
 
-How agents interact with language models.
+Unified error taxonomy for agent systems.
 
 ```typescript
-import { LLMConfig, LLMRequest, LLMResponse } from "@deepractice-ai/agentx-types/agent/llm";
+import type { AgentError, ErrorSeverity } from "@deepractice-ai/agentx-types";
 
-interface LLMConfig {
-  model: string;
-  temperature?: number; // 0-2
-  maxTokens?: number;
-  topP?: number;
-  stopSequences?: string[];
-  maxThinkingTokens?: number;
+interface AgentError {
+  category: "system" | "agent" | "llm" | "validation" | "unknown";
+  code: string;
+  message: string;
+  severity: ErrorSeverity;
+  recoverable: boolean;
+  details?: Record<string, unknown>;
 }
 
-interface LLMRequest {
-  messages: Message[];
-  config: LLMConfig;
-  systemPrompt?: string;
-}
-
-interface LLMResponse {
-  content: string | ContentPart[];
-  stopReason: StopReason;
-  usage: TokenUsage;
-  finishTime: Date;
-}
+type ErrorSeverity = "fatal" | "error" | "warning";
 ```
 
 ---
 
-### 5. Type Guards
+## Design Decisions
 
-Type-safe runtime checks for discriminated unions.
+### Why Separate Types Package?
+
+1. **Zero Dependencies** - Can be imported anywhere without bloat
+2. **Contract-First** - Types are the single source of truth
+3. **Cross-Platform** - Same types work in Node.js, Browser, Edge
+4. **Version Control** - Type changes are explicit and versioned
+
+### Why Discriminated Unions?
+
+TypeScript's type narrowing works best with discriminated unions:
 
 ```typescript
-import {
-  isUserMessage,
-  isAssistantMessage,
-  isTextPart,
-  isImagePart,
-} from "@deepractice-ai/agentx-types";
-
-function processMessage(message: Message) {
-  if (isUserMessage(message)) {
-    // TypeScript knows: message is UserMessage
-    console.log("User said:", message.content);
-  } else if (isAssistantMessage(message)) {
-    // TypeScript knows: message is AssistantMessage
-    console.log("Tokens used:", message.usage?.input);
+function handleEvent(event: AgentEventType) {
+  switch (event.type) {
+    case "text_delta":
+      // TypeScript knows: event is TextDeltaEvent
+      console.log(event.data.text);
+      break;
+    case "assistant_message":
+      // TypeScript knows: event is AssistantMessageEvent
+      console.log(event.data.content);
+      break;
   }
 }
 ```
 
-**Available guards:**
+### Why `subtype` for Messages?
 
-- Messages: `isUserMessage`, `isAssistantMessage`, `isSystemMessage`, `isToolUseMessage`, `isErrorMessage`
-- Content: `isTextPart`, `isThinkingPart`, `isImagePart`, `isFilePart`, `isToolCallPart`, `isToolResultPart`
+Messages use `subtype` instead of `type` because:
 
----
-
-## 🌍 Environment Domain
-
-### Session - 1-to-1 Conversation Snapshot
-
-A session represents the conversation history and context between a user and an agent.
+1. `role` indicates WHO (user, assistant, tool, system)
+2. `subtype` indicates WHAT TYPE of message (user, assistant, tool-call, tool-result)
+3. This supports future message types with same role but different structure
 
 ```typescript
-import { Session } from "@deepractice-ai/agentx-types/environment/session";
-
-interface Session {
-  id: string;
-  title: string;
-
-  // Records the relationship
-  agentId: string; // Which agent created/served this session
-  userId?: string; // Which user (optional)
-
-  // Conversation data
-  messages: Message[];
-
-  // Timestamps
-  createdAt: Date;
-  updatedAt: Date;
-
-  // Extension point
-  metadata?: Record<string, unknown>;
-}
-```
-
-**Example:**
-
-```typescript
-const session: Session = {
-  id: "session-001",
-  title: "Code Review Discussion",
-  agentId: "code-reviewer",
-  userId: "user-123",
-  messages: [
-    { id: "msg-1", role: "user", content: "Review this code", timestamp: Date.now() },
-    { id: "msg-2", role: "assistant", content: "Analyzing...", timestamp: Date.now() },
-  ],
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
-```
-
-#### Why agentId and userId?
-
-**agentId (required):**
-
-- Records which agent created/served the conversation
-- Users expect continuity - they chose this specific agent
-- Like your chat history with a specific friend in WeChat
-- You don't randomly switch friends mid-conversation
-
-**userId (optional):**
-
-- Optional because some sessions don't involve users:
-  - Agent-initiated tasks
-  - Background workflows
-  - Agent-to-agent conversations
-- When present, used for permission control and user-specific filtering
-
-#### Session as Snapshot
-
-Think of Session as a saved game file:
-
-```typescript
-// Save session snapshot
-const session: Session = {
-  id: "session-1",
-  agentId: "writing-coach",
-  messages: [...conversationHistory],
-  createdAt: new Date(),
-  updatedAt: new Date(),
-};
-await saveSession(session);
-
-// Later: Load session and revive agent
-const session = await loadSession("session-1");
-const agent = new AgentService(config);
-agent.loadFromSession(session); // Revive from snapshot
-await agent.send("Continue from where we left off");
-```
-
-**Key principle:** Session is data (snapshot), Agent is runtime (execution).
-
----
-
-## 🎨 Design Philosophy
-
-### 1. Pure Data Structures
-
-All types represent **data**, not behavior. No methods, no runtime state.
-
-```typescript
-// ✅ Good - Pure data
-interface Message {
-  id: string;
-  role: string;
-  content: string;
-}
-
-// ❌ Bad - Behavior mixed in
-interface Message {
-  id: string;
-  send(): Promise<void>; // Behavior belongs in services
-}
-```
-
-### 2. Discriminated Unions
-
-Use `type` or `role` fields for type discrimination.
-
-```typescript
-type ContentPart =
-  | { type: "text"; text: string }
-  | { type: "image"; data: string; mediaType: string };
-
-function render(part: ContentPart) {
-  switch (part.type) {
-    case "text":
-      return part.text; // TypeScript knows: part.text exists
-    case "image":
-      return `<img src="${part.data}" />`; // TypeScript knows: part.data exists
-  }
-}
-```
-
-### 3. Platform-Agnostic
-
-Types work everywhere - Node.js, Browser, Edge, Deno.
-
-```typescript
-// ✅ Platform-agnostic
-interface Message {
-  timestamp: number; // Unix timestamp
-}
-
-// ❌ Platform-specific
-interface Message {
-  timestamp: Buffer; // Buffer only in Node.js
-}
-```
-
-### 4. Extension Points
-
-Use `metadata` or index signatures for extensibility.
-
-```typescript
-const session: Session = {
-  id: "session-1",
-  title: "My Session",
-  agentId: "agent-1",
-  messages: [],
-  metadata: {
-    tags: ["important"],
-    customField: "value", // ✅ Extensible
-  },
-};
+// Both are role: "assistant" but different subtypes
+| AssistantMessage   // subtype: "assistant" - text response
+| ToolCallMessage    // subtype: "tool-call" - tool request
 ```
 
 ---
 
-## 🔧 Common Patterns
+## Type Guards
 
-### Pattern 1: Creating Messages
-
-```typescript
-function createUserMessage(text: string): UserMessage {
-  return {
-    id: crypto.randomUUID(),
-    role: "user",
-    content: text,
-    timestamp: Date.now(),
-  };
-}
-
-function createAssistantMessage(text: string, usage?: TokenUsage): AssistantMessage {
-  return {
-    id: crypto.randomUUID(),
-    role: "assistant",
-    content: text,
-    timestamp: Date.now(),
-    usage,
-  };
-}
-```
-
-### Pattern 2: Multi-Modal Content
+Runtime type checking for discriminated unions:
 
 ```typescript
-const message: UserMessage = {
-  id: crypto.randomUUID(),
-  role: "user",
-  content: [
-    { type: "text", text: "Analyze this image:" },
-    {
-      type: "image",
-      data: "data:image/png;base64,iVBORw0KGgo...",
-      mediaType: "image/png",
-    },
-  ],
-  timestamp: Date.now(),
-};
-```
+import { isTextPart, isToolCallPart, isStopReason } from "@deepractice-ai/agentx-types";
 
-### Pattern 3: Session Management
-
-```typescript
-// Create session
-function createSession(agentId: string, userId?: string): Session {
-  return {
-    id: crypto.randomUUID(),
-    title: "New Conversation",
-    agentId,
-    userId,
-    messages: [],
-    createdAt: new Date(),
-    updatedAt: new Date(),
-  };
+// Content part guards
+if (isTextPart(part)) {
+  console.log(part.text);
 }
 
-// Load and resume
-async function resumeSession(sessionId: string) {
-  const session = await loadSession(sessionId);
-  const agent = await createAgentForSession(session.agentId);
-  agent.loadFromSession(session);
-  return { session, agent };
+// StopReason guard
+if (isStopReason(value)) {
+  // value is StopReason
 }
 ```
 
 ---
 
-## 📚 Integration with Other Packages
+## Package Dependencies
 
-`agentx-types` is the foundation for the entire AgentX ecosystem:
-
-```
-agentx-ui ──────→ agentx-framework ──→ agentx-core ──→ agentx-types
-                                              ↓
-                                        agentx-event
-```
-
-**Usage examples:**
-
-```typescript
-// In agentx-core
-import { Message, Session } from '@deepractice-ai/agentx-types';
-
-class AgentService {
-  private messages: Message[] = [];
-
-  loadFromSession(session: Session) {
-    this.messages = [...session.messages];
-  }
-}
-
-// In agentx-ui
-import { Message, isUserMessage } from '@deepractice-ai/agentx-types';
-
-function ChatMessage({ message }: { message: Message }) {
-  if (isUserMessage(message)) {
-    return <UserBubble>{message.content}</UserBubble>;
-  }
-  // ...
-}
+```text
+agentx-types (this package)
+     ↑
+agentx-adk (uses type declarations)
+     ↑
+agentx-logger (logging facade)
+     ↑
+agentx-engine (Mealy Machine processors)
+     ↑
+agentx-core (Agent runtime)
+     ↑
+agentx (Platform API)
+     ↑
+agentx-claude (Claude driver)
+     ↑
+agentx-ui (React components)
 ```
 
 ---
 
-## 🤝 Contributing
+## Contributing
 
 This package follows **strict type-only conventions**:
 
-1. **No runtime code** - Only TypeScript types and interfaces
+1. **No runtime code** - Only TypeScript types (except type guards)
 2. **No dependencies** - Keep the package pure
 3. **One file, one primary type** - Use PascalCase filenames
-4. **Domain separation** - Agent domain vs Environment domain
-5. **Discriminated unions** - Always use `type` or `role` for discrimination
-6. **JSDoc comments** - Document every public type
+4. **Discriminated unions** - Always use `type` or `subtype` for discrimination
+5. **JSDoc comments** - Document every public type with examples
+6. **Design decisions** - Document WHY in module-level comments
 
 ---
 
-## 📄 License
+## License
 
-MIT © Deepractice AI
+MIT

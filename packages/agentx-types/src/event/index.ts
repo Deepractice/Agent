@@ -3,6 +3,53 @@
  *
  * Complete event system for AgentX.
  * Organized by layers: Stream → State → Message → Turn
+ *
+ * ## Design Decision: 4-Layer Architecture
+ *
+ * Each layer serves different consumers:
+ *
+ * | Layer   | Consumer                    | Purpose                          |
+ * |---------|-----------------------------|---------------------------------|
+ * | Stream  | UI (typewriter effect)      | Real-time incremental updates    |
+ * | State   | State machine, loading UI   | Track agent lifecycle            |
+ * | Message | Chat history, persistence   | Complete conversation records    |
+ * | Turn    | Analytics, billing          | Usage metrics and cost tracking  |
+ *
+ * ## Why Not Flatten?
+ *
+ * Flattening would force all consumers to handle all event types.
+ * The layered approach allows:
+ * - UI to only subscribe to Stream events for real-time display
+ * - Persistence layer to only handle Message events
+ * - Analytics to only process Turn events
+ *
+ * ## Event Flow
+ *
+ * ```text
+ * Driver.receive()
+ *      │ yields
+ *      ▼
+ * Stream Events (text_delta, tool_call...)
+ *      │ Mealy Machine assembles
+ *      ▼
+ * State Events (conversation_start, tool_executing...)
+ *      │
+ *      ▼
+ * Message Events (assistant_message, tool_call_message...)
+ *      │
+ *      ▼
+ * Turn Events (turn_request, turn_response)
+ * ```
+ *
+ * ## Design Decision: ErrorEvent is Independent
+ *
+ * Error is NOT part of Message or the 4-layer hierarchy because:
+ * 1. Not conversation content - Errors are system notifications
+ * 2. SSE transport - Errors need special handling for transmission
+ * 3. UI-specific rendering - Error display differs from messages
+ *
+ * ErrorEvent travels via SSE alongside StreamEvents, bypassing the
+ * Mealy Machine processing. Browser receives and displays error UI directly.
  */
 
 // ===== Base Layer =====
