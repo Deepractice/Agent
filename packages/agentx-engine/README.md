@@ -265,7 +265,7 @@ Engine is stateless, enabling horizontal scaling:
 
 ## Related Packages
 
-- **[@deepractice-ai/agentx-core](../agentx-core)** - Agent runtime (uses this engine)
+- **[@deepractice-ai/agentx-agent](../agentx-agent)** - Agent runtime (uses this engine)
 - **[@deepractice-ai/agentx-types](../agentx-types)** - Event and message type definitions
 - **[@deepractice-ai/agentx-logger](../agentx-logger)** - Logging facade
 

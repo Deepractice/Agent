@@ -4,7 +4,7 @@
 
 ## Overview
 
-`agentx-types` is a **pure TypeScript type library** (137+ files, zero dependencies) that defines the complete type system for building event-driven AI agents.
+`agentx-types` is a **pure TypeScript type library** (140+ files, zero dependencies) that defines the complete type system for building event-driven AI agents.
 
 **Key Characteristics:**
 
@@ -12,6 +12,7 @@
 - **Platform-agnostic** - Works in Node.js, Browser, and Edge runtimes
 - **Contract-first design** - Single source of truth for data structures
 - **4-Layer Event Architecture** - Stream → State → Message → Turn
+- **"Define Once, Run Anywhere"** - Unified agent definition across platforms
 - **Well-documented** - Every type includes JSDoc comments with design decisions
 
 ## Installation
@@ -26,30 +27,30 @@ pnpm add @deepractice-ai/agentx-types
 
 ```text
 ┌─────────────────────────────────────────────────────────────────────┐
-│                        agentx-types (137+ files)                    │
+│                        agentx-types (140+ files)                    │
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────┐  │
 │  │   agent/    │  │   event/    │  │  message/   │  │   llm/    │  │
-│  │  11 files   │  │  44 files   │  │  13 files   │  │  7 files  │  │
+│  │  14 files   │  │  44 files   │  │  13 files   │  │  7 files  │  │
 │  │             │  │             │  │             │  │           │  │
-│  │ Agent       │  │ 4-Layer     │  │ Message     │  │ Provider  │  │
+│  │ Agent       │  │ 4-Layer     │  │ Message     │  │ LLM       │  │
 │  │ Driver      │  │ Events      │  │ Content     │  │ Config    │  │
 │  │ Presenter   │  │             │  │ Parts       │  │ Request   │  │
-│  │ Middleware  │  │             │  │             │  │ Response  │  │
+│  │ Definition  │  │             │  │             │  │ Response  │  │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └───────────┘  │
 │                                                                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐  ┌───────────┐  │
-│  │   agentx/   │  │    mcp/     │  │    adk/     │  │  error/   │  │
-│  │  17 files   │  │   7 files   │  │   4 files   │  │  7 files  │  │
+│  │   agentx/   │  │  runtime/   │  │    mcp/     │  │  error/   │  │
+│  │  13 files   │  │  15+ files  │  │   7 files   │  │  7 files  │  │
 │  │             │  │             │  │             │  │           │  │
-│  │ Platform    │  │ Tool        │  │ defineAgent │  │ AgentError│  │
-│  │ Manager     │  │ Resource    │  │ defineDriver│  │ Category  │  │
-│  │ Endpoint    │  │ Prompt      │  │ defineConfig│  │ Severity  │  │
+│  │ Platform    │  │ Runtime     │  │ Tool        │  │ AgentError│  │
+│  │ Manager     │  │ Container   │  │ Resource    │  │ Category  │  │
+│  │ defineAgent │  │ Sandbox     │  │ Prompt      │  │ Severity  │  │
 │  └─────────────┘  └─────────────┘  └─────────────┘  └───────────┘  │
 │                                                                     │
 │  ┌─────────────┐  ┌─────────────┐  ┌─────────────┐                 │
-│  │  session/   │  │   logger/   │  │  config/    │                 │
+│  │  session/   │  │   logger/   │  │   guards/   │                 │
 │  │   2 files   │  │   4 files   │  │   3 files   │                 │
 │  └─────────────┘  └─────────────┘  └─────────────┘                 │
 │                                                                     │
@@ -72,7 +73,7 @@ Agent runtime interfaces - the core contracts for building agents.
 | `AgentMiddleware`  | Incoming message interceptor (before driver)           |
 | `AgentInterceptor` | Outgoing event interceptor (after engine)              |
 | `AgentContext`     | Runtime context (agentId, config, session)             |
-| `AgentDefinition`  | Agent blueprint (name, driver, presenters)             |
+| `AgentDefinition`  | Agent template (name, description, systemPrompt)       |
 | `AgentContainer`   | Agent instance storage                                 |
 
 ```typescript
@@ -335,29 +336,47 @@ interface CreateAgentEndpoint
 
 ---
 
-### ADK Types (`adk/`)
+### Runtime Types (`runtime/`)
 
-Agent Development Kit type declarations for `defineAgent`, `defineDriver`, `defineConfig`.
+Runtime layer types for the "Define Once, Run Anywhere" architecture.
 
 ```typescript
-import type {
-  DefineAgentInput,
-  DefineDriverInput,
-  ConfigSchema,
-} from "@deepractice-ai/agentx-types";
+import type { Runtime, RuntimeDriver, Container, Sandbox } from "@deepractice-ai/agentx-types";
 
-// Config field definition
-interface ConfigFieldDefinition {
-  type: "string" | "number" | "boolean" | "object" | "array";
-  description?: string;
-  required?: boolean;
-  default?: unknown;
-  scope: "definition" | "instance";
+// Runtime - Complete environment encapsulation
+interface Runtime {
+  readonly name: string;
+  readonly container: Container;
+  createSandbox(name: string): Sandbox;
+  createDriver(definition: AgentDefinition, context: AgentContext, sandbox: Sandbox): RuntimeDriver;
 }
 
-// Schema for driver/agent config
-type ConfigSchema = Record<string, ConfigFieldDefinition>;
+// Container - Agent lifecycle management
+interface Container {
+  register(agent: Agent): void;
+  get(agentId: string): Agent | undefined;
+  remove(agentId: string): boolean;
+  list(): Agent[];
+}
+
+// Sandbox - Resource isolation (OS + LLM)
+interface Sandbox {
+  readonly name: string;
+  readonly os: OS; // FileSystem, Process, Env, Disk
+  readonly llm: LLMProvider; // apiKey, baseUrl
+}
 ```
+
+**Key Concepts:**
+
+| Type            | Description                                                   |
+| --------------- | ------------------------------------------------------------- |
+| `Runtime`       | Complete environment (Container + Sandbox + Driver)           |
+| `RuntimeDriver` | Driver interface with sandbox access                          |
+| `Container`     | Agent lifecycle management (1:N)                              |
+| `Sandbox`       | Resource isolation per agent (OS + LLM)                       |
+| `OS`            | Operating system abstraction (FileSystem, Process, Env, Disk) |
+| `LLMProvider`   | LLM supply service (apiKey, baseUrl)                          |
 
 ---
 
@@ -497,17 +516,15 @@ if (isStopReason(value)) {
 ```text
 agentx-types (this package)
      ↑
-agentx-adk (uses type declarations)
-     ↑
 agentx-logger (logging facade)
      ↑
 agentx-engine (Mealy Machine processors)
      ↑
-agentx-core (Agent runtime)
+agentx-agent (Agent runtime)
      ↑
-agentx (Platform API)
+agentx (Platform API + defineAgent)
      ↑
-agentx-claude (Claude driver)
+agentx-node (NodeRuntime + ClaudeDriver)
      ↑
 agentx-ui (React components)
 ```

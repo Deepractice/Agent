@@ -1,65 +1,117 @@
-# @deepractice-ai/agentx-claude
+# @deepractice-ai/agentx-node
 
-**Claude Driver for AgentX** - Node.js only.
+**Node.js Runtime for AgentX** - Contains `NodeRuntime` and `ClaudeDriver`.
 
 ## Overview
 
-This package provides `ClaudeDriver`, which wraps `@anthropic-ai/claude-agent-sdk` for use with AgentX.
+This package provides the Node.js Runtime for the AgentX platform. It implements the Runtime interface using Claude Agent SDK for AI capabilities.
 
 > **Note**: This is a Node.js-only package. It cannot be used in browsers or edge runtimes.
 
 ## Installation
 
 ```bash
-pnpm add @deepractice-ai/agentx-claude
+pnpm add @deepractice-ai/agentx-node
 ```
 
-## Usage
+## Quick Start
 
 ```typescript
-import { defineAgent, createAgent } from "@deepractice-ai/agentx";
-import { ClaudeDriver } from "@deepractice-ai/agentx-claude";
+import { defineAgent, createAgentX } from "@deepractice-ai/agentx";
+import { runtime } from "@deepractice-ai/agentx-node";
 
+// 1. Define agent (business config only)
 const MyAgent = defineAgent({
   name: "Assistant",
-  driver: ClaudeDriver,
-  configSchema: {
-    apiKey: { type: "string", required: true },
-    model: { type: "string", default: "claude-sonnet-4-20250514" },
-  },
+  systemPrompt: "You are a helpful assistant",
 });
 
-const agent = createAgent(MyAgent, {
-  apiKey: process.env.ANTHROPIC_API_KEY,
+// 2. Create platform with runtime
+const agentx = createAgentX(runtime);
+
+// 3. Create and use agent
+const agent = agentx.agents.create(MyAgent);
+
+agent.on("text_delta", (event) => {
+  process.stdout.write(event.data.text);
 });
 
-agent.on((event) => console.log(event));
 await agent.receive("Hello!");
 await agent.destroy();
 ```
 
-## Configuration
+## Environment Variables
 
-`ClaudeDriver` supports all options from `@anthropic-ai/claude-agent-sdk`:
+NodeRuntime collects configuration from environment variables:
 
-| Option            | Type     | Description                                                     |
-| ----------------- | -------- | --------------------------------------------------------------- |
-| `apiKey`          | string   | Anthropic API key                                               |
-| `baseUrl`         | string   | API base URL                                                    |
-| `model`           | string   | Model name (default: claude-sonnet-4-20250514)                  |
-| `cwd`             | string   | Working directory for file operations                           |
-| `systemPrompt`    | string   | System prompt                                                   |
-| `maxTurns`        | number   | Maximum conversation turns                                      |
-| `permissionMode`  | string   | Permission mode (default, acceptEdits, bypassPermissions, plan) |
-| `mcpServers`      | object   | MCP server configurations                                       |
-| `allowedTools`    | string[] | Allowed tool names                                              |
-| `disallowedTools` | string[] | Disallowed tool names                                           |
+| Variable             | Required | Description                                    |
+| -------------------- | -------- | ---------------------------------------------- |
+| `ANTHROPIC_API_KEY`  | Yes      | Anthropic API key                              |
+| `ANTHROPIC_BASE_URL` | No       | API base URL (default: Anthropic API)          |
+| `CLAUDE_MODEL`       | No       | Model name (default: claude-sonnet-4-20250514) |
 
-See [Claude Agent SDK documentation](https://github.com/anthropics/claude-agent-sdk) for full options.
+## API Reference
+
+### `runtime` (Singleton)
+
+Pre-configured NodeRuntime instance, ready to use:
+
+```typescript
+import { runtime } from "@deepractice-ai/agentx-node";
+
+const agentx = createAgentX(runtime);
+```
+
+### `NodeRuntime`
+
+The Runtime implementation for Node.js:
+
+```typescript
+import { NodeRuntime } from "@deepractice-ai/agentx-node";
+
+// Custom runtime instance (if needed)
+const myRuntime = new NodeRuntime();
+const agentx = createAgentX(myRuntime);
+```
+
+**NodeRuntime implements:**
+
+- `container` - MemoryAgentContainer for agent lifecycle
+- `createSandbox()` - Creates LocalSandbox (placeholder for future OS + LLM isolation)
+- `createDriver()` - Creates ClaudeDriver from AgentDefinition + RuntimeConfig
+
+### `createClaudeDriver` (Advanced)
+
+For advanced use cases where you need direct driver access:
+
+```typescript
+import { createClaudeDriver } from "@deepractice-ai/agentx-node";
+
+const driver = createClaudeDriver(definition, context, sandbox, {
+  apiKey: "sk-xxx",
+  model: "claude-sonnet-4-20250514",
+});
+```
+
+## Architecture
+
+```text
+NodeRuntime
+    │
+    ├── container: MemoryAgentContainer
+    │       └── Manages Agent lifecycle (register, get, remove)
+    │
+    ├── createSandbox(name)
+    │       └── LocalSandbox (OS + LLM resources)
+    │
+    └── createDriver(definition, context, sandbox)
+            └── ClaudeDriver (Claude Agent SDK wrapper)
+                    └── Uses sandbox.llm for apiKey/baseUrl
+```
 
 ## Why Separate Package?
 
-`ClaudeDriver` depends on `@anthropic-ai/claude-agent-sdk`, which:
+`NodeRuntime` depends on `@anthropic-ai/claude-agent-sdk`, which:
 
 - Spawns child processes (Claude Code CLI)
 - Uses Node.js-only APIs (`child_process`, `fs`)
@@ -69,9 +121,9 @@ Keeping it separate ensures `@deepractice-ai/agentx` stays platform-agnostic.
 
 ## Related Packages
 
-- **[@deepractice-ai/agentx](../agentx)** - Platform API (uses this driver)
-- **[@deepractice-ai/agentx-adk](../agentx-adk)** - ADK for building drivers
-- **[@deepractice-ai/agentx-types](../agentx-types)** - Event type definitions
+- **[@deepractice-ai/agentx](../agentx)** - Platform API (createAgentX, defineAgent)
+- **[@deepractice-ai/agentx-agent](../agentx-agent)** - Agent runtime
+- **[@deepractice-ai/agentx-types](../agentx-types)** - Type definitions
 
 ## License
 

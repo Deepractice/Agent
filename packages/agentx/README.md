@@ -1,6 +1,6 @@
 # @deepractice-ai/agentx
 
-> Unified Platform API for the Deepractice AgentX ecosystem
+> "Define Once, Run Anywhere" - Unified Platform API for AI Agents
 
 ## Overview
 
@@ -8,11 +8,11 @@
 
 **Key Characteristics:**
 
-- **Dual Mode Architecture** - Local (in-process) and Remote (HTTP/SSE) modes
+- **"Define Once, Run Anywhere"** - Same AgentDefinition works on Server and Browser
+- **Runtime Abstraction** - Platform provides Runtime (NodeRuntime, SSERuntime)
 - **Web Standard Based** - Server built on Request/Response API, framework-agnostic
 - **Stream-First Transport** - Efficient SSE transmission with client-side reassembly
 - **Framework Adapters** - Ready-to-use adapters for Express, Hono, Next.js
-- **Provider Registry** - Built-in dependency injection for extensibility
 
 ## Installation
 
@@ -30,31 +30,28 @@ pnpm add @deepractice-ai/agentx
 ├─────────────────────────────────────────────────────────────────────┤
 │                                                                      │
 │  ┌─────────────────────────────────────────────────────────────┐    │
-│  │                      createAgentX()                          │    │
+│  │               createAgentX(runtime)                          │    │
 │  │                                                              │    │
-│  │   options.mode === 'local'    options.mode === 'remote'     │    │
+│  │   NodeRuntime (server)         SSERuntime (browser)          │    │
 │  │            │                           │                     │    │
 │  │            ▼                           ▼                     │    │
 │  │   ┌──────────────┐            ┌──────────────┐              │    │
-│  │   │ AgentXLocal  │            │ AgentXRemote │              │    │
-│  │   │              │            │              │              │    │
-│  │   │ • agents     │            │ • agents     │              │    │
-│  │   │ • sessions   │            │ • sessions   │              │    │
-│  │   │ • errors     │            │ • platform   │              │    │
+│  │   │ ClaudeDriver │            │  SSEDriver   │              │    │
+│  │   │ LocalSandbox │            │ NoopSandbox  │              │    │
 │  │   └──────────────┘            └──────────────┘              │    │
 │  └─────────────────────────────────────────────────────────────┘    │
 │                                                                      │
 │  ┌──────────────────────┐    ┌──────────────────────────────────┐   │
 │  │      /server         │    │           /client                 │   │
 │  │                      │    │                                   │   │
-│  │ createAgentXHandler  │    │  SSEDriver (browser)             │   │
-│  │ SSEServerTransport   │    │  SSEClientTransport              │   │
-│  │                      │    │  createRemoteAgent               │   │
-│  │ /adapters:           │    │  AgentXClient                    │   │
+│  │ createAgentXHandler  │    │  createSSERuntime (browser)       │   │
+│  │ SSEConnection        │    │  SSERuntime                       │   │
+│  │                      │    │  SSEDriver                        │   │
+│  │ /adapters:           │    │                                   │   │
 │  │  • express           │    │                                   │   │
-│  │  • hono              │    └──────────────────────────────────┘   │
-│  │  • next              │                                           │
-│  └──────────────────────┘                                           │
+│  │  • hono              │    │                                   │   │
+│  │  • next              │    │                                   │   │
+│  └──────────────────────┘    └──────────────────────────────────┘   │
 │                                                                      │
 └─────────────────────────────────────────────────────────────────────┘
 ```
@@ -67,54 +64,46 @@ pnpm add @deepractice-ai/agentx
 
 The main entry point for creating AgentX instances.
 
-| Export         | Type      | Description                            |
-| -------------- | --------- | -------------------------------------- |
-| `createAgentX` | Function  | Factory for AgentX instances           |
-| `agentx`       | Singleton | Default local AgentX instance          |
-| `createAgent`  | Function  | Convenience wrapper for agent creation |
-| `getAgent`     | Function  | Get agent by ID from default instance  |
-| `hasAgent`     | Function  | Check agent existence                  |
-| `destroyAgent` | Function  | Destroy agent by ID                    |
-| `destroyAll`   | Function  | Destroy all agents                     |
+| Export         | Type     | Description                               |
+| -------------- | -------- | ----------------------------------------- |
+| `defineAgent`  | Function | Define an agent template                  |
+| `createAgentX` | Function | Factory for AgentX instances with Runtime |
 
 ```typescript
-import { createAgentX, agentx } from "@deepractice-ai/agentx";
+import { defineAgent, createAgentX } from "@deepractice-ai/agentx";
+import { runtime } from "@deepractice-ai/agentx-node";
 
-// Local mode (default) - agents run in-process
-const local = createAgentX();
-// or use the singleton
-const agent = agentx.agents.create(MyAgent, config);
-
-// Remote mode - connect to AgentX server
-const remote = createAgentX({
-  mode: "remote",
-  remote: { serverUrl: "http://localhost:5200/agentx" },
+// 1. Define agent (business config only)
+const MyAgent = defineAgent({
+  name: "Assistant",
+  systemPrompt: "You are a helpful assistant",
 });
+
+// 2. Create platform with runtime
+const agentx = createAgentX(runtime);
+
+// 3. Create agent instance
+const agent = agentx.agents.create(MyAgent);
+
+// 4. Use agent
+await agent.receive("Hello!");
 ```
 
-#### AgentXLocal Interface
+#### AgentX Interface
 
 ```typescript
-interface AgentXLocal {
-  readonly mode: "local";
-  readonly agents: AgentManager; // Agent lifecycle management
-  readonly sessions: LocalSessionManager; // Session storage
-  readonly errors: ErrorManager; // Global error handling
-  provide<T>(key: ProviderKey<T>, provider: T): void; // DI registration
-  resolve<T>(key: ProviderKey<T>): T | undefined; // DI resolution
+interface AgentX {
+  readonly runtime: Runtime;
+  readonly agents: AgentManager;
 }
-```
 
-#### AgentXRemote Interface
-
-```typescript
-interface AgentXRemote {
-  readonly mode: "remote";
-  readonly agents: AgentManager; // Agent lifecycle (local + remote)
-  readonly sessions: RemoteSessionManager; // Remote session API
-  readonly platform: PlatformManager; // Server info/health
-  provide<T>(key: ProviderKey<T>, provider: T): void;
-  resolve<T>(key: ProviderKey<T>): T | undefined;
+interface AgentManager {
+  create(definition: AgentDefinition): Agent;
+  get(agentId: string): Agent | undefined;
+  has(agentId: string): boolean;
+  destroy(agentId: string): boolean;
+  destroyAll(): void;
+  list(): Agent[];
 }
 ```
 
@@ -238,87 +227,72 @@ export const { GET, POST, DELETE } = createNextHandler(handler, {
 
 ### Client Module (`/client`)
 
-Browser and Node.js SDK for connecting to remote AgentX servers.
+Browser SDK for connecting to remote AgentX servers using the same API.
 
 ```typescript
-import { createRemoteAgent, SSEDriver } from "@deepractice-ai/agentx/client";
+import { createSSERuntime } from "@deepractice-ai/agentx/client";
 ```
 
-#### `createRemoteAgent(options)`
+#### `createSSERuntime(config)`
 
-High-level API for creating a remote agent connection:
+Creates a browser-compatible Runtime that connects to remote server:
 
 ```typescript
-const agent = createRemoteAgent({
-  serverUrl: "http://localhost:5200/agentx",
-  agentId: "agent_123",
+import { defineAgent, createAgentX } from "@deepractice-ai/agentx";
+import { createSSERuntime } from "@deepractice-ai/agentx/client";
+
+// Same agent definition as server!
+const MyAgent = defineAgent({
+  name: "Assistant",
+  systemPrompt: "You are a helpful assistant",
 });
 
-// Use like a local agent
+// Create SSE runtime for browser
+const runtime = createSSERuntime({
+  serverUrl: "http://localhost:5200/agentx",
+  agentId: "agent_123", // Connect to existing server-side agent
+});
+
+// Same API as server-side!
+const agentx = createAgentX(runtime);
+const agent = agentx.agents.create(MyAgent);
+
+// Subscribe to events
 agent.on("assistant_message", (event) => {
   console.log(event.data.content);
 });
 
 await agent.receive("Hello!");
-await agent.destroy();
 ```
 
-#### SSEDriver
-
-ADK-based driver for browser SSE connections:
-
-```typescript
-import { defineAgent } from "@deepractice-ai/agentx-adk";
-import { SSEDriver } from "@deepractice-ai/agentx/client";
-
-const RemoteAgent = defineAgent({
-  name: "RemoteAgent",
-  driver: SSEDriver,
-});
-
-const agent = agentx.agents.create(RemoteAgent, {
-  serverUrl: "http://localhost:5200/agentx",
-  agentId: "agent_123",
-});
-```
-
-#### AgentXClient
-
-Low-level HTTP client for direct API access:
-
-```typescript
-import { AgentXClient } from "@deepractice-ai/agentx/client";
-
-const client = new AgentXClient({
-  baseUrl: "http://localhost:5200/agentx",
-  headers: { Authorization: "Bearer xxx" },
-});
-
-const info = await client.getInfo();
-const agents = await client.listAgents();
-const agent = await client.getAgent("agent_123");
-```
+**Key Point**: Browser uses the same `defineAgent` + `createAgentX` API.
+Only the Runtime differs (`SSERuntime` vs `NodeRuntime`).
 
 ---
 
 ## Design Decisions
 
-### Why Dual Mode Architecture?
+### Why "Define Once, Run Anywhere"?
 
-AgentX supports both local and remote modes to accommodate different use cases:
+AgentDefinition contains only business config (name, systemPrompt).
+Runtime provides infrastructure (Driver, Sandbox).
 
-| Scenario             | Mode   | Benefit                             |
-| -------------------- | ------ | ----------------------------------- |
-| Development          | Local  | Fast iteration, no server needed    |
-| Single-process app   | Local  | Lower latency, simpler deployment   |
-| Multi-client access  | Remote | Share agents across clients         |
-| Browser applications | Remote | Agents run on server, UI in browser |
-| Microservices        | Remote | Agents as a service                 |
+| Environment | Runtime     | Driver       | Use Case                    |
+| ----------- | ----------- | ------------ | --------------------------- |
+| Server      | NodeRuntime | ClaudeDriver | Direct LLM API calls        |
+| Browser     | SSERuntime  | SSEDriver    | Connect to server via SSE   |
+| Edge        | EdgeRuntime | EdgeDriver   | Cloudflare Workers (future) |
 
 ```typescript
-// Same API, different deployment
-const agentx = createAgentX(); // Local
-const agentx = createAgentX({ mode: "remote", remote: { serverUrl } }); // Remote
+// Same agent definition everywhere
+const MyAgent = defineAgent({
+  name: "Assistant",
+  systemPrompt: "You are helpful",
+});
+
+// Different runtimes for different environments
+const agentx = createAgentX(nodeRuntime); // Server
+const agentx = createAgentX(sseRuntime); // Browser
 ```
 
 ### Why Web Standard Request/Response?
@@ -410,17 +384,15 @@ const logger = agentx.resolve(LoggerFactoryKey);
 ```text
 agentx-types (type definitions)
      ↑
-agentx-adk (defineAgent, defineDriver, defineConfig)
-     ↑
 agentx-logger (logging facade)
      ↑
 agentx-engine (event processing)
      ↑
-agentx-core (Agent runtime)
+agentx-agent (Agent runtime)
      ↑
-agentx (this package) ← Platform API
+agentx (this package) ← Platform API + defineAgent
      ↑
-agentx-claude (Claude driver)
+agentx-node (NodeRuntime + ClaudeDriver)
      ↑
 agentx-ui (React components)
 ```
@@ -429,15 +401,14 @@ agentx-ui (React components)
 
 ## Related Packages
 
-| Package                                           | Description             |
-| ------------------------------------------------- | ----------------------- |
-| [@deepractice-ai/agentx-types](../agentx-types)   | Type definitions        |
-| [@deepractice-ai/agentx-adk](../agentx-adk)       | Agent Development Kit   |
-| [@deepractice-ai/agentx-core](../agentx-core)     | Agent runtime           |
-| [@deepractice-ai/agentx-engine](../agentx-engine) | Event processing engine |
-| [@deepractice-ai/agentx-claude](../agentx-claude) | Claude driver           |
-| [@deepractice-ai/agentx-logger](../agentx-logger) | Logging facade          |
-| [@deepractice-ai/agentx-ui](../agentx-ui)         | React components        |
+| Package                                           | Description                |
+| ------------------------------------------------- | -------------------------- |
+| [@deepractice-ai/agentx-types](../agentx-types)   | Type definitions           |
+| [@deepractice-ai/agentx-agent](../agentx-agent)   | Agent runtime              |
+| [@deepractice-ai/agentx-engine](../agentx-engine) | Event processing engine    |
+| [@deepractice-ai/agentx-node](../agentx-node)     | NodeRuntime + ClaudeDriver |
+| [@deepractice-ai/agentx-logger](../agentx-logger) | Logging facade             |
+| [@deepractice-ai/agentx-ui](../agentx-ui)         | React components           |
 
 ---
 

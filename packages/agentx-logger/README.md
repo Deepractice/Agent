@@ -268,18 +268,18 @@ class UserService {
 }
 ```
 
-### With AgentX Core
+### With AgentX
 
 ```typescript
-import { createAgent } from "@deepractice-ai/agentx-core";
+import { createAgentX, defineAgent } from "@deepractice-ai/agentx";
 import { Logger, LoggerProvider } from "@deepractice-ai/agentx-logger";
 
 class MyDriver implements AgentDriver {
   @Logger()
   private logger!: LoggerProvider;
 
-  async *sendMessage(messages) {
-    this.logger.info("Sending message to LLM");
+  async *receive(message) {
+    this.logger.info("Processing message");
     // Driver implementation
   }
 }
@@ -288,7 +288,7 @@ class MyDriver implements AgentDriver {
 ## Related Packages
 
 - **[@deepractice-ai/agentx-types](../agentx-types)** - Logger interface definitions
-- **[@deepractice-ai/agentx-core](../agentx-core)** - Uses logger for agent lifecycle logging
+- **[@deepractice-ai/agentx-agent](../agentx-agent)** - Uses logger for agent lifecycle logging
 - **[@deepractice-ai/agentx-engine](../agentx-engine)** - Uses logger for event processing
 
 ## License
