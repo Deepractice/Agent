@@ -13,7 +13,9 @@
     "format:check": "prettier --check .",
     "test": "turbo test",
     "clean": "turbo clean && rm -rf node_modules",
-    "prepare": "lefthook install || true"
+    "prepare": "lefthook install || true",
+    "docs": "typedoc",
+    "docs:watch": "typedoc --watch"
   },
   "author": "Deepractice",
   "license": "MIT",
@@ -32,6 +34,7 @@
     "lefthook": "^1.13.6",
     "prettier": "^3.6.2",
     "turbo": "^2.5.8",
+    "typedoc": "^0.28.15",
     "wait-on": "^8.0.4"
   },
   "pnpm": {

@@ -187,6 +187,9 @@ tasks/
 .storybook-out/
 .out/
 
+# TypeDoc generated API docs
+typedocs/
+
 # Netlify
 .netlify/
 

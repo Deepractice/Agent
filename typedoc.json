@@ -1,0 +1,31 @@
+{
+  "$schema": "https://typedoc.org/schema.json",
+  "entryPointStrategy": "packages",
+  "entryPoints": [
+    "packages/agentx-types",
+    "packages/agentx-adk",
+    "packages/agentx-logger",
+    "packages/agentx-engine",
+    "packages/agentx-core",
+    "packages/agentx",
+    "packages/agentx-claude",
+    "packages/agentx-ui"
+  ],
+  "out": "typedocs",
+  "name": "Deepractice AgentX",
+  "readme": "README.md",
+  "includeVersion": true,
+  "categorizeByGroup": true,
+  "navigationLinks": {
+    "GitHub": "https://github.com/deepractice/Agent"
+  },
+  "excludePrivate": true,
+  "excludeProtected": false,
+  "excludeInternal": true,
+  "githubPages": false,
+  "sort": ["source-order"],
+  "visibilityFilters": {
+    "protected": true,
+    "@internal": false
+  }
+}
