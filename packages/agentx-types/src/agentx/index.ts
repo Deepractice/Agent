@@ -1,23 +1,36 @@
 /**
  * AgentX Platform Contract Layer
  *
+ * "Define Once, Run Anywhere"
+ *
  * AgentX is the application context - the central entry point
- * for all agent operations, like Express app or Vue app.
+ * for all agent operations.
  *
- * ## Design Decision: Local vs Remote Modes
+ * ## Two Roles
  *
- * Two operational modes with different capabilities:
+ * 1. **Application Developer** - Uses AgentX
+ *    - defineAgent() - Define agent template
+ *    - createAgentX(runtime) - Create platform
+ *    - agentx.agents.create() - Create instance
  *
- * | Feature      | Local                  | Remote                    |
- * |--------------|------------------------|---------------------------|
- * | Agent create | In-memory, sync        | Via HTTP API              |
- * | Sessions     | LocalSessionManager    | RemoteSessionManager      |
- * | Errors       | ErrorManager           | Client handles errors     |
- * | Platform     | N/A                    | PlatformManager           |
+ * 2. **Platform Developer** - Implements Runtime
+ *    - NodeRuntime, BrowserRuntime
+ *    - createDriver, createSandbox
  *
- * Why the split?
- * - Local: Direct access to agent instances, no network overhead
- * - Remote: Network-based, browser can control server-side agents
+ * ## Usage
+ *
+ * ```typescript
+ * import { defineAgent, createAgentX } from "@deepractice-ai/agentx";
+ * import { runtime } from "@deepractice-ai/agentx-node";
+ *
+ * const MyAgent = defineAgent({
+ *   name: "Translator",
+ *   systemPrompt: "You are a translator",
+ * });
+ *
+ * const agentx = createAgentX(runtime);
+ * const agent = agentx.agents.create(MyAgent);
+ * ```
  *
  * ## API Design
  *
@@ -25,45 +38,19 @@
  * agentx
  * ├── .agents.*     Agent lifecycle (create, get, destroy)
  * ├── .sessions.*   Session management (create, get, list)
- * ├── .errors.*     Error handling (Local only)
- * └── .platform.*   Platform info (Remote only)
- * ```
- *
- * ## Design Decision: Manager + Endpoint Pattern
- *
- * Each module has two parts:
- * - **Manager**: TypeScript API interface (agentx.agents.create())
- * - **Endpoint**: HTTP API contracts (POST /agents)
- *
- * This enables:
- * - Type-safe HTTP API definitions
- * - Framework-agnostic endpoint contracts
- * - Easy API documentation generation
- *
- * ## Design Decision: Definition vs Instance
- *
- * Agent creation is split between two packages:
- * - **agentx-adk**: defineAgent() - Development time, creates blueprint
- * - **agentx**: agentx.agents.create() - Runtime, creates instance
- *
- * ```typescript
- * // Development time (agentx-adk)
- * const MyAgent = defineAgent({
- *   name: "Assistant",
- *   driver: ClaudeDriver,
- * });
- *
- * // Runtime (agentx)
- * const agent = agentx.agents.create(MyAgent, config);
+ * └── .errors.*     Error handling
  * ```
  */
 
 // Main platform interfaces
 export type { AgentX, AgentXLocal, AgentXRemote } from "./AgentX";
 
-// Factory function and options
-export type { AgentXOptions, AgentXLocalOptions, AgentXRemoteOptions } from "./createAgentX";
+// Factory function
 export { createAgentX } from "./createAgentX";
+
+// defineAgent
+export type { DefineAgentInput } from "./defineAgent";
+export { defineAgent } from "./defineAgent";
 
 // Configuration types
 export type { RemoteConfig } from "./AgentXConfig";

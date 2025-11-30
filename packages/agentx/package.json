@@ -56,7 +56,6 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "@deepractice-ai/agentx-adk": "workspace:*",
     "@deepractice-ai/agentx-agent": "workspace:*",
     "@deepractice-ai/agentx-engine": "workspace:*",
     "@deepractice-ai/agentx-logger": "workspace:*",

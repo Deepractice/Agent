@@ -56,9 +56,6 @@ importers:
 
   packages/agentx:
     dependencies:
-      '@deepractice-ai/agentx-adk':
-        specifier: workspace:*
-        version: link:../agentx-adk
       '@deepractice-ai/agentx-agent':
         specifier: workspace:*
         version: link:../agentx-agent
@@ -94,19 +91,6 @@ importers:
         specifier: ^3.2.4
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.2)(@vitest/ui@3.2.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
 
-  packages/agentx-adk:
-    dependencies:
-      '@deepractice-ai/agentx-types':
-        specifier: workspace:*
-        version: link:../agentx-types
-    devDependencies:
-      tsup:
-        specifier: ^8.3.5
-        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@24.9.2))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
-      typescript:
-        specifier: ^5.9.3
-        version: 5.9.3
-
   packages/agentx-agent:
     dependencies:
       '@deepractice-ai/agentx-engine':
@@ -137,43 +121,6 @@ importers:
       vitest:
         specifier: ^3.2.3
         version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.2)(@vitest/ui@3.2.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
-
-  packages/agentx-claude:
-    dependencies:
-      '@anthropic-ai/claude-agent-sdk':
-        specifier: ^0.1.30
-        version: 0.1.30(zod@4.1.12)
-      '@deepractice-ai/agentx':
-        specifier: workspace:*
-        version: link:../agentx
-      '@deepractice-ai/agentx-adk':
-        specifier: workspace:*
-        version: link:../agentx-adk
-      '@deepractice-ai/agentx-agent':
-        specifier: workspace:*
-        version: link:../agentx-agent
-      '@deepractice-ai/agentx-engine':
-        specifier: workspace:*
-        version: link:../agentx-engine
-      '@deepractice-ai/agentx-logger':
-        specifier: workspace:*
-        version: link:../agentx-logger
-      '@deepractice-ai/agentx-types':
-        specifier: workspace:*
-        version: link:../agentx-types
-      rxjs:
-        specifier: ^7.8.2
-        version: 7.8.2
-    devDependencies:
-      '@types/node':
-        specifier: ^22.10.2
-        version: 22.19.1
-      tsup:
-        specifier: ^8.3.5
-        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
-      typescript:
-        specifier: ^5.7.2
-        version: 5.9.3
 
   packages/agentx-engine:
     dependencies:
@@ -222,8 +169,14 @@ importers:
         specifier: ^5.9.3
         version: 5.9.3
 
-  packages/agentx-runtime:
+  packages/agentx-node:
     dependencies:
+      '@anthropic-ai/claude-agent-sdk':
+        specifier: ^0.1.30
+        version: 0.1.30(zod@4.1.12)
+      '@deepractice-ai/agentx':
+        specifier: workspace:*
+        version: link:../agentx
       '@deepractice-ai/agentx-agent':
         specifier: workspace:*
         version: link:../agentx-agent
@@ -236,19 +189,19 @@ importers:
       '@deepractice-ai/agentx-types':
         specifier: workspace:*
         version: link:../agentx-types
+      rxjs:
+        specifier: ^7.8.2
+        version: 7.8.2
     devDependencies:
       '@types/node':
-        specifier: ^24.9.2
-        version: 24.9.2
+        specifier: ^22.10.2
+        version: 22.19.1
       tsup:
-        specifier: ^8.5.0
-        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@24.9.2))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
+        specifier: ^8.3.5
+        version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@22.19.1))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
       typescript:
-        specifier: ^5.9.3
+        specifier: ^5.7.2
         version: 5.9.3
-      vitest:
-        specifier: ^3.2.3
-        version: 3.2.4(@types/debug@4.1.12)(@types/node@24.9.2)(@vitest/ui@3.2.4)(jiti@2.6.1)(lightningcss@1.30.2)(tsx@4.20.6)(yaml@2.8.1)
 
   packages/agentx-types:
     devDependencies:
@@ -301,12 +254,9 @@ importers:
         specifier: ^5.0.2
         version: 5.0.8(@types/react@18.3.26)(react@18.3.1)
     devDependencies:
-      '@deepractice-ai/agentx-adk':
+      '@deepractice-ai/agentx-node':
         specifier: workspace:*
-        version: link:../agentx-adk
-      '@deepractice-ai/agentx-claude':
-        specifier: workspace:*
-        version: link:../agentx-claude
+        version: link:../agentx-node
       '@storybook/addon-a11y':
         specifier: ^8.4.7
         version: 8.6.14(storybook@8.6.14(prettier@3.6.2))

@@ -1,24 +1,25 @@
 /**
  * AgentManager - Agent lifecycle management (Runtime API)
  *
- * TypeScript API for runtime agent operations (agentx.agents.*)
+ * "Define Once, Run Anywhere"
  *
- * Note: Agent definition is done via defineAgent from @deepractice-ai/agentx-adk
+ * TypeScript API for runtime agent operations (agentx.agents.*)
  *
  * @example
  * ```typescript
- * import { defineAgent } from "@deepractice-ai/agentx-adk";
+ * import { defineAgent } from "@deepractice-ai/agentx";
  * import { createAgentX } from "@deepractice-ai/agentx";
+ * import { runtime } from "@deepractice-ai/agentx-node";
  *
  * // Define agent (development time)
  * const MyAgent = defineAgent({
- *   name: "MyAssistant",
- *   driver: myDriver,
+ *   name: "Translator",
+ *   systemPrompt: "You are a translator",
  * });
  *
  * // Create instance (runtime)
- * const agentx = createAgentX();
- * const agent = agentx.agents.create(MyAgent, config);
+ * const agentx = createAgentX(runtime);
+ * const agent = agentx.agents.create(MyAgent);  // No config needed!
  *
  * // Get / List / Destroy
  * agentx.agents.get(agentId);
@@ -29,7 +30,7 @@
 
 import type { Agent } from "~/agent/Agent";
 import type { AgentDefinition } from "~/agent/AgentDefinition";
-import type { DriverClass } from "~/agent/AgentDriver";
+import type { AgentConfig } from "~/agent/AgentConfig";
 
 /**
  * Agent lifecycle management interface (Runtime only)
@@ -37,11 +38,11 @@ import type { DriverClass } from "~/agent/AgentDriver";
 export interface AgentManager {
   /**
    * Create a new agent instance from definition
+   *
+   * @param definition - Agent definition (business config)
+   * @param config - Agent config (instance overrides, currently unused)
    */
-  create<TDriver extends DriverClass>(
-    definition: AgentDefinition<TDriver>,
-    config: Record<string, unknown>
-  ): Agent;
+  create(definition: AgentDefinition, config?: AgentConfig): Agent;
 
   /**
    * Get an existing agent by ID

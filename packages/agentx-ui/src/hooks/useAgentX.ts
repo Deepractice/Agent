@@ -7,16 +7,17 @@
  * @example
  * ```tsx
  * import { useAgentX } from "@deepractice-ai/agentx-ui";
+ * import { BrowserRuntime } from "@deepractice-ai/agentx";
  * import { MyAgentDefinition } from "./agents";
  *
  * function App() {
- *   const agentx = useAgentX();
+ *   const runtime = useMemo(() => new BrowserRuntime({ serverUrl: "..." }), []);
+ *   const agentx = useAgentX(runtime);
  *   const [agent, setAgent] = useState(null);
  *
  *   const handleCreateAgent = () => {
- *     const newAgent = agentx.agents.create(MyAgentDefinition, {
- *       apiKey: "xxx",
- *     });
+ *     if (!agentx) return;
+ *     const newAgent = agentx.agents.create(MyAgentDefinition, {});
  *     setAgent(newAgent);
  *   };
  *
@@ -31,12 +32,12 @@
  */
 
 import { useState, useEffect } from "react";
-import type { AgentX, AgentXOptions } from "@deepractice-ai/agentx-types";
+import type { AgentX, Runtime } from "@deepractice-ai/agentx-types";
 
 // Lazy import to avoid bundling issues
-let createAgentXFn: ((options?: AgentXOptions) => AgentX) | null = null;
+let createAgentXFn: ((runtime: Runtime) => AgentX) | null = null;
 
-async function getCreateAgentX(): Promise<(options?: AgentXOptions) => AgentX> {
+async function getCreateAgentX(): Promise<(runtime: Runtime) => AgentX> {
   if (!createAgentXFn) {
     const module = await import("@deepractice-ai/agentx");
     createAgentXFn = module.createAgentX;
@@ -49,10 +50,10 @@ async function getCreateAgentX(): Promise<(options?: AgentXOptions) => AgentX> {
  *
  * Creates an AgentX instance on mount and destroys all agents on unmount.
  *
- * @param options - Optional AgentX configuration
+ * @param runtime - Runtime instance (required)
  * @returns The AgentX instance (null during initialization)
  */
-export function useAgentX(options?: AgentXOptions): AgentX | null {
+export function useAgentX(runtime: Runtime): AgentX | null {
   const [agentx, setAgentx] = useState<AgentX | null>(null);
 
   useEffect(() => {
@@ -62,7 +63,7 @@ export function useAgentX(options?: AgentXOptions): AgentX | null {
     getCreateAgentX()
       .then((createAgentX) => {
         if (!mounted) return;
-        instance = createAgentX(options);
+        instance = createAgentX(runtime);
         setAgentx(instance);
       })
       .catch((error) => {
@@ -77,8 +78,7 @@ export function useAgentX(options?: AgentXOptions): AgentX | null {
         });
       }
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []); // Only run once on mount
+  }, [runtime]); // Re-run if runtime changes
 
   return agentx;
 }

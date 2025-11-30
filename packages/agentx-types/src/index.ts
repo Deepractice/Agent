@@ -19,12 +19,11 @@
  * | event/    | 44    | 4-layer events (Stream→State→Message→Turn) |
  * | message/  | 13    | Message formats and content parts          |
  * | agentx/   | 17    | Platform API (Local/Remote modes)          |
- * | runtime/  | 2     | Runtime resource components (LLM, FS, etc) |
+ * | runtime/  | 15+   | Runtime (Container, Sandbox, Driver, Config)|
  * | llm/      | 7     | LLM configuration and responses            |
  * | mcp/      | 7     | Model Context Protocol types               |
  * | error/    | 7     | Error taxonomy (category + code)           |
  * | adk/      | 4     | Agent Development Kit type declarations    |
- * | config/   | 3     | Configuration schema and inference         |
  * | logger/   | 4     | Logging facade types                       |
  * | session/  | 2     | Session/conversation context               |
  * | guards/   | 1     | Runtime type guards                        |
@@ -45,17 +44,11 @@
 // Agent state
 export type { AgentState } from "./AgentState";
 
-// Platform context (AgentX)
+// Platform context (AgentX) - includes defineAgent
 export * from "./agentx";
 
 // Logger types
 export * from "./logger";
-
-// Config system
-export * from "./config";
-
-// ADK (Agent Development Kit)
-export * from "./adk";
 
 // Agent contracts
 export * from "./agent";

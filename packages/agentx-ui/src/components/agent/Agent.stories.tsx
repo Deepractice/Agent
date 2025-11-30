@@ -2,10 +2,17 @@ import type { Meta, StoryObj } from "@storybook/react";
 import { useState, useEffect, type ReactNode } from "react";
 import { Agent } from "./Agent";
 import { Chat } from "../chat/Chat";
-import { createRemoteAgent } from "@deepractice-ai/agentx/client";
+import { createAgentX, defineAgent } from "@deepractice-ai/agentx";
+import { createSSERuntime } from "@deepractice-ai/agentx/client";
 import type { Agent as AgentType } from "@deepractice-ai/agentx-types";
 
 const SERVER_URL = "http://localhost:5200/agentx";
+
+// Define agent for stories
+const StoryAgent = defineAgent({
+  name: "StoryAgent",
+  description: "Agent for Storybook stories",
+});
 
 /**
  * Create an agent on the server
@@ -38,14 +45,19 @@ function useRemoteAgentSetup() {
 
     async function setup() {
       try {
-        console.log("[Story] Creating agent...");
+        console.log("[Story] Creating agent on server...");
         const { agentId } = await createServerAgent();
         console.log("[Story] Agent created:", agentId);
 
-        currentAgent = createRemoteAgent({
+        // Create runtime that connects to existing agent
+        const runtime = createSSERuntime({
           serverUrl: SERVER_URL,
-          agentId,
+          agentId, // Connect to the agent we just created on server
         });
+
+        // Use unified API
+        const agentx = createAgentX(runtime);
+        currentAgent = agentx.agents.create(StoryAgent);
 
         // Debug logging
         currentAgent.on((event) => {
@@ -131,10 +143,16 @@ Integration component that binds Agent events to React state.
 **Usage:**
 \`\`\`tsx
 import { Agent, Chat } from "@deepractice-ai/agentx-ui";
-import { createRemoteAgent } from "@deepractice-ai/agentx/client";
+import { createAgentX, defineAgent } from "@deepractice-ai/agentx";
+import { createSSERuntime } from "@deepractice-ai/agentx/client";
 
-// User manages Agent creation
-const agent = createRemoteAgent({ serverUrl, agentId });
+// Define agent
+const MyAgent = defineAgent({ name: "Assistant" });
+
+// Create runtime and agent
+const runtime = createSSERuntime({ serverUrl, agentId });
+const agentx = createAgentX(runtime);
+const agent = agentx.agents.create(MyAgent);
 
 // Agent handles event binding, Chat is pure UI
 <Agent agent={agent}>

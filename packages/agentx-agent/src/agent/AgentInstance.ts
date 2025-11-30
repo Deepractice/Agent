@@ -30,6 +30,7 @@ import type {
   AgentInterceptor,
   EventConsumer,
   AgentDriver,
+  Sandbox,
   // Stream Layer Events
   MessageStartEvent,
   MessageDeltaEvent,
@@ -76,6 +77,7 @@ export class AgentInstance implements Agent {
   readonly definition: AgentDefinition;
   readonly context: AgentContext;
   readonly createdAt: number;
+  readonly sandbox: Sandbox;
 
   private _lifecycle: AgentLifecycle = "running";
   private readonly engine: AgentEngine;
@@ -120,16 +122,22 @@ export class AgentInstance implements Agent {
    */
   private readonly destroyHandlers: Set<() => void> = new Set();
 
-  constructor(definition: AgentDefinition, context: AgentContext, engine: AgentEngine) {
+  constructor(
+    definition: AgentDefinition,
+    context: AgentContext,
+    engine: AgentEngine,
+    driver: AgentDriver,
+    sandbox: Sandbox
+  ) {
     this.agentId = context.agentId;
     this.definition = definition;
     this.context = context;
     this.engine = engine;
     this.createdAt = context.createdAt;
+    this.sandbox = sandbox;
 
-    // Instantiate driver from driver class
-
-    this.driver = new definition.driver(context);
+    // Driver is provided by Runtime (not created from definition)
+    this.driver = driver;
 
     // Initialize components that need agentId
     this.errorClassifier = new AgentErrorClassifier(this.agentId);
@@ -311,21 +319,14 @@ export class AgentInstance implements Agent {
   }
 
   /**
-   * Send output to all presenters in definition
+   * Send output to all presenters
+   *
+   * Note: Presenters are no longer part of AgentDefinition.
+   * This is a placeholder for future presenter injection via Runtime or middleware.
    */
-  private presentOutput(output: AgentOutput): void {
-    const presenters = this.definition.presenters ?? [];
-    for (const presenter of presenters) {
-      try {
-        presenter.present(this.agentId, output);
-      } catch (error) {
-        logger.error("Presenter error", {
-          agentId: this.agentId,
-          eventType: output.type,
-          error,
-        });
-      }
-    }
+  private presentOutput(_output: AgentOutput): void {
+    // Presenters removed from AgentDefinition.
+    // Future: Presenters can be injected via Runtime or interceptor chain.
   }
 
   /**

@@ -87,12 +87,13 @@ export type {
 export type { AgentDriver, DriverClass } from "./AgentDriver";
 export type { AgentPresenter } from "./AgentPresenter";
 
-// Definition & Container
+// Config & Definition
+export type { AgentConfig } from "./AgentConfig";
 export type { AgentDefinition } from "./AgentDefinition";
 export type { AgentContainer } from "./AgentContainer";
 
 // Context
-export type { AgentContext, AgentContextBase } from "./AgentContext";
+export type { AgentContext } from "./AgentContext";
 
 // Output
 export type { AgentOutput } from "./AgentOutput";

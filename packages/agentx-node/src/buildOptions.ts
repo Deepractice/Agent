@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /**
  * Build Claude SDK Options from AgentContext
  *

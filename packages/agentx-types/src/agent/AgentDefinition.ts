@@ -1,93 +1,38 @@
 /**
  * AgentDefinition - Static definition of an Agent
  *
- * Like Spring's BeanDefinition, this defines WHAT an agent is.
- * Only contains the essentials:
- * - Identity (name, description)
- * - Driver class (instantiated per agent)
- * - Presenters (output adapters)
+ * "Define Once, Run Anywhere"
  *
- * Any other fields (systemPrompt, version, etc.) should be
- * defined by developers in their configSchema.
- */
-
-import type { DriverClass } from "./AgentDriver";
-import type { AgentPresenter } from "./AgentPresenter";
-import type { ConfigSchema, DefinitionConfig } from "~/config";
-
-/**
- * AgentDefinition - Static agent definition
+ * AgentDefinition is the template created by defineAgent().
+ * Contains business-level configuration (what the agent does).
+ * Runtime provides infrastructure (how to run it).
  *
- * Defines the template for creating agent instances.
- * Configuration is split into two scopes:
- * - Definition-scope: Set here in the template (shared by all instances)
- * - Instance-scope: Set when creating each instance (per-instance)
+ * @example
+ * ```typescript
+ * const MyAgent = defineAgent({
+ *   name: "Translator",
+ *   systemPrompt: "You are a professional translator",
+ * });
+ *
+ * const agentx = createAgentX(runtime);
+ * const agent = agentx.agents.create(MyAgent);
+ * ```
  */
-export interface AgentDefinition<TDriver extends DriverClass = DriverClass> {
+export interface AgentDefinition {
   /**
-   * Agent name (identifier)
+   * Agent name (required)
    */
   name: string;
 
   /**
-   * Description (optional)
+   * Agent description (optional)
    */
   description?: string;
 
   /**
-   * Driver class for message processing
-   *
-   * Pass the class itself, not an instance.
-   * AgentInstance will instantiate the driver with AgentContext.
-   *
-   * @example
-   * ```typescript
-   * // Basic usage
-   * defineAgent({
-   *   name: "MyAgent",
-   *   driver: ClaudeDriver,
-   * });
-   *
-   * // With schema - type-safe config
-   * defineAgent({
-   *   name: "MyAgent",
-   *   driver: ClaudeDriver,  // has static schema
-   *   config: {
-   *     systemPrompt: "...",  // ✅ definition scope
-   *     model: "sonnet",      // ✅ definition scope
-   *     apiKey: "xxx",        // ❌ type error! instance scope
-   *   },
-   * });
-   * ```
+   * System prompt - controls agent behavior
    */
-  driver: TDriver;
+  systemPrompt?: string;
 
-  /**
-   * Output presenters (optional)
-   */
-  presenters?: AgentPresenter[];
-
-  /**
-   * Definition-level configuration
-   *
-   * Fields set here are shared by all instances created from this definition.
-   * Type is automatically inferred from the driver's schema (if available).
-   * Only fields with scope: "definition" can be set here.
-   *
-   * @example
-   * ```typescript
-   * const ClaudeAgent = defineAgent({
-   *   driver: ClaudeSDKDriver,
-   *   config: {
-   *     // Type-safe: only definition-scope fields allowed
-   *     systemPrompt: "You are a code reviewer",
-   *     model: "claude-sonnet-4-5",
-   *     allowedTools: ["Read", "Grep"],
-   *   },
-   * });
-   * ```
-   */
-  config?: TDriver extends { schema: infer S extends ConfigSchema }
-    ? DefinitionConfig<S>
-    : Record<string, unknown>;
+  // Add more fields as needed
 }

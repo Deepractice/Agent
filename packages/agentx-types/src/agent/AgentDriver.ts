@@ -42,7 +42,6 @@
 import type { StreamEventType } from "~/event";
 import type { UserMessage } from "~/message";
 import type { AgentContext } from "./AgentContext";
-import type { ConfigSchema } from "~/config";
 
 /**
  * AgentDriver interface
@@ -86,39 +85,22 @@ export interface AgentDriver {
 }
 
 /**
- * Driver class constructor type
+ * Driver class constructor type (Legacy)
  *
- * Used in AgentDefinition to specify which Driver class to instantiate.
+ * @deprecated Use factory function pattern instead.
+ * Runtime.createDriver() creates drivers directly.
  *
  * @example
  * ```typescript
- * // Basic usage - pass the class directly
- * defineAgent({
- *   name: "MyAgent",
- *   driver: ClaudeDriver,
- * });
- *
- * // With schema - driver declares its config structure
- * class ClaudeDriver implements AgentDriver {
- *   static schema = {
- *     systemPrompt: { type: "string", scope: "definition" },
- *     apiKey: { type: "string", scope: "instance", required: true },
- *     // ...
- *   } as const satisfies ConfigSchema;
+ * // New pattern - factory function
+ * function createClaudeDriver(config, context, sandbox): RuntimeDriver {
+ *   // Create driver instance
  * }
  * ```
  */
-export interface DriverClass<TConfig = Record<string, unknown>> {
+export interface DriverClass {
   /**
    * Constructor
    */
-  new (context: AgentContext<TConfig>): AgentDriver;
-
-  /**
-   * Optional configuration schema
-   *
-   * If provided, enables type-safe config in defineAgent and create.
-   * The schema declares what configuration the driver accepts.
-   */
-  schema?: ConfigSchema;
+  new (context: AgentContext): AgentDriver;
 }

@@ -1,3 +1,4 @@
+/* eslint-disable no-undef */
 /**
  * SSEDriver - Browser-side driver that connects to remote AgentX server via SSE
  *
@@ -6,12 +7,15 @@
  *
  * @example
  * ```typescript
- * import { createRemoteAgent } from "@deepractice-ai/agentx/client";
+ * import { createSSERuntime } from "@deepractice-ai/agentx/client";
+ * import { createAgentX, defineAgent } from "@deepractice-ai/agentx";
  *
- * const agent = createRemoteAgent({
+ * const runtime = createSSERuntime({
  *   serverUrl: "http://localhost:5200/agentx",
  *   agentId: "agent_123"
  * });
+ * const agentx = createAgentX(runtime);
+ * const agent = agentx.agents.create(defineAgent({ name: "Assistant" }));
  *
  * agent.on("assistant_message", (event) => {
  *   console.log(event.data.content);
@@ -21,9 +25,8 @@
  * ```
  */
 
-import type { UserMessage, StreamEventType } from "@deepractice-ai/agentx-types";
+import type { UserMessage, StreamEventType, AgentDriver } from "@deepractice-ai/agentx-types";
 import { STREAM_EVENT_TYPE_NAMES } from "@deepractice-ai/agentx-types";
-import { defineConfig, defineDriver } from "@deepractice-ai/agentx-adk";
 
 /**
  * Persistent SSE connection manager
@@ -196,97 +199,74 @@ class PersistentSSEConnection {
 }
 
 /**
- * SSEDriver configuration schema
+ * SSEDriver configuration
  */
-const sseConfig = defineConfig({
-  serverUrl: {
-    type: "string",
-    description: "Server base URL (e.g., http://localhost:5200/agentx)",
-    required: true,
-    scopes: ["instance"],
-  },
-  agentId: {
-    type: "string",
-    description: "Agent ID on the server",
-    required: true,
-    scopes: ["instance"],
-  },
-  headers: {
-    type: "object",
-    description:
-      "Optional request headers (for auth, etc.). Note: EventSource doesn't support custom headers natively. For auth, consider using cookies or URL params.",
-    required: false,
-    scopes: ["instance"],
-  },
-});
+export interface SSEDriverConfig {
+  serverUrl: string;
+  agentId: string;
+  headers?: Record<string, string>;
+}
 
 /**
- * SSEDriver - ADK-based driver for browser SSE connections
+ * Create an SSEDriver instance
+ *
+ * Factory function for browser-side SSE driver.
  */
-export const SSEDriver = defineDriver({
-  name: "SSEDriver",
-  description: "Browser SSE driver for connecting to remote AgentX server",
-  config: sseConfig,
+export function createSSEDriver(config: SSEDriverConfig): AgentDriver {
+  const { serverUrl, agentId, headers = {} } = config;
+  let connection: PersistentSSEConnection | null = null;
 
-  create: (context) => {
-    let connection: PersistentSSEConnection | null = null;
+  return {
+    name: "SSEDriver",
 
-    return {
-      name: "SSEDriver",
+    async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
+      // 1. Ensure SSE connection is established
+      if (!connection) {
+        connection = new PersistentSSEConnection(serverUrl, agentId);
+        connection.connect();
+      }
 
-      async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
-        const { serverUrl, agentId, headers = {} } = context;
+      // 2. Send message to server via HTTP POST
+      const messageUrl = `${serverUrl}/agents/${agentId}/messages`;
+      const response = await fetch(messageUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...headers,
+        },
+        body: JSON.stringify({
+          content: typeof message.content === "string" ? message.content : message.content,
+        }),
+      });
 
-        // 1. Ensure SSE connection is established
-        if (!connection) {
-          connection = new PersistentSSEConnection(serverUrl, agentId);
-          connection.connect();
-        }
+      if (!response.ok) {
+        const errorBody = (await response.json().catch(() => ({}))) as {
+          error?: { message?: string };
+        };
+        throw new Error(errorBody.error?.message || `HTTP ${response.status}`);
+      }
 
-        // 2. Send message to server via HTTP POST
-        const messageUrl = `${serverUrl}/agents/${agentId}/messages`;
-        const response = await fetch(messageUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...headers,
-          },
-          body: JSON.stringify({
-            content: typeof message.content === "string" ? message.content : message.content,
-          }),
-        });
+      // 3. Yield events from persistent SSE connection
+      yield* connection.createIterator();
+    },
 
-        if (!response.ok) {
-          const errorBody = (await response.json().catch(() => ({}))) as {
-            error?: { message?: string };
-          };
-          throw new Error(errorBody.error?.message || `HTTP ${response.status}`);
-        }
+    interrupt(): void {
+      // Call server interrupt endpoint (fire-and-forget)
+      const interruptUrl = `${serverUrl}/agents/${agentId}/interrupt`;
+      fetch(interruptUrl, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          ...headers,
+        },
+      }).catch(() => {
+        // Ignore errors - interrupt is best-effort
+      });
+    },
 
-        // 3. Yield events from persistent SSE connection
-        yield* connection.createIterator();
-      },
-
-      interrupt(): void {
-        const { serverUrl, agentId, headers = {} } = context;
-
-        // Call server interrupt endpoint (fire-and-forget)
-        const interruptUrl = `${serverUrl}/agents/${agentId}/interrupt`;
-        fetch(interruptUrl, {
-          method: "POST",
-          headers: {
-            "Content-Type": "application/json",
-            ...headers,
-          },
-        }).catch(() => {
-          // Ignore errors - interrupt is best-effort
-        });
-      },
-
-      async destroy(): Promise<void> {
-        connection?.close();
-        connection = null;
-      },
-    };
-  },
-});
+    async destroy(): Promise<void> {
+      connection?.close();
+      connection = null;
+    },
+  };
+}

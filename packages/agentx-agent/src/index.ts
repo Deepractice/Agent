@@ -72,7 +72,6 @@ export {
   // Types (re-exported from @deepractice-ai/agentx-types)
   type Agent,
   type AgentContext,
-  type AgentContextBase,
   type AgentDriver,
   type AgentPresenter,
   type AgentDefinition,

@@ -3,15 +3,15 @@
  *
  * Provides manager implementations for AgentX platform.
  *
- * Directory structure indicates Local/Remote variants:
- * - agent/     - LocalAgentManager (Remote reuses with different driver)
+ * Directory structure:
+ * - agent/     - AgentManager (uses Runtime)
  * - session/   - LocalSessionManager, RemoteSessionManager
- * - error/     - ErrorManager (Local only)
- * - remote/    - PlatformManager, HttpClient (Remote only)
+ * - error/     - ErrorManager
+ * - remote/    - PlatformManager, HttpClient
  */
 
-// Agent managers
-export { LocalAgentManager } from "./agent";
+// Agent manager (uses Runtime)
+export { AgentManager } from "./agent";
 
 // Session managers
 export { LocalSessionManager, RemoteSessionManager } from "./session";

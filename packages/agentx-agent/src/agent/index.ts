@@ -13,7 +13,6 @@ export type {
   AgentDefinition,
   AgentContainer,
   AgentContext,
-  AgentContextBase,
   AgentOutput,
   AgentLifecycle,
   AgentEventHandler,

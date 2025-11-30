@@ -15,17 +15,16 @@ export function generateAgentId(): string {
 }
 
 /**
- * Create AgentContext by merging internal fields with config
+ * Create AgentContext - pure identity
  *
- * @param config - User-provided configuration
- * @returns Complete AgentContext with internal fields + config
+ * AgentContext is now pure identity (agentId + createdAt).
+ * Config is separate and passed to Driver.
+ *
+ * @returns AgentContext with agentId and createdAt
  */
-export function createAgentContext<TConfig extends Record<string, unknown>>(
-  config: TConfig
-): AgentContext<TConfig> {
+export function createAgentContext(): AgentContext {
   return {
     agentId: generateAgentId(),
     createdAt: Date.now(),
-    ...config,
-  } as AgentContext<TConfig>;
+  };
 }

@@ -7,72 +7,15 @@
  * @example
  * ```typescript
  * import { createAgentX } from "@deepractice-ai/agentx";
+ * import { NodeRuntime } from "@deepractice-ai/agentx-claude";
  *
- * // Local mode (default)
- * const local = createAgentX();
- * const local = createAgentX({ mode: 'local' });
- *
- * // Remote mode
- * const remote = createAgentX({
- *   mode: 'remote',
- *   remote: { serverUrl: "http://localhost:5200/agentx" }
- * });
+ * const runtime = new NodeRuntime({ apiKey: "xxx" });
+ * const agentx = createAgentX(runtime);
  * ```
  */
 
 import type { AgentX } from "./AgentX";
-import type { RemoteConfig } from "./AgentXConfig";
-
-// ============================================================================
-// Options - Discriminated Union
-// ============================================================================
-
-/**
- * Local mode options
- */
-export interface AgentXLocalOptions {
-  /**
-   * Mode identifier (optional, defaults to 'local')
-   */
-  mode?: "local";
-}
-
-/**
- * Remote mode options
- */
-export interface AgentXRemoteOptions {
-  /**
-   * Mode identifier (required for remote)
-   */
-  mode: "remote";
-
-  /**
-   * Remote server configuration (required for remote mode)
-   */
-  remote: RemoteConfig;
-}
-
-/**
- * AgentX creation options
- *
- * Discriminated union - TypeScript enforces:
- * - mode='local' or undefined: remote is not allowed
- * - mode='remote': remote config is required
- *
- * @example
- * ```typescript
- * // Local mode (default)
- * const opts1: AgentXOptions = {};
- * const opts2: AgentXOptions = { mode: 'local' };
- *
- * // Remote mode - remote is required
- * const opts3: AgentXOptions = {
- *   mode: 'remote',
- *   remote: { serverUrl: 'http://...' }
- * };
- * ```
- */
-export type AgentXOptions = AgentXLocalOptions | AgentXRemoteOptions;
+import type { Runtime } from "~/runtime/Runtime";
 
 // ============================================================================
 // Function Declaration - Authoritative API
@@ -84,19 +27,21 @@ export type AgentXOptions = AgentXLocalOptions | AgentXRemoteOptions;
  * This is the authoritative API definition.
  * The agentx package must implement this function exactly.
  *
- * @param options - AgentX creation options (local or remote mode)
+ * @param runtime - Runtime provides infrastructure (Container, Sandbox, Driver)
  * @returns AgentX instance
  *
  * @example
  * ```typescript
- * // Local mode (default)
- * const agentx = createAgentX();
+ * import { createAgentX } from "@deepractice-ai/agentx";
+ * import { NodeRuntime } from "@deepractice-ai/agentx-claude";
  *
- * // Remote mode
- * const agentx = createAgentX({
- *   mode: 'remote',
- *   remote: { serverUrl: 'http://localhost:5200/agentx' }
- * });
+ * // Node.js environment
+ * const nodeRuntime = new NodeRuntime({ apiKey: "xxx" });
+ * const agentx = createAgentX(nodeRuntime);
+ *
+ * // Browser environment
+ * const browserRuntime = new BrowserRuntime({ serverUrl: "http://..." });
+ * const agentx = createAgentX(browserRuntime);
  * ```
  */
-export declare function createAgentX(options?: AgentXOptions): AgentX;
+export declare function createAgentX(runtime: Runtime): AgentX;

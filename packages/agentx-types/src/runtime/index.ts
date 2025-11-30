@@ -1,11 +1,26 @@
 /**
  * Runtime types
  *
- * Container layer: manages multiple Agents (1:N)
- * Sandbox layer: pure resource isolation (OS + LLM)
+ * Runtime = Complete environment encapsulation
+ * - Container: Agent lifecycle management
+ * - Sandbox: Resource isolation (OS + LLM)
+ * - RuntimeDriver: Driver with Sandbox
+ * - Config: Configuration schema
  *
- * Hierarchy: Container → Agent → Sandbox (OS + LLM)
+ * Agent is pure business, Runtime is infrastructure.
  */
 
+// Runtime
+export type { Runtime } from "./Runtime";
+
+// RuntimeDriver
+export type { RuntimeDriver } from "./RuntimeDriver";
+
+// Container
 export * from "./container";
+
+// Sandbox
 export * from "./sandbox";
+
+// Config
+export * from "./config";

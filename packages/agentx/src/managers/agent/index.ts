@@ -1,8 +1,7 @@
 /**
  * Agent Manager module
  *
- * Provides agent management implementations for Local and Remote modes.
+ * Provides agent management implementation using Runtime.
  */
 
-export { LocalAgentManager } from "./LocalAgentManager";
-// export { RemoteAgentManager } from "./RemoteAgentManager";  // TODO
+export { AgentManager } from "./AgentManager";
