@@ -1,7 +1,7 @@
 {
-  "name": "@deepractice-ai/agentx-core",
+  "name": "@deepractice-ai/agentx-runtime",
   "version": "0.1.0",
-  "description": "Core implementations for AgentX ecosystem - Session management and agent registry",
+  "description": "Platform runtime for AgentX - Infrastructure layer managing agents, sessions, and shared resources",
   "type": "module",
   "main": "./dist/index.js",
   "module": "./dist/index.mjs",
@@ -28,9 +28,9 @@
   "keywords": [
     "ai",
     "agent",
-    "core",
-    "session",
-    "registry",
+    "runtime",
+    "platform",
+    "infrastructure",
     "agentx",
     "deepractice"
   ],
@@ -45,13 +45,12 @@
   },
   "homepage": "https://github.com/Deepractice/Agent#readme",
   "dependencies": {
+    "@deepractice-ai/agentx-agent": "workspace:*",
     "@deepractice-ai/agentx-engine": "workspace:*",
     "@deepractice-ai/agentx-logger": "workspace:*",
-    "@deepractice-ai/agentx-types": "workspace:*",
-    "rxjs": "^7.8.2"
+    "@deepractice-ai/agentx-types": "workspace:*"
   },
   "devDependencies": {
-    "@deepracticex/vitest-cucumber": "^1.4.3",
     "@types/node": "^24.9.2",
     "tsup": "^8.5.0",
     "typescript": "^5.9.3",

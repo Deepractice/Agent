@@ -1,22 +1,14 @@
 /**
  * AgentX Core
  *
- * Agent runtime and session management - the stateful layer of AgentX.
+ * Agent runtime - the stateful layer of AgentX.
  * Builds on top of the stateless Engine to provide lifecycle management.
  *
  * ## Design Principles
  *
  * 1. **Stateful Coordination**: Manages Agent lifecycle, Engine is stateless
  * 2. **Event-Driven**: All communication via RxJS-based EventBus
- * 3. **Immutable Sessions**: Functional operations return new Session objects
- * 4. **Role Separation**: Producer/Consumer views for EventBus access control
- *
- * ## Module Structure
- *
- * | Module               | Files | Purpose                                    |
- * |----------------------|-------|--------------------------------------------|
- * | agent/               | 7     | Agent runtime (Instance, EventBus, State)  |
- * | session/             | 3     | Session and message persistence            |
+ * 3. **Role Separation**: Producer/Consumer views for EventBus access control
  *
  * ## Key Design Decisions
  *
@@ -43,19 +35,7 @@
  * - Automatic cleanup on destroy
  * - Producer/Consumer role separation
  *
- * ### 3. Why Immutable Sessions?
- *
- * **Problem**: Session state changes (add message, associate agent) need tracking.
- *
- * **Decision**: All Session operations return new Session objects.
- *
- * **Rationale**:
- * - Predictable state changes
- * - Easy to implement undo/redo
- * - Compatible with React's immutable state model
- * - No hidden mutations
- *
- * ### 4. Why Middleware + Interceptor Pattern?
+ * ### 3. Why Middleware + Interceptor Pattern?
  *
  * **Problem**: Need to intercept both input (messages) and output (events).
  *
@@ -67,7 +47,7 @@
  * - Middleware: rate limiting, auth, message transformation
  * - Interceptor: logging, metrics, event filtering
  *
- * ### 5. Why StateMachine Driven by Events?
+ * ### 4. Why StateMachine Driven by Events?
  *
  * **Problem**: How to track agent conversation state?
  *
@@ -109,25 +89,3 @@ export {
   generateAgentId,
   createAgentContext,
 } from "./agent";
-
-// ===== Session =====
-export {
-  // Types
-  type Message,
-  type MessageRole,
-  type Session,
-  type SessionRepository,
-  type SessionQueryOptions,
-  // Classes
-  MemorySessionRepository,
-  // Functions
-  createMessage,
-  fromTypesMessage,
-  generateSessionId,
-  createSession,
-  associateAgent,
-  disassociateAgent,
-  addMessage,
-  getMessagesByAgent,
-  clearMessages,
-} from "./session";

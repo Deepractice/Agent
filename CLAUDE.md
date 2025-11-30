@@ -19,7 +19,7 @@ This is a **pnpm monorepo** with Turborepo build orchestration:
     ├── agentx-adk/       # Agent Development Kit (defineConfig, defineDriver, defineAgent)
     ├── agentx-logger/    # SLF4J-style logging facade
     ├── agentx-engine/    # Mealy Machine event processor
-    ├── agentx-core/      # Agent runtime & session management
+    ├── agentx-agent/     # Agent runtime
     ├── agentx/           # Platform API (local/remote, server/client)
     ├── agentx-claude/    # Claude SDK driver integration
     └── agentx-ui/        # React UI components (Storybook)
@@ -47,7 +47,7 @@ pnpm dev --filter=@deepractice-ai/agentx-ui
 pnpm build
 
 # Build specific package
-pnpm build --filter=@deepractice-ai/agentx-core
+pnpm build --filter=@deepractice-ai/agentx-agent
 ```
 
 ### Code Quality
@@ -228,7 +228,7 @@ agentx-logger (SLF4J-style facade)
     ↓
 agentx-engine (Mealy Machine processors)
     ↓
-agentx-core (Agent runtime, session management)
+agentx-agent (Agent runtime)
     ↓
 agentx (Platform API: local/remote, server/client)
     ↓
@@ -245,7 +245,7 @@ agentx-ui (React components)
 | **ADK**      | `agentx-adk`    | Development tools (defineConfig, defineDriver, defineAgent) |
 | **Logger**   | `agentx-logger` | Logging facade with lazy initialization                     |
 | **Engine**   | `agentx-engine` | Pure event processing (Mealy Machines)                      |
-| **Core**     | `agentx-core`   | Agent runtime, EventBus, Session management                 |
+| **Agent**    | `agentx-agent`  | Agent runtime, EventBus, lifecycle management               |
 | **Platform** | `agentx`        | Unified API, SSE server/client                              |
 | **Driver**   | `agentx-claude` | Claude SDK integration                                      |
 | **UI**       | `agentx-ui`     | React components, Storybook                                 |
@@ -465,7 +465,7 @@ This separation ensures clean server-browser boundaries.
 
 **Important**: This is a Turborepo monorepo. Dependencies between packages are resolved by Turbo's task pipeline.
 
-1. **Always build dependencies first**: If you modify `agentx-core`, run `pnpm build --filter=@deepractice-ai/agentx-core` before working with packages that depend on it.
+1. **Always build dependencies first**: If you modify `agentx-agent`, run `pnpm build --filter=@deepractice-ai/agentx-agent` before working with packages that depend on it.
 
 2. **Use workspace references**: Packages use `"workspace:*"` protocol. Never use file paths.
 
@@ -989,7 +989,7 @@ pnpm build
 pnpm typecheck
 
 # Check specific package
-pnpm typecheck --filter=@deepractice-ai/agentx-core
+pnpm typecheck --filter=@deepractice-ai/agentx-agent
 ```
 
 ### Dependency Issues
@@ -1124,21 +1124,21 @@ import { createLogger } from "@deepractice-ai/agentx-logger";
 import { AgentEngine } from "@deepractice-ai/agentx-engine";
 ```
 
-### agentx-core
+### agentx-agent
 
-**Purpose**: Agent runtime and session management
+**Purpose**: Agent runtime and lifecycle management
 
 **Key Classes:**
 
 - `AgentInstance` - Main agent implementation
 - `AgentEventBus` - RxJS-based event system
 - `AgentStateMachine` - State transition manager
-- `Session`, `SessionRepository` - Session data structures
+- `MemoryAgentContainer` - In-memory agent container
 
 **Import Pattern:**
 
 ```typescript
-import { AgentInstance } from "@deepractice-ai/agentx-core";
+import { AgentInstance } from "@deepractice-ai/agentx-agent";
 ```
 
 ### agentx
@@ -1210,7 +1210,7 @@ import { Chat, UserMessage } from "@deepractice-ai/agentx-ui";
 **Package Dependency Flow:**
 
 ```
-types → adk → logger → engine → core → agentx → claude → ui
+types → adk → logger → engine → agent → agentx → claude → ui
 ```
 
 **Critical Design Decisions:**
@@ -1222,4 +1222,3 @@ types → adk → logger → engine → core → agentx → claude → ui
 - ✅ **Errors flow through event system** (not just exceptions)
 - ✅ **Logger facade with lazy initialization**
 - ✅ **defineConfig → defineDriver → defineAgent** (three-layer pattern)
-- ✅ **Immutable sessions and messages**

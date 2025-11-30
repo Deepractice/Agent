@@ -33,7 +33,7 @@ import type {
   LoggerFactory,
 } from "@deepractice-ai/agentx-types";
 import { LoggerFactoryKey } from "@deepractice-ai/agentx-types";
-import { MemoryAgentContainer } from "@deepractice-ai/agentx-core";
+import { MemoryAgentContainer } from "@deepractice-ai/agentx-agent";
 import { AgentEngine } from "@deepractice-ai/agentx-engine";
 import { createLogger, setLoggerFactory } from "@deepractice-ai/agentx-logger";
 import {

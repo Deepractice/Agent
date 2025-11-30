@@ -6,7 +6,8 @@
     "packages/agentx-adk",
     "packages/agentx-logger",
     "packages/agentx-engine",
-    "packages/agentx-core",
+    "packages/agentx-agent",
+    "packages/agentx-runtime",
     "packages/agentx",
     "packages/agentx-claude",
     "packages/agentx-ui"

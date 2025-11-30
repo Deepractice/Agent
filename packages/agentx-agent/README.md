@@ -1,10 +1,10 @@
-# @deepractice-ai/agentx-core
+# @deepractice-ai/agentx-agent
 
-**AgentX Core** - Agent Lifecycle and Session Management for AI Agents.
+**AgentX Agent** - Agent Runtime for AI Agents.
 
 ## Overview
 
-AgentX Core provides the **stateful layer** on top of the stateless Engine. It manages Agent instances (like Spring's ApplicationContext manages Beans) and Session persistence.
+AgentX Agent provides the **stateful layer** on top of the stateless Engine. It manages Agent instances (like Spring's ApplicationContext manages Beans).
 
 **Key Design**:
 
@@ -19,13 +19,12 @@ AgentX Core provides the **stateful layer** on top of the stateless Engine. It m
 - **Stateless Driver** - Driver receives context, no internal state
 - **Context-based Config** - Config merged into AgentContext at runtime
 - **Agent Lifecycle** - `running` / `destroyed` state management
-- **Session Management** - Message persistence with agent association
 - **Type-safe Events** - Subscribe to agent events with type safety
 
 ## Installation
 
 ```bash
-pnpm add @deepractice-ai/agentx-core
+pnpm add @deepractice-ai/agentx-agent
 ```
 
 ## Quick Start
@@ -33,7 +32,7 @@ pnpm add @deepractice-ai/agentx-core
 ### Define a Stateless Driver
 
 ```typescript
-import type { AgentDriver, AgentContext } from "@deepractice-ai/agentx-core";
+import type { AgentDriver, AgentContext } from "@deepractice-ai/agentx-agent";
 
 // Driver is STATELESS - all config comes from context
 const claudeDriver: AgentDriver<{ apiKey: string; model?: string }> = {
@@ -55,7 +54,7 @@ const claudeDriver: AgentDriver<{ apiKey: string; model?: string }> = {
 ### Create an Agent
 
 ```typescript
-import { initializeCore, createAgent, destroyAgent } from "@deepractice-ai/agentx-core";
+import { initializeCore, createAgent, destroyAgent } from "@deepractice-ai/agentx-agent";
 import { AgentEngine } from "@deepractice-ai/agentx-engine";
 
 // 1. Initialize core (once per process)
@@ -78,27 +77,6 @@ await agent.receive("Hello!");
 
 // 5. Clean up
 await destroyAgent(agent.agentId);
-```
-
-### With Sessions
-
-```typescript
-import {
-  createSession,
-  associateAgent,
-  addMessage,
-  createMessage,
-} from "@deepractice-ai/agentx-core";
-
-// Create a session
-let session = createSession("My Chat");
-
-// Associate with an agent
-session = associateAgent(session, agent.agentId);
-
-// Add messages
-const userMsg = createMessage(agent.agentId, "user", "Hello!");
-session = addMessage(session, userMsg);
 ```
 
 ## Core Interfaces

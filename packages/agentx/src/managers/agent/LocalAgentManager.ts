@@ -13,7 +13,7 @@ import type {
   ErrorEvent,
   DriverClass,
 } from "@deepractice-ai/agentx-types";
-import { AgentInstance, createAgentContext } from "@deepractice-ai/agentx-core";
+import { AgentInstance, createAgentContext } from "@deepractice-ai/agentx-agent";
 import type { AgentEngine } from "@deepractice-ai/agentx-engine";
 import type { ErrorManager } from "../error/ErrorManager";
 import { createLogger } from "@deepractice-ai/agentx-logger";
