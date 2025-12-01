@@ -18,7 +18,13 @@ import type { AgentX, ProviderKey, LoggerFactory, Runtime } from "@deepractice-a
 import { LoggerFactoryKey } from "@deepractice-ai/agentx-types";
 import { AgentEngine } from "@deepractice-ai/agentx-engine";
 import { createLogger, setLoggerFactory } from "@deepractice-ai/agentx-logger";
-import { AgentManager, SessionManagerImpl, ErrorManager } from "./managers";
+import {
+  AgentManager,
+  SessionManagerImpl,
+  ErrorManager,
+  DefinitionManagerImpl,
+  ImageManagerImpl,
+} from "./managers";
 
 const logger = createLogger("agentx/AgentX");
 
@@ -70,6 +76,8 @@ export function createAgentX(runtime: Runtime): AgentX {
 
   // Create managers
   const errorManager = new ErrorManager();
+  const definitionManager = new DefinitionManagerImpl(runtime.repository);
+  const imageManager = new ImageManagerImpl(runtime.repository);
   const agentManager = new AgentManager(runtime, engine, errorManager);
 
   // Create session manager with repository and agent factory
@@ -84,6 +92,8 @@ export function createAgentX(runtime: Runtime): AgentX {
 
   return {
     mode: "local",
+    definitions: definitionManager,
+    images: imageManager,
     agents: agentManager,
     sessions: sessionManager,
     errors: errorManager,

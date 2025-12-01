@@ -117,10 +117,13 @@ class SessionImpl implements Session {
       throw new Error(`Image not found: ${this.imageId}`);
     }
 
-    // Create new image with copied data
+    // Create new image with copied data (DerivedImage from fork)
     const newImageId = generateImageId();
     const newImageRecord: ImageRecord = {
       imageId: newImageId,
+      type: "derived",
+      definitionName: imageRecord.definitionName,
+      parentImageId: imageRecord.imageId,
       definition: imageRecord.definition,
       config: imageRecord.config,
       messages: [...imageRecord.messages], // Copy messages

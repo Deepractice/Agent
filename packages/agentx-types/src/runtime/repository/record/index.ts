@@ -11,7 +11,7 @@
  *                    Session (external wrapper)
  */
 
-export type { ImageRecord } from "./ImageRecord";
+export type { ImageRecord, ImageType } from "./ImageRecord";
 export type { SessionRecord } from "./SessionRecord";
 export type { MessageRecord } from "./MessageRecord";
 

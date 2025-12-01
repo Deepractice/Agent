@@ -4,11 +4,19 @@
  * Provides manager implementations for AgentX platform.
  *
  * Directory structure:
- * - agent/     - AgentManager (uses Runtime)
- * - session/   - SessionManagerImpl
- * - error/     - ErrorManager
- * - remote/    - PlatformManager, HttpClient
+ * - definition/ - DefinitionManagerImpl
+ * - image/      - ImageManagerImpl
+ * - agent/      - AgentManager (uses Runtime)
+ * - session/    - SessionManagerImpl
+ * - error/      - ErrorManager
+ * - remote/     - PlatformManager, HttpClient
  */
+
+// Definition manager
+export { DefinitionManagerImpl } from "./definition";
+
+// Image manager
+export { ImageManagerImpl } from "./image";
 
 // Agent manager (uses Runtime)
 export { AgentManager } from "./agent";

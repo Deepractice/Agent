@@ -4,30 +4,40 @@
  * Part of Docker-style layered architecture:
  * Definition → build → Image → run → Agent
  *
- * AgentImage is the frozen snapshot created by build().
- * Contains everything needed to run an Agent:
- * - Definition snapshot (business config)
- * - Config (runtime config at build time)
- * - Messages (conversation history for resume/fork)
+ * AgentImage is a discriminated union of:
+ * - MetaImage: Genesis image (auto-created from Definition, empty messages)
+ * - DerivedImage: Committed image (from session.commit(), has messages)
+ *
+ * Use type narrowing to distinguish:
+ * ```typescript
+ * if (image.type === 'meta') {
+ *   // MetaImage - no parent, empty messages
+ * } else {
+ *   // DerivedImage - has parentImageId
+ * }
+ * ```
  *
  * @example
  * ```typescript
- * // Build image from definition
- * const image = await agentx.images.build("Translator", { model: "claude-3" });
+ * // Get MetaImage (genesis)
+ * const metaImage = await agentx.images.getMetaImage("Translator");
  *
- * // Run agent from image
- * const agent = agentx.agents.run(image.imageId);
+ * // Create session and commit to get DerivedImage
+ * const session = await agentx.sessions.create(metaImage.imageId, userId);
+ * // ... conversation ...
+ * const derivedImage = await session.commit();
  *
- * // Fork image (with messages)
- * const forkedImage = await session.fork();
+ * // Fork: create new session from any image
+ * const forkedSession = await agentx.sessions.create(derivedImage.imageId, userId);
  * ```
  */
 
-import type { AgentDefinition } from "~/definition";
 import type { UserMessage } from "~/message/UserMessage";
 import type { AssistantMessage } from "~/message/AssistantMessage";
 import type { ToolCallMessage } from "~/message/ToolCallMessage";
 import type { ToolResultMessage } from "~/message/ToolResultMessage";
+import type { MetaImage } from "./MetaImage";
+import type { DerivedImage } from "./DerivedImage";
 
 /**
  * Union type of all message types that can be stored in an Image
@@ -35,34 +45,10 @@ import type { ToolResultMessage } from "~/message/ToolResultMessage";
 export type ImageMessage = UserMessage | AssistantMessage | ToolCallMessage | ToolResultMessage;
 
 /**
- * AgentImage - Immutable snapshot of agent state
+ * AgentImage - Discriminated union of MetaImage and DerivedImage
+ *
+ * Use `image.type` for type narrowing:
+ * - 'meta': MetaImage (genesis, no messages)
+ * - 'derived': DerivedImage (committed, has messages)
  */
-export interface AgentImage {
-  /**
-   * Unique image identifier
-   */
-  readonly imageId: string;
-
-  /**
-   * Frozen definition snapshot
-   * Contains the business config at build time
-   */
-  readonly definition: AgentDefinition;
-
-  /**
-   * Frozen runtime config
-   * Contains model, apiKey reference, etc. at build time
-   */
-  readonly config: Record<string, unknown>;
-
-  /**
-   * Frozen conversation history
-   * Contains all messages for resume/fork capability
-   */
-  readonly messages: ImageMessage[];
-
-  /**
-   * When this image was created
-   */
-  readonly createdAt: Date;
-}
+export type AgentImage = MetaImage | DerivedImage;

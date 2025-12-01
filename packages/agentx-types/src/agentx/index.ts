@@ -93,6 +93,12 @@ export type {
   GetHealthEndpoint,
 } from "./platform";
 
+// Definition module (Manager)
+export type { DefinitionManager } from "./definition";
+
+// Image module (Manager)
+export type { ImageManager } from "./image";
+
 // Provider types
 export type { ProviderKey } from "./ProviderKey";
 export { createProviderKey, LoggerFactoryKey } from "./ProviderKey";

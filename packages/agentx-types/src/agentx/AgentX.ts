@@ -30,12 +30,24 @@ import type { AgentManager } from "./agent";
 import type { ErrorManager } from "./error";
 import type { SessionManager } from "./session";
 import type { PlatformManager } from "./platform";
+import type { DefinitionManager } from "./definition";
+import type { ImageManager } from "./image";
 import type { ProviderKey } from "./ProviderKey";
 
 /**
  * Base AgentX interface (shared by Local and Remote)
  */
 interface AgentXBase {
+  /**
+   * Definition registry (Docker-style: source templates)
+   */
+  readonly definitions: DefinitionManager;
+
+  /**
+   * Image management (Docker-style: built artifacts)
+   */
+  readonly images: ImageManager;
+
   /**
    * Agent lifecycle management
    */

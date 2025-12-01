@@ -25,6 +25,23 @@ import type {
   MessageRole,
 } from "@deepractice-ai/agentx-types";
 
+/**
+ * Convert Date, string, or number to ISO string
+ * Handles JSON deserialization where Date becomes string or number
+ */
+function toISOString(value: Date | string | number): string {
+  if (value instanceof Date) {
+    return value.toISOString();
+  }
+  if (typeof value === "string") {
+    return value; // Assume already ISO string
+  }
+  if (typeof value === "number") {
+    return new Date(value).toISOString();
+  }
+  throw new Error(`Invalid date value: ${value}`);
+}
+
 export class SQLiteRepository implements Repository {
   private db: Database.Database;
 
@@ -37,11 +54,17 @@ export class SQLiteRepository implements Repository {
     this.db.exec(`
       CREATE TABLE IF NOT EXISTS images (
         imageId TEXT PRIMARY KEY,
+        type TEXT NOT NULL,
+        definitionName TEXT NOT NULL,
+        parentImageId TEXT,
         definition TEXT NOT NULL,
         config TEXT NOT NULL,
         messages TEXT NOT NULL,
         createdAt TEXT NOT NULL
       );
+
+      CREATE INDEX IF NOT EXISTS idx_images_definitionName ON images(definitionName);
+      CREATE INDEX IF NOT EXISTS idx_images_type ON images(type);
 
       CREATE TABLE IF NOT EXISTS sessions (
         sessionId TEXT PRIMARY KEY,
@@ -49,8 +72,7 @@ export class SQLiteRepository implements Repository {
         imageId TEXT NOT NULL,
         title TEXT,
         createdAt TEXT NOT NULL,
-        updatedAt TEXT NOT NULL,
-        FOREIGN KEY (imageId) REFERENCES images(imageId) ON DELETE CASCADE
+        updatedAt TEXT NOT NULL
       );
 
       CREATE INDEX IF NOT EXISTS idx_sessions_imageId ON sessions(imageId);
@@ -76,9 +98,12 @@ export class SQLiteRepository implements Repository {
 
   async saveImage(record: ImageRecord): Promise<void> {
     const stmt = this.db.prepare(`
-      INSERT INTO images (imageId, definition, config, messages, createdAt)
-      VALUES (@imageId, @definition, @config, @messages, @createdAt)
+      INSERT INTO images (imageId, type, definitionName, parentImageId, definition, config, messages, createdAt)
+      VALUES (@imageId, @type, @definitionName, @parentImageId, @definition, @config, @messages, @createdAt)
       ON CONFLICT(imageId) DO UPDATE SET
+        type = @type,
+        definitionName = @definitionName,
+        parentImageId = @parentImageId,
         definition = @definition,
         config = @config,
         messages = @messages
@@ -86,10 +111,13 @@ export class SQLiteRepository implements Repository {
 
     stmt.run({
       imageId: record.imageId,
+      type: record.type,
+      definitionName: record.definitionName,
+      parentImageId: record.parentImageId,
       definition: JSON.stringify(record.definition),
       config: JSON.stringify(record.config),
       messages: JSON.stringify(record.messages),
-      createdAt: record.createdAt.toISOString(),
+      createdAt: toISOString(record.createdAt),
     });
   }
 
@@ -135,8 +163,8 @@ export class SQLiteRepository implements Repository {
       userId: record.userId,
       imageId: record.imageId,
       title: record.title,
-      createdAt: record.createdAt.toISOString(),
-      updatedAt: record.updatedAt.toISOString(),
+      createdAt: toISOString(record.createdAt),
+      updatedAt: toISOString(record.updatedAt),
     });
   }
 
@@ -203,7 +231,7 @@ export class SQLiteRepository implements Repository {
       sessionId: record.sessionId,
       role: record.role,
       content: JSON.stringify(record.content),
-      createdAt: record.createdAt.toISOString(),
+      createdAt: toISOString(record.createdAt),
     });
   }
 
@@ -246,6 +274,9 @@ export class SQLiteRepository implements Repository {
   private toImageRecord(row: ImageRow): ImageRecord {
     return {
       imageId: row.imageId,
+      type: row.type as ImageRecord["type"],
+      definitionName: row.definitionName,
+      parentImageId: row.parentImageId,
       definition: JSON.parse(row.definition),
       config: JSON.parse(row.config),
       messages: JSON.parse(row.messages),
@@ -285,6 +316,9 @@ export class SQLiteRepository implements Repository {
 // Row types for SQLite results
 interface ImageRow {
   imageId: string;
+  type: string;
+  definitionName: string;
+  parentImageId: string | null;
   definition: string;
   config: string;
   messages: string;
