@@ -1,25 +1,30 @@
 /**
  * Storage Module - Persistence abstraction for AgentX
  *
+ * Part of Docker-style layered architecture:
+ * Definition → build → Image → run → Agent
+ *                        ↓
+ *                    Session (external wrapper)
+ *
  * ## Architecture
  *
  * ```
  * Repository (unified interface)
- * ├── Agent methods (save, find, delete)
+ * ├── Image methods (save, find, delete)
  * ├── Session methods (save, find, delete)
- * └── Message methods (save, find, delete)
+ * └── Message methods (deprecated, stored in Image)
  *
  * Implementations:
- * ├── PrismaRepository (agentx-node) - SQLite/PostgreSQL
+ * ├── SQLiteRepository (agentx-node) - SQLite
  * └── RemoteRepository (agentx) - HTTP API
  * ```
  *
  * ## Record Types (Storage Schema)
  *
- * Pure data types used by both Prisma schema and HTTP API:
- * - AgentRecord: Agent persistence data
- * - SessionRecord: Session persistence data
- * - MessageRecord: Message persistence data
+ * Pure data types used by both SQLite schema and HTTP API:
+ * - ImageRecord: Image persistence data (frozen snapshot)
+ * - SessionRecord: Session persistence data (external wrapper)
+ * - MessageRecord: Message persistence data (deprecated)
  *
  * @packageDocumentation
  */

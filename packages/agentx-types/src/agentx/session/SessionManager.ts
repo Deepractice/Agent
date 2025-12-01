@@ -1,19 +1,24 @@
 /**
  * SessionManager - Unified session management interface
  *
- * Manages session lifecycle. Storage is handled by the underlying
- * Storage implementation (local or remote).
+ * Part of Docker-style layered architecture:
+ * Definition → build → Image → run → Agent
+ *                        ↓
+ *                    Session (external wrapper)
  *
  * @example
  * ```typescript
- * // Create session for an agent
- * const session = await agentx.sessions.create(agentId);
+ * // Create session for an image and user
+ * const session = await agentx.sessions.create(imageId, userId);
  *
  * // Resume agent from session
  * const agent = await session.resume();
  *
- * // List sessions
- * const sessions = await agentx.sessions.listByAgent(agentId);
+ * // List sessions by user
+ * const sessions = await agentx.sessions.listByUser(userId);
+ *
+ * // Fork session
+ * const forkedSession = await session.fork();
  *
  * // Cleanup
  * await agentx.sessions.destroy(sessionId);
@@ -27,12 +32,13 @@ import type { Session } from "~/session/Session";
  */
 export interface SessionManager {
   /**
-   * Create a new session for an agent
+   * Create a new session for an image and user
    *
-   * @param agentId - The agent ID to create session for
+   * @param imageId - The image ID to create session for
+   * @param userId - The user ID who owns this session
    * @returns Created session
    */
-  create(agentId: string): Promise<Session>;
+  create(imageId: string, userId: string): Promise<Session>;
 
   /**
    * Get an existing session by ID
@@ -58,12 +64,20 @@ export interface SessionManager {
   list(): Promise<Session[]>;
 
   /**
-   * List all sessions for an agent
+   * List all sessions for an image
    *
-   * @param agentId - The agent ID
-   * @returns Array of sessions for the agent
+   * @param imageId - The image ID
+   * @returns Array of sessions for the image
    */
-  listByAgent(agentId: string): Promise<Session[]>;
+  listByImage(imageId: string): Promise<Session[]>;
+
+  /**
+   * List all sessions for a user
+   *
+   * @param userId - The user ID
+   * @returns Array of sessions for the user
+   */
+  listByUser(userId: string): Promise<Session[]>;
 
   /**
    * Destroy a session
@@ -73,11 +87,11 @@ export interface SessionManager {
   destroy(sessionId: string): Promise<void>;
 
   /**
-   * Destroy all sessions for an agent
+   * Destroy all sessions for an image
    *
-   * @param agentId - The agent ID
+   * @param imageId - The image ID
    */
-  destroyByAgent(agentId: string): Promise<void>;
+  destroyByImage(imageId: string): Promise<void>;
 
   /**
    * Destroy all sessions

@@ -1,7 +1,12 @@
 /**
  * SQLiteRepository - better-sqlite3 implementation of Repository
  *
- * Lightweight, synchronous SQLite storage for agents, sessions, and messages.
+ * Lightweight, synchronous SQLite storage for images, sessions, and messages.
+ *
+ * Part of Docker-style layered architecture:
+ * Definition → build → Image → run → Agent
+ *                        ↓
+ *                    Session (external wrapper)
  *
  * @example
  * ```typescript
@@ -14,11 +19,10 @@
 import Database from "better-sqlite3";
 import type {
   Repository,
-  AgentRecord,
+  ImageRecord,
   SessionRecord,
   MessageRecord,
   MessageRole,
-  AgentLifecycle,
 } from "@deepractice-ai/agentx-types";
 
 export class SQLiteRepository implements Repository {
@@ -31,25 +35,26 @@ export class SQLiteRepository implements Repository {
 
   private initSchema(): void {
     this.db.exec(`
-      CREATE TABLE IF NOT EXISTS agents (
-        agentId TEXT PRIMARY KEY,
+      CREATE TABLE IF NOT EXISTS images (
+        imageId TEXT PRIMARY KEY,
         definition TEXT NOT NULL,
         config TEXT NOT NULL,
-        lifecycle TEXT NOT NULL,
-        createdAt TEXT NOT NULL,
-        updatedAt TEXT NOT NULL
+        messages TEXT NOT NULL,
+        createdAt TEXT NOT NULL
       );
 
       CREATE TABLE IF NOT EXISTS sessions (
         sessionId TEXT PRIMARY KEY,
-        agentId TEXT NOT NULL,
+        userId TEXT NOT NULL,
+        imageId TEXT NOT NULL,
         title TEXT,
         createdAt TEXT NOT NULL,
         updatedAt TEXT NOT NULL,
-        FOREIGN KEY (agentId) REFERENCES agents(agentId) ON DELETE CASCADE
+        FOREIGN KEY (imageId) REFERENCES images(imageId) ON DELETE CASCADE
       );
 
-      CREATE INDEX IF NOT EXISTS idx_sessions_agentId ON sessions(agentId);
+      CREATE INDEX IF NOT EXISTS idx_sessions_imageId ON sessions(imageId);
+      CREATE INDEX IF NOT EXISTS idx_sessions_userId ON sessions(userId);
 
       CREATE TABLE IF NOT EXISTS messages (
         messageId TEXT PRIMARY KEY,
@@ -67,61 +72,59 @@ export class SQLiteRepository implements Repository {
     this.db.pragma("foreign_keys = ON");
   }
 
-  // ==================== Agent ====================
+  // ==================== Image ====================
 
-  async saveAgent(record: AgentRecord): Promise<void> {
+  async saveImage(record: ImageRecord): Promise<void> {
     const stmt = this.db.prepare(`
-      INSERT INTO agents (agentId, definition, config, lifecycle, createdAt, updatedAt)
-      VALUES (@agentId, @definition, @config, @lifecycle, @createdAt, @updatedAt)
-      ON CONFLICT(agentId) DO UPDATE SET
+      INSERT INTO images (imageId, definition, config, messages, createdAt)
+      VALUES (@imageId, @definition, @config, @messages, @createdAt)
+      ON CONFLICT(imageId) DO UPDATE SET
         definition = @definition,
         config = @config,
-        lifecycle = @lifecycle,
-        updatedAt = @updatedAt
+        messages = @messages
     `);
 
     stmt.run({
-      agentId: record.agentId,
+      imageId: record.imageId,
       definition: JSON.stringify(record.definition),
       config: JSON.stringify(record.config),
-      lifecycle: record.lifecycle,
+      messages: JSON.stringify(record.messages),
       createdAt: record.createdAt.toISOString(),
-      updatedAt: record.updatedAt.toISOString(),
     });
   }
 
-  async findAgentById(agentId: string): Promise<AgentRecord | null> {
-    const stmt = this.db.prepare("SELECT * FROM agents WHERE agentId = ?");
-    const row = stmt.get(agentId) as AgentRow | undefined;
+  async findImageById(imageId: string): Promise<ImageRecord | null> {
+    const stmt = this.db.prepare("SELECT * FROM images WHERE imageId = ?");
+    const row = stmt.get(imageId) as ImageRow | undefined;
 
     if (!row) return null;
 
-    return this.toAgentRecord(row);
+    return this.toImageRecord(row);
   }
 
-  async findAllAgents(): Promise<AgentRecord[]> {
-    const stmt = this.db.prepare("SELECT * FROM agents");
-    const rows = stmt.all() as AgentRow[];
+  async findAllImages(): Promise<ImageRecord[]> {
+    const stmt = this.db.prepare("SELECT * FROM images ORDER BY createdAt DESC");
+    const rows = stmt.all() as ImageRow[];
 
-    return rows.map((row) => this.toAgentRecord(row));
+    return rows.map((row) => this.toImageRecord(row));
   }
 
-  async deleteAgent(agentId: string): Promise<void> {
-    const stmt = this.db.prepare("DELETE FROM agents WHERE agentId = ?");
-    stmt.run(agentId);
+  async deleteImage(imageId: string): Promise<void> {
+    const stmt = this.db.prepare("DELETE FROM images WHERE imageId = ?");
+    stmt.run(imageId);
   }
 
-  async agentExists(agentId: string): Promise<boolean> {
-    const stmt = this.db.prepare("SELECT 1 FROM agents WHERE agentId = ?");
-    return stmt.get(agentId) !== undefined;
+  async imageExists(imageId: string): Promise<boolean> {
+    const stmt = this.db.prepare("SELECT 1 FROM images WHERE imageId = ?");
+    return stmt.get(imageId) !== undefined;
   }
 
   // ==================== Session ====================
 
   async saveSession(record: SessionRecord): Promise<void> {
     const stmt = this.db.prepare(`
-      INSERT INTO sessions (sessionId, agentId, title, createdAt, updatedAt)
-      VALUES (@sessionId, @agentId, @title, @createdAt, @updatedAt)
+      INSERT INTO sessions (sessionId, userId, imageId, title, createdAt, updatedAt)
+      VALUES (@sessionId, @userId, @imageId, @title, @createdAt, @updatedAt)
       ON CONFLICT(sessionId) DO UPDATE SET
         title = @title,
         updatedAt = @updatedAt
@@ -129,7 +132,8 @@ export class SQLiteRepository implements Repository {
 
     stmt.run({
       sessionId: record.sessionId,
-      agentId: record.agentId,
+      userId: record.userId,
+      imageId: record.imageId,
       title: record.title,
       createdAt: record.createdAt.toISOString(),
       updatedAt: record.updatedAt.toISOString(),
@@ -145,17 +149,24 @@ export class SQLiteRepository implements Repository {
     return this.toSessionRecord(row);
   }
 
-  async findSessionsByAgentId(agentId: string): Promise<SessionRecord[]> {
+  async findSessionsByImageId(imageId: string): Promise<SessionRecord[]> {
     const stmt = this.db.prepare(
-      "SELECT * FROM sessions WHERE agentId = ? ORDER BY createdAt DESC"
+      "SELECT * FROM sessions WHERE imageId = ? ORDER BY createdAt DESC"
     );
-    const rows = stmt.all(agentId) as SessionRow[];
+    const rows = stmt.all(imageId) as SessionRow[];
+
+    return rows.map((row) => this.toSessionRecord(row));
+  }
+
+  async findSessionsByUserId(userId: string): Promise<SessionRecord[]> {
+    const stmt = this.db.prepare("SELECT * FROM sessions WHERE userId = ? ORDER BY updatedAt DESC");
+    const rows = stmt.all(userId) as SessionRow[];
 
     return rows.map((row) => this.toSessionRecord(row));
   }
 
   async findAllSessions(): Promise<SessionRecord[]> {
-    const stmt = this.db.prepare("SELECT * FROM sessions ORDER BY createdAt DESC");
+    const stmt = this.db.prepare("SELECT * FROM sessions ORDER BY updatedAt DESC");
     const rows = stmt.all() as SessionRow[];
 
     return rows.map((row) => this.toSessionRecord(row));
@@ -166,9 +177,9 @@ export class SQLiteRepository implements Repository {
     stmt.run(sessionId);
   }
 
-  async deleteSessionsByAgentId(agentId: string): Promise<void> {
-    const stmt = this.db.prepare("DELETE FROM sessions WHERE agentId = ?");
-    stmt.run(agentId);
+  async deleteSessionsByImageId(imageId: string): Promise<void> {
+    const stmt = this.db.prepare("DELETE FROM sessions WHERE imageId = ?");
+    stmt.run(imageId);
   }
 
   async sessionExists(sessionId: string): Promise<boolean> {
@@ -176,7 +187,7 @@ export class SQLiteRepository implements Repository {
     return stmt.get(sessionId) !== undefined;
   }
 
-  // ==================== Message ====================
+  // ==================== Message (deprecated) ====================
 
   async saveMessage(record: MessageRecord): Promise<void> {
     const stmt = this.db.prepare(`
@@ -232,21 +243,21 @@ export class SQLiteRepository implements Repository {
 
   // ==================== Helpers ====================
 
-  private toAgentRecord(row: AgentRow): AgentRecord {
+  private toImageRecord(row: ImageRow): ImageRecord {
     return {
-      agentId: row.agentId,
+      imageId: row.imageId,
       definition: JSON.parse(row.definition),
       config: JSON.parse(row.config),
-      lifecycle: row.lifecycle as AgentLifecycle,
+      messages: JSON.parse(row.messages),
       createdAt: new Date(row.createdAt),
-      updatedAt: new Date(row.updatedAt),
     };
   }
 
   private toSessionRecord(row: SessionRow): SessionRecord {
     return {
       sessionId: row.sessionId,
-      agentId: row.agentId,
+      userId: row.userId,
+      imageId: row.imageId,
       title: row.title,
       createdAt: new Date(row.createdAt),
       updatedAt: new Date(row.updatedAt),
@@ -272,18 +283,18 @@ export class SQLiteRepository implements Repository {
 }
 
 // Row types for SQLite results
-interface AgentRow {
-  agentId: string;
+interface ImageRow {
+  imageId: string;
   definition: string;
   config: string;
-  lifecycle: string;
+  messages: string;
   createdAt: string;
-  updatedAt: string;
 }
 
 interface SessionRow {
   sessionId: string;
-  agentId: string;
+  userId: string;
+  imageId: string;
   title: string | null;
   createdAt: string;
   updatedAt: string;

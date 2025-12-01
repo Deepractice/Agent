@@ -2,6 +2,11 @@
  * SessionManagerImpl - Session management implementation
  *
  * Manages session lifecycle using Repository for persistence.
+ *
+ * Part of Docker-style layered architecture:
+ * Definition → build → Image → run → Agent
+ *                        ↓
+ *                    Session (external wrapper)
  */
 
 import type {
@@ -9,6 +14,7 @@ import type {
   SessionManager,
   Repository,
   SessionRecord,
+  ImageRecord,
   Agent,
   AgentDefinition,
 } from "@deepractice-ai/agentx-types";
@@ -26,11 +32,21 @@ function generateSessionId(): string {
 }
 
 /**
- * Session implementation with resume capability
+ * Generate unique image ID
+ */
+function generateImageId(): string {
+  const timestamp = Date.now().toString(36);
+  const random = Math.random().toString(36).substring(2, 8);
+  return `image_${timestamp}_${random}`;
+}
+
+/**
+ * Session implementation with resume and fork capability
  */
 class SessionImpl implements Session {
   readonly sessionId: string;
-  readonly agentId: string;
+  readonly userId: string;
+  readonly imageId: string;
   readonly createdAt: number;
 
   private _title: string | null;
@@ -47,7 +63,8 @@ class SessionImpl implements Session {
     agentFactory: (definition: AgentDefinition, config: Record<string, unknown>) => Agent
   ) {
     this.sessionId = record.sessionId;
-    this.agentId = record.agentId;
+    this.userId = record.userId;
+    this.imageId = record.imageId;
     this._title = record.title;
     this.createdAt = record.createdAt.getTime();
     this._updatedAt = record.updatedAt.getTime();
@@ -66,32 +83,71 @@ class SessionImpl implements Session {
   async resume(): Promise<Agent> {
     logger.info("Resuming agent from session", {
       sessionId: this.sessionId,
-      agentId: this.agentId,
+      imageId: this.imageId,
     });
 
-    // Get agent record from repository
-    const agentRecord = await this.repository.findAgentById(this.agentId);
-    if (!agentRecord) {
-      throw new Error(`Agent not found: ${this.agentId}`);
+    // Get image record from repository
+    const imageRecord = await this.repository.findImageById(this.imageId);
+    if (!imageRecord) {
+      throw new Error(`Image not found: ${this.imageId}`);
     }
 
-    // Get messages for this session
-    const messages = await this.repository.findMessagesBySessionId(this.sessionId);
-
     // Create agent with stored definition and config
-    const definition = agentRecord.definition as unknown as AgentDefinition;
-    const config = agentRecord.config;
+    const definition = imageRecord.definition as unknown as AgentDefinition;
+    const config = imageRecord.config;
 
     const agent = this.agentFactory(definition, config);
 
-    // TODO: Load messages into agent context
+    // TODO: Load messages from imageRecord.messages into agent context
     logger.debug("Agent resumed", {
       sessionId: this.sessionId,
-      agentId: this.agentId,
-      messageCount: messages.length,
+      imageId: this.imageId,
+      messageCount: imageRecord.messages.length,
     });
 
     return agent;
+  }
+
+  async fork(): Promise<Session> {
+    logger.info("Forking session", { sessionId: this.sessionId });
+
+    // Get current image
+    const imageRecord = await this.repository.findImageById(this.imageId);
+    if (!imageRecord) {
+      throw new Error(`Image not found: ${this.imageId}`);
+    }
+
+    // Create new image with copied data
+    const newImageId = generateImageId();
+    const newImageRecord: ImageRecord = {
+      imageId: newImageId,
+      definition: imageRecord.definition,
+      config: imageRecord.config,
+      messages: [...imageRecord.messages], // Copy messages
+      createdAt: new Date(),
+    };
+    await this.repository.saveImage(newImageRecord);
+
+    // Create new session pointing to new image
+    const newSessionId = generateSessionId();
+    const now = new Date();
+    const newSessionRecord: SessionRecord = {
+      sessionId: newSessionId,
+      userId: this.userId,
+      imageId: newImageId,
+      title: this._title ? `Fork of ${this._title}` : null,
+      createdAt: now,
+      updatedAt: now,
+    };
+    await this.repository.saveSession(newSessionRecord);
+
+    logger.info("Session forked", {
+      originalSessionId: this.sessionId,
+      newSessionId,
+      newImageId,
+    });
+
+    return new SessionImpl(newSessionRecord, this.repository, this.agentFactory);
   }
 
   async setTitle(title: string): Promise<void> {
@@ -100,7 +156,8 @@ class SessionImpl implements Session {
     const now = new Date();
     await this.repository.saveSession({
       sessionId: this.sessionId,
-      agentId: this.agentId,
+      userId: this.userId,
+      imageId: this.imageId,
       title,
       createdAt: new Date(this.createdAt),
       updatedAt: now,
@@ -131,13 +188,14 @@ export class SessionManagerImpl implements SessionManager {
     this.agentFactory = agentFactory;
   }
 
-  async create(agentId: string): Promise<Session> {
+  async create(imageId: string, userId: string): Promise<Session> {
     const sessionId = generateSessionId();
     const now = new Date();
 
     const record: SessionRecord = {
       sessionId,
-      agentId,
+      userId,
+      imageId,
       title: null,
       createdAt: now,
       updatedAt: now,
@@ -145,7 +203,7 @@ export class SessionManagerImpl implements SessionManager {
 
     await this.repository.saveSession(record);
 
-    logger.info("Session created", { sessionId, agentId });
+    logger.info("Session created", { sessionId, imageId, userId });
 
     return new SessionImpl(record, this.repository, this.agentFactory);
   }
@@ -166,8 +224,13 @@ export class SessionManagerImpl implements SessionManager {
     return records.map((r) => new SessionImpl(r, this.repository, this.agentFactory));
   }
 
-  async listByAgent(agentId: string): Promise<Session[]> {
-    const records = await this.repository.findSessionsByAgentId(agentId);
+  async listByImage(imageId: string): Promise<Session[]> {
+    const records = await this.repository.findSessionsByImageId(imageId);
+    return records.map((r) => new SessionImpl(r, this.repository, this.agentFactory));
+  }
+
+  async listByUser(userId: string): Promise<Session[]> {
+    const records = await this.repository.findSessionsByUserId(userId);
     return records.map((r) => new SessionImpl(r, this.repository, this.agentFactory));
   }
 
@@ -176,9 +239,9 @@ export class SessionManagerImpl implements SessionManager {
     logger.info("Session destroyed", { sessionId });
   }
 
-  async destroyByAgent(agentId: string): Promise<void> {
-    await this.repository.deleteSessionsByAgentId(agentId);
-    logger.info("Sessions destroyed by agent", { agentId });
+  async destroyByImage(imageId: string): Promise<void> {
+    await this.repository.deleteSessionsByImageId(imageId);
+    logger.info("Sessions destroyed by image", { imageId });
   }
 
   async destroyAll(): Promise<void> {

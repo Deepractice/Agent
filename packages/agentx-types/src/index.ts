@@ -44,6 +44,15 @@
 // Agent state
 export type { AgentState } from "./AgentState";
 
+// User types
+export * from "./user";
+
+// Definition types (Docker-style: source template)
+export * from "./definition";
+
+// Image types (Docker-style: built artifact)
+export * from "./image";
+
 // Platform context (AgentX) - includes defineAgent
 export * from "./agentx";
 

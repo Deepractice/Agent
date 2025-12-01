@@ -1,13 +1,18 @@
 /**
  * Repository - Unified persistence interface for AgentX
  *
- * Single interface for all data operations (agents, sessions, messages).
- * Implementations can be local (Prisma) or remote (HTTP API).
+ * Single interface for all data operations (images, sessions, messages).
+ * Implementations can be local (SQLite) or remote (HTTP API).
+ *
+ * Part of Docker-style layered architecture:
+ * Definition → build → Image → run → Agent
+ *                        ↓
+ *                    Session (external wrapper)
  *
  * @example
  * ```typescript
  * // Local implementation (agentx-node)
- * const repository = new PrismaRepository(prismaClient);
+ * const repository = new SQLiteRepository(dbPath);
  *
  * // Remote implementation (agentx browser)
  * const repository = new RemoteRepository({ serverUrl: "http://..." });
@@ -17,7 +22,7 @@
  * ```
  */
 
-import type { AgentRecord } from "./record/AgentRecord";
+import type { ImageRecord } from "./record/ImageRecord";
 import type { SessionRecord } from "./record/SessionRecord";
 import type { MessageRecord } from "./record/MessageRecord";
 
@@ -25,32 +30,32 @@ import type { MessageRecord } from "./record/MessageRecord";
  * Repository - Unified persistence interface
  */
 export interface Repository {
-  // ==================== Agent ====================
+  // ==================== Image ====================
 
   /**
-   * Save an agent record (create or update)
+   * Save an image record (create or update)
    */
-  saveAgent(record: AgentRecord): Promise<void>;
+  saveImage(record: ImageRecord): Promise<void>;
 
   /**
-   * Find agent by ID
+   * Find image by ID
    */
-  findAgentById(agentId: string): Promise<AgentRecord | null>;
+  findImageById(imageId: string): Promise<ImageRecord | null>;
 
   /**
-   * Find all agents
+   * Find all images
    */
-  findAllAgents(): Promise<AgentRecord[]>;
+  findAllImages(): Promise<ImageRecord[]>;
 
   /**
-   * Delete agent by ID (cascades to sessions and messages)
+   * Delete image by ID (cascades to sessions)
    */
-  deleteAgent(agentId: string): Promise<void>;
+  deleteImage(imageId: string): Promise<void>;
 
   /**
-   * Check if agent exists
+   * Check if image exists
    */
-  agentExists(agentId: string): Promise<boolean>;
+  imageExists(imageId: string): Promise<boolean>;
 
   // ==================== Session ====================
 
@@ -65,9 +70,14 @@ export interface Repository {
   findSessionById(sessionId: string): Promise<SessionRecord | null>;
 
   /**
-   * Find all sessions for an agent
+   * Find all sessions for an image
    */
-  findSessionsByAgentId(agentId: string): Promise<SessionRecord[]>;
+  findSessionsByImageId(imageId: string): Promise<SessionRecord[]>;
+
+  /**
+   * Find all sessions for a user
+   */
+  findSessionsByUserId(userId: string): Promise<SessionRecord[]>;
 
   /**
    * Find all sessions
@@ -75,14 +85,14 @@ export interface Repository {
   findAllSessions(): Promise<SessionRecord[]>;
 
   /**
-   * Delete session by ID (cascades to messages)
+   * Delete session by ID
    */
   deleteSession(sessionId: string): Promise<void>;
 
   /**
-   * Delete all sessions for an agent
+   * Delete all sessions for an image
    */
-  deleteSessionsByAgentId(agentId: string): Promise<void>;
+  deleteSessionsByImageId(imageId: string): Promise<void>;
 
   /**
    * Check if session exists
@@ -90,34 +100,42 @@ export interface Repository {
   sessionExists(sessionId: string): Promise<boolean>;
 
   // ==================== Message ====================
+  // Note: Messages are now stored in ImageRecord.messages
+  // These methods are kept for backward compatibility during migration
 
   /**
    * Save a message record
+   * @deprecated Messages should be stored in ImageRecord.messages
    */
   saveMessage(record: MessageRecord): Promise<void>;
 
   /**
    * Find message by ID
+   * @deprecated Messages should be stored in ImageRecord.messages
    */
   findMessageById(messageId: string): Promise<MessageRecord | null>;
 
   /**
    * Find all messages for a session (ordered by createdAt)
+   * @deprecated Messages should be stored in ImageRecord.messages
    */
   findMessagesBySessionId(sessionId: string): Promise<MessageRecord[]>;
 
   /**
    * Delete message by ID
+   * @deprecated Messages should be stored in ImageRecord.messages
    */
   deleteMessage(messageId: string): Promise<void>;
 
   /**
    * Delete all messages for a session
+   * @deprecated Messages should be stored in ImageRecord.messages
    */
   deleteMessagesBySessionId(sessionId: string): Promise<void>;
 
   /**
    * Count messages in a session
+   * @deprecated Messages should be stored in ImageRecord.messages
    */
   countMessagesBySessionId(sessionId: string): Promise<number>;
 }

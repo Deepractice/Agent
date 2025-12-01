@@ -2,11 +2,16 @@
  * RemoteRepository - HTTP-based repository implementation
  *
  * Communicates with remote AgentX server for persistence.
+ *
+ * Part of Docker-style layered architecture:
+ * Definition → build → Image → run → Agent
+ *                        ↓
+ *                    Session (external wrapper)
  */
 
 import type {
   Repository,
-  AgentRecord,
+  ImageRecord,
   SessionRecord,
   MessageRecord,
 } from "@deepractice-ai/agentx-types";
@@ -27,34 +32,34 @@ export class RemoteRepository implements Repository {
     logger.debug("RemoteRepository created", { serverUrl: options.serverUrl });
   }
 
-  // ==================== Agent ====================
+  // ==================== Image ====================
 
-  async saveAgent(record: AgentRecord): Promise<void> {
-    await this.client.put(`repository/agents/${record.agentId}`, { json: record });
+  async saveImage(record: ImageRecord): Promise<void> {
+    await this.client.put(`repository/images/${record.imageId}`, { json: record });
   }
 
-  async findAgentById(agentId: string): Promise<AgentRecord | null> {
+  async findImageById(imageId: string): Promise<ImageRecord | null> {
     try {
-      const result = await this.client.get(`repository/agents/${agentId}`).json<AgentRecord>();
-      return this.parseAgentRecord(result);
+      const result = await this.client.get(`repository/images/${imageId}`).json<ImageRecord>();
+      return this.parseImageRecord(result);
     } catch (error: unknown) {
       if (this.isNotFound(error)) return null;
       throw error;
     }
   }
 
-  async findAllAgents(): Promise<AgentRecord[]> {
-    const result = await this.client.get("repository/agents").json<AgentRecord[]>();
-    return result.map((r) => this.parseAgentRecord(r));
+  async findAllImages(): Promise<ImageRecord[]> {
+    const result = await this.client.get("repository/images").json<ImageRecord[]>();
+    return result.map((r) => this.parseImageRecord(r));
   }
 
-  async deleteAgent(agentId: string): Promise<void> {
-    await this.client.delete(`repository/agents/${agentId}`);
+  async deleteImage(imageId: string): Promise<void> {
+    await this.client.delete(`repository/images/${imageId}`);
   }
 
-  async agentExists(agentId: string): Promise<boolean> {
+  async imageExists(imageId: string): Promise<boolean> {
     try {
-      await this.client.head(`repository/agents/${agentId}`);
+      await this.client.head(`repository/images/${imageId}`);
       return true;
     } catch {
       return false;
@@ -79,9 +84,16 @@ export class RemoteRepository implements Repository {
     }
   }
 
-  async findSessionsByAgentId(agentId: string): Promise<SessionRecord[]> {
+  async findSessionsByImageId(imageId: string): Promise<SessionRecord[]> {
     const result = await this.client
-      .get(`repository/agents/${agentId}/sessions`)
+      .get(`repository/images/${imageId}/sessions`)
+      .json<SessionRecord[]>();
+    return result.map((r) => this.parseSessionRecord(r));
+  }
+
+  async findSessionsByUserId(userId: string): Promise<SessionRecord[]> {
+    const result = await this.client
+      .get(`repository/users/${userId}/sessions`)
       .json<SessionRecord[]>();
     return result.map((r) => this.parseSessionRecord(r));
   }
@@ -95,8 +107,8 @@ export class RemoteRepository implements Repository {
     await this.client.delete(`repository/sessions/${sessionId}`);
   }
 
-  async deleteSessionsByAgentId(agentId: string): Promise<void> {
-    await this.client.delete(`repository/agents/${agentId}/sessions`);
+  async deleteSessionsByImageId(imageId: string): Promise<void> {
+    await this.client.delete(`repository/images/${imageId}/sessions`);
   }
 
   async sessionExists(sessionId: string): Promise<boolean> {
@@ -108,7 +120,7 @@ export class RemoteRepository implements Repository {
     }
   }
 
-  // ==================== Message ====================
+  // ==================== Message (deprecated) ====================
 
   async saveMessage(record: MessageRecord): Promise<void> {
     await this.client.put(`repository/messages/${record.messageId}`, { json: record });
@@ -154,11 +166,10 @@ export class RemoteRepository implements Repository {
     return (error as { response?: { status: number } })?.response?.status === 404;
   }
 
-  private parseAgentRecord(raw: AgentRecord): AgentRecord {
+  private parseImageRecord(raw: ImageRecord): ImageRecord {
     return {
       ...raw,
       createdAt: new Date(raw.createdAt),
-      updatedAt: new Date(raw.updatedAt),
     };
   }
 
