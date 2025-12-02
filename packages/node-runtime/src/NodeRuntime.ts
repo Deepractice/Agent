@@ -27,6 +27,7 @@ import type { LLMSupply } from "./llm";
 import { envLLM, sqlite, fileLogger } from "./providers";
 import { homedir } from "node:os";
 import { join } from "node:path";
+import { mkdirSync } from "node:fs";
 import type { EnvLLMConfig, SQLiteConfig, FileLoggerConfig } from "./providers";
 
 const logger = createCommonLogger("node/NodeRuntime");
@@ -154,11 +155,18 @@ class NodeRuntime implements Runtime {
 
     // Create workspace with path under ~/.agentx/containers/{containerId}/workspace/
     // Container directory can hold other resources in the future (logs, config, etc.)
+    const workspacePath = `${this.basePath}/containers/${containerId}/workspace`;
+
+    // Ensure workspace directory exists (lazy creation on first use)
+    mkdirSync(workspacePath, { recursive: true });
+
     const workspace: Workspace = {
       id: containerId,
       name: containerId,
-      path: `${this.basePath}/containers/${containerId}/workspace`,
+      path: workspacePath,
     };
+
+    logger.debug("Sandbox created", { containerId, workspacePath });
 
     return new NodeSandbox(containerId, workspace, this.llmProvider);
   }
