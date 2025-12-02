@@ -238,15 +238,15 @@ agentx-ui (React components)
 
 **Layer Responsibilities:**
 
-| Layer        | Package          | Responsibility                                      |
-| ------------ | ---------------- | --------------------------------------------------- |
-| **Types**    | `agentx-types`   | Pure type definitions, logger type declarations     |
-| **Common**   | `agentx-common`  | Internal shared utilities (logger facade)           |
-| **Engine**   | `agentx-engine`  | Pure event processing (Mealy Machines)              |
-| **Agent**    | `agentx-agent`   | Agent runtime, EventBus, lifecycle management       |
-| **Platform** | `agentx`         | Unified API, SSE server/client, browser runtime     |
-| **Node**     | `agentx-runtime` | Node.js runtime (Claude driver, SQLite, FileLogger) |
-| **UI**       | `agentx-ui`      | React components, Storybook, Tailwind v4            |
+| Layer        | Package          | Responsibility                                               |
+| ------------ | ---------------- | ------------------------------------------------------------ |
+| **Types**    | `agentx-types`   | Pure type definitions, logger type declarations              |
+| **Common**   | `agentx-common`  | Internal shared utilities (logger facade)                    |
+| **Engine**   | `agentx-engine`  | Pure event processing (Mealy Machines)                       |
+| **Agent**    | `agentx-agent`   | Agent runtime, EventBus, lifecycle management                |
+| **Platform** | `agentx`         | Docker-style API (5 managers), SSE server/client, sseRuntime |
+| **Node**     | `agentx-runtime` | Node.js runtime (Claude driver, SQLite, FileLogger)          |
+| **UI**       | `agentx-ui`      | React components, Storybook, Tailwind v4                     |
 
 **Directory Structure** (all packages follow this):
 
@@ -389,53 +389,88 @@ type TurnEventType =
 - `createAgentXHandler()` - HTTP request handler (Web Standard Request/Response)
 - `SSEConnection` - SSE transport implementation (ReadableStream)
 - `SSEConnectionManager` - Manages SSE connections per agent
-- Framework adapters: `expressAdapter()`, `honoAdapter()`, `nextAdapter()`
+- Framework adapters: `toExpressHandler()`, `toHonoHandler()`, `createNextHandler()`
 
 **Browser Side** (`agentx` package):
 
-- `SSEDriver` - EventSource-based driver for browser
-- `createRemoteAgent()` - Helper to connect to remote server
+- `sseRuntime()` - Browser runtime factory
+- `SSEDriver` - EventSource-based driver with persistent connection
+- `RemoteContainer` - Calls server to create/resume agents, caches locally
+- `RemoteRepository` - HTTP-based persistence (noop for saveMessage)
+- `BrowserLogger` - Styled console logging for browser
 - Full `AgentEngine` runs in browser (reassembles all events)
 
 #### SSE API Endpoints
 
-| Method | Path                    | Description                          |
-| ------ | ----------------------- | ------------------------------------ |
-| GET    | `/info`                 | Platform info (version, agent count) |
-| GET    | `/health`               | Health check                         |
-| GET    | `/agents`               | List all agents                      |
-| POST   | `/agents`               | Create agent (if creation enabled)   |
-| GET    | `/agents/:id`           | Get agent info                       |
-| DELETE | `/agents/:id`           | Destroy agent                        |
-| GET    | `/agents/:id/sse`       | SSE connection (EventSource)         |
-| POST   | `/agents/:id/messages`  | Send message to agent                |
-| POST   | `/agents/:id/interrupt` | Interrupt agent processing           |
+| Method | Path                            | Description            |
+| ------ | ------------------------------- | ---------------------- |
+| GET    | `/info`                         | Platform info          |
+| GET    | `/health`                       | Health check           |
+| GET    | `/definitions`                  | List all definitions   |
+| GET    | `/definitions/:name`            | Get definition by name |
+| POST   | `/definitions`                  | Register definition    |
+| DELETE | `/definitions/:name`            | Unregister definition  |
+| GET    | `/images`                       | List all images        |
+| GET    | `/images/:imageId`              | Get image by ID        |
+| POST   | `/images/:imageId/run`          | Run agent from image   |
+| DELETE | `/images/:imageId`              | Delete image           |
+| GET    | `/agents`                       | List all agents        |
+| GET    | `/agents/:agentId`              | Get agent info         |
+| DELETE | `/agents/:agentId`              | Destroy agent          |
+| GET    | `/agents/:agentId/sse`          | SSE event stream       |
+| POST   | `/agents/:agentId/messages`     | Send message to agent  |
+| POST   | `/agents/:agentId/interrupt`    | Interrupt processing   |
+| GET    | `/sessions`                     | List all sessions      |
+| GET    | `/sessions/:sessionId`          | Get session by ID      |
+| POST   | `/sessions`                     | Create session         |
+| POST   | `/sessions/:sessionId/resume`   | Resume session         |
+| POST   | `/sessions/:sessionId/fork`     | Fork session           |
+| GET    | `/sessions/:sessionId/messages` | Get session messages   |
+| DELETE | `/sessions/:sessionId`          | Destroy session        |
 
 **Correct Usage Flow:**
 
 ```typescript
-// 1. Create agent (server-side or via API)
-const agent = agentx.agents.create(ClaudeAgent, { apiKey: "xxx" });
+// Server-side setup
+import { defineAgent, createAgentX } from "agentxjs";
+import { nodeRuntime } from "@agentxjs/node-runtime";
 
-// 2. Browser connects to SSE
-const sseUrl = `${serverUrl}/agents/${agentId}/sse`;
-const eventSource = new EventSource(sseUrl);
-
-// 3. Browser creates SSEDriver + AgentInstance
-const driver = new SSEDriver({ serverUrl, agentId });
-const browserAgent = new AgentInstance(definition, context, engine);
-
-// 4. User sends message (browser)
-await browserAgent.receive("Hello!");
-
-// 5. SSEDriver posts to server
-await fetch(`${serverUrl}/agents/${agentId}/messages`, {
-  method: "POST",
-  body: JSON.stringify({ content: "Hello!" }),
+const MyAgent = defineAgent({
+  name: "Assistant",
+  systemPrompt: "You are helpful",
 });
 
+const agentx = createAgentX(nodeRuntime());
+agentx.definitions.register(MyAgent);
+
+// 1. Run agent from image
+const metaImage = agentx.images.getMetaImage(MyAgent.name);
+const agent = await agentx.images.run(metaImage.id);
+
+// Browser-side setup
+import { defineAgent, createAgentX } from "agentxjs";
+import { sseRuntime } from "agentxjs/client";
+
+const runtime = sseRuntime({
+  serverUrl: "http://localhost:5200/agentx",
+});
+const agentx = createAgentX(runtime);
+
+// 2. Register same definition (syncs with server)
+agentx.definitions.register(MyAgent);
+
+// 3. Run agent (RemoteContainer calls server, creates local agent with SSEDriver)
+const metaImage = agentx.images.getMetaImage(MyAgent.name);
+const agent = await agentx.images.run(metaImage.id);
+
+// 4. Subscribe to events (browser's AgentEngine reassembles)
+agent.on("assistant_message", (event) => console.log(event.data.content));
+
+// 5. Send message (SSEDriver posts to server)
+await agent.receive("Hello!");
+
 // 6. Server processes, forwards Stream Events via SSE
-// 7. Browser receives, reassembles Message/State/Turn events
+// 7. Browser AgentEngine reassembles Message/State/Turn events
 // 8. UI updates via event subscriptions
 ```
 
@@ -716,27 +751,40 @@ pnpm changeset publish  # Publish to npm
 
 ## Key Implementation Details
 
-### Agent Lifecycle
+### Agent Lifecycle (Docker-Style)
 
 ```typescript
-// 1. Create agent
-const agent = agentx.agents.create(ClaudeAgent, { apiKey: "xxx" });
+import { defineAgent, createAgentX } from "agentxjs";
+import { nodeRuntime } from "@agentxjs/node-runtime";
 
-// 2. Initialize (if needed)
-await agent.initialize?.();
+// 1. Define agent template
+const MyAgent = defineAgent({
+  name: "Assistant",
+  systemPrompt: "You are a helpful assistant",
+});
 
-// 3. Subscribe to events
+// 2. Create platform with runtime
+const agentx = createAgentX(nodeRuntime());
+
+// 3. Register definition (auto-creates MetaImage)
+agentx.definitions.register(MyAgent);
+
+// 4. Run agent from image
+const metaImage = agentx.images.getMetaImage(MyAgent.name);
+const agent = await agentx.images.run(metaImage.id);
+
+// 5. Subscribe to events
 const unsubscribe = agent.react({
   onTextDelta: (event) => process.stdout.write(event.data.text),
   onAssistantMessage: (event) => console.log(event.data.content),
 });
 
-// 4. Send messages
+// 6. Send messages
 await agent.receive("Hello!");
 
-// 5. Cleanup
+// 7. Cleanup
 unsubscribe();
-await agent.destroy();
+agentx.agents.destroy(agent.id);
 ```
 
 ### Message Processing Pipeline
@@ -865,28 +913,29 @@ interface AgentPresenter {
 ### Creating an Agent
 
 ```typescript
-import { createAgentX } from "agentxjs";
-import { defineAgent } from "@agentxjs/adk";
-import { ClaudeDriver } from "@agentxjs/node-runtime";
+import { defineAgent, createAgentX } from "agentxjs";
+import { nodeRuntime } from "@agentxjs/node-runtime";
 
-// Create AgentX platform
-const agentx = createAgentX();
-
-// Define agent using ADK
-const ClaudeAgent = defineAgent({
-  name: "ClaudeAssistant",
-  driver: ClaudeDriver,
+// 1. Define agent template
+const MyAgent = defineAgent({
+  name: "Assistant",
+  description: "A helpful assistant",
+  systemPrompt: "You are a helpful assistant",
 });
 
-// Create agent instance
-const agent = agentx.agents.create(ClaudeAgent, {
-  apiKey: process.env.ANTHROPIC_API_KEY,
-  model: "claude-sonnet-4-20250514",
-});
+// 2. Create platform with runtime
+const agentx = createAgentX(nodeRuntime());
 
-// Use agent
+// 3. Register definition (auto-creates MetaImage)
+agentx.definitions.register(MyAgent);
+
+// 4. Run agent from image
+const metaImage = agentx.images.getMetaImage(MyAgent.name);
+const agent = await agentx.images.run(metaImage.id);
+
+// 5. Use agent
 await agent.receive("Hello!");
-await agent.destroy();
+agentx.agents.destroy(agent.id);
 ```
 
 ### Custom Driver (ADK)
@@ -982,10 +1031,26 @@ const agent = agentx.agents.create(
 ### Remote Agent (Browser)
 
 ```typescript
-import { createRemoteAgent } from "agentxjs";
+import { defineAgent, createAgentX } from "agentxjs";
+import { sseRuntime } from "agentxjs/client";
 
-// Create remote agent (connects to server)
-const agent = createRemoteAgent("http://localhost:5200/agentx", agentId);
+// Same agent definition as server
+const MyAgent = defineAgent({
+  name: "Assistant",
+  systemPrompt: "You are helpful",
+});
+
+// Create platform with SSE runtime
+const runtime = sseRuntime({
+  serverUrl: "http://localhost:5200/agentx",
+  headers: { Authorization: "Bearer xxx" }, // Optional
+});
+const agentx = createAgentX(runtime);
+
+// Register and run (same API as server!)
+agentx.definitions.register(MyAgent);
+const metaImage = agentx.images.getMetaImage(MyAgent.name);
+const agent = await agentx.images.run(metaImage.id);
 
 // Use like any agent
 agent.react({
@@ -1128,22 +1193,49 @@ import { AgentInstance } from "@agentxjs/agent";
 
 ### agentx
 
-**Purpose**: Unified platform API (local/remote, server/client)
+**Purpose**: Unified platform API with Docker-style lifecycle (local/remote, server/client)
 
 **Key Components:**
 
-- `createAgentX()` - Platform factory
-- Server: `createAgentXHandler()`, `SSEConnection`
-- Client: `SSEDriver`, `createRemoteAgent()`
+- `defineAgent()` - Agent definition factory
+- `createAgentX(runtime)` - Platform factory with five managers
+- Server: `createAgentXHandler()`, `SSEConnection`, framework adapters
+- Client: `sseRuntime()`, `SSEDriver`, `RemoteContainer`, `RemoteRepository`
+
+**AgentX Interface:**
+
+```typescript
+interface AgentX {
+  readonly runtime: Runtime;
+  readonly definitions: DefinitionManager; // Register agent templates
+  readonly images: ImageManager; // Build/manage snapshots
+  readonly agents: AgentManager; // Query running agents
+  readonly sessions: SessionManager; // User-facing sessions
+  readonly errors: ErrorManager; // Error handling
+}
+```
 
 **Import Pattern:**
 
 ```typescript
-import { createAgentX } from "agentxjs";
-import { createRemoteAgent } from "agentxjs/client";
+// Core API
+import { defineAgent, createAgentX } from "agentxjs";
+
+// Browser runtime
+import { sseRuntime } from "agentxjs/client";
+
+// Server handler
+import { createAgentXHandler } from "agentxjs/server";
+import { toHonoHandler } from "agentxjs/server/adapters/hono";
 ```
 
-**Note**: `defineAgent()` has been moved to `agentx-adk` package.
+**Docker-Style Lifecycle:**
+
+```
+Definition → register → MetaImage → run → Agent → Session
+```
+
+**Key Principle**: AgentManager only queries. Creation happens via `images.run()` or `sessions.create()`.
 
 ### agentx-runtime
 
@@ -1218,28 +1310,33 @@ LLM_PROVIDER_KEY      # Claude API key
 
 **AgentX Architecture Principles:**
 
-1. **Mealy Machines**: Pure event processing with "state is means, output is goal"
-2. **4-Layer Events**: Stream → State → Message → Turn
-3. **Agent-as-Driver**: Unlimited composition via shared interface
-4. **Stream-Only SSE**: Server forwards Stream events, browser reassembles
-5. **Event-Driven**: All communication via RxJS EventBus
-6. **Type-Safe**: 140+ TypeScript definitions
-7. **Cross-Platform**: Same API works in Node.js and browser
+1. **Docker-Style Lifecycle**: Definition → Image → Agent → Session
+2. **Five Manager Pattern**: definitions, images, agents, sessions, errors
+3. **Mealy Machines**: Pure event processing with "state is means, output is goal"
+4. **4-Layer Events**: Stream → State → Message → Turn
+5. **Agent-as-Driver**: Unlimited composition via shared interface
+6. **Stream-Only SSE**: Server forwards Stream events, browser reassembles
+7. **Event-Driven**: All communication via RxJS EventBus
+8. **Type-Safe**: 140+ TypeScript definitions
+9. **Cross-Platform**: Same API works in Node.js and browser
 
 **Package Dependency Flow:**
 
 ```
-types → common → engine → agent → agentx → node → ui
+types → common → engine → agent → agentx → node-runtime → ui
                                       ↘
                                     portagent (app)
 ```
 
 **Critical Design Decisions:**
 
+- ✅ **Docker-style layered architecture** (Definition → Image → Agent)
+- ✅ **AgentManager only queries** (creation via images.run() or sessions.create())
 - ✅ **Server forwards Stream events only** (NOT assembled messages)
 - ✅ **Browser has full AgentEngine** (complete reassembly)
+- ✅ **RemoteRepository noop for saveMessage** (server persists via SessionCollector)
 - ✅ **State is implementation detail** (Mealy philosophy)
-- ✅ **Errors flow through event system** (not just exceptions)
+- ✅ **Errors flow through event system** (ErrorManager + error_message events)
 - ✅ **Logger facade with lazy initialization** (agentx-common)
-- ✅ **Runtime abstraction** (NodeRuntime, SSERuntime)
+- ✅ **Runtime abstraction** (nodeRuntime, sseRuntime)
 - ✅ **Tailwind v4 CSS-first** (design tokens via @theme)
