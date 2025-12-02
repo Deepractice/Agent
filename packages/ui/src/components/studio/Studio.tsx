@@ -1,7 +1,7 @@
 /**
- * Workspace - Integration layer for multi-agent chat UI
+ * Studio - Integration layer for multi-agent chat UI
  *
- * Workspace is the ONLY frontend-specific concept in the UI architecture.
+ * Studio is the ONLY frontend-specific concept in the UI architecture.
  * It integrates:
  * - useSession hook (maps to agentx.sessions)
  * - useAgent hook (maps to agentx.agents)
@@ -10,15 +10,15 @@
  * Part of UI-Backend API Consistency design (see index.ts ADR #5):
  * - UI types mirror agentx-types
  * - Naming follows backend (session, not topic)
- * - No invented concepts except Workspace
+ * - No invented concepts except Studio
  *
  * @example
  * ```tsx
- * import { Workspace } from "@agentxjs/ui";
+ * import { Studio } from "@agentxjs/ui";
  *
  * function App() {
  *   return (
- *     <Workspace
+ *     <Studio
  *       agentx={agentx}
  *       userId="user_123"
  *       definitions={definitions}
@@ -44,9 +44,9 @@ import { MainContent } from "~/components/layout/MainContent";
 import type { AgentDefinitionItem } from "~/components/container/types";
 
 /**
- * Props for Workspace component
+ * Props for Studio component
  */
-export interface WorkspaceProps {
+export interface StudioProps {
   /**
    * AgentX instance for backend communication
    */
@@ -85,14 +85,14 @@ export interface WorkspaceProps {
 }
 
 /**
- * Workspace - Integration layer component
+ * Studio - Integration layer component
  *
  * Integrates:
  * - useSession for session management (maps to agentx.sessions)
  * - useAgent for agent state (maps to agentx.agents)
  * - ContainerView layout components
  */
-export function Workspace({
+export function Studio({
   agentx,
   userId,
   containerId,
@@ -100,7 +100,7 @@ export function Workspace({
   onSessionChange,
   onDefinitionChange,
   className = "",
-}: WorkspaceProps) {
+}: StudioProps) {
   // ===== UI Selection State =====
   const [currentDefinition, setCurrentDefinition] = useState<AgentDefinitionItem | null>(
     definitions[0] ?? null
@@ -323,4 +323,4 @@ export function Workspace({
   );
 }
 
-export default Workspace;
+export default Studio;

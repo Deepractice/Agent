@@ -2,7 +2,7 @@
  * ContainerView Component Stories
  *
  * Demonstrates the pure UI layout component with mock data.
- * For real backend integration, use Workspace stories.
+ * For real backend integration, use Studio stories.
  */
 
 import type { Meta, StoryObj } from "@storybook/react";
@@ -110,9 +110,9 @@ const mockMessages: Message[] = [
 ];
 
 /**
- * Complete workspace with all panes and mock data
+ * Complete studio with all panes and mock data
  */
-export const CompleteWorkspace: Story = {
+export const CompleteStudio: Story = {
   render: () => (
     <div className="h-screen bg-background">
       <ContainerView

@@ -5,12 +5,12 @@
  * as props. It contains NO business logic or state management.
  *
  * Part of UI-Backend API Consistency design (see index.ts ADR #5):
- * - Workspace (integration) uses useSession + useAgent hooks
+ * - Studio (integration) uses useSession + useAgent hooks
  * - ContainerView (pure UI) renders the layout
  *
  * @example
  * ```tsx
- * // Used by Workspace (integration layer)
+ * // Used by Studio (integration layer)
  * <ContainerView
  *   definitions={definitions}
  *   sessions={sessions}

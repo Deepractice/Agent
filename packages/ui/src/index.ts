@@ -115,12 +115,12 @@
  * 1. **Type Consistency**: UI types mirror `agentx-types` (e.g., `SessionItem` matches `Session`)
  * 2. **Naming Consistency**: Use backend names (session, not topic/conversation)
  * 3. **No Invented Concepts**: Don't add concepts that don't exist in backend
- * 4. **Workspace as Integration**: `Workspace` is the ONLY frontend-specific concept,
+ * 4. **Studio as Integration**: `Studio` is the ONLY frontend-specific concept,
  *    responsible for integrating UI components with backend hooks
  *
  * **Architecture**:
  * ```
- * Workspace (frontend integration layer)
+ * Studio (frontend integration layer)
  * ├── useSession (maps to agentx.sessions)
  * ├── useAgent (maps to agentx.agents)
  * └── ContainerView (pure UI layout)

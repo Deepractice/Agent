@@ -1,13 +1,13 @@
 /**
  * Chat Page
  *
- * Main chat interface using Workspace component.
+ * Main chat interface using Studio component.
  */
 
 import { useState, useEffect } from "react";
 import type { AgentX } from "@agentxjs/types";
 import { createAgentX, sseRuntime } from "agentxjs";
-import { Workspace, type AgentDefinitionItem } from "@agentxjs/ui";
+import { Studio, type AgentDefinitionItem } from "@agentxjs/ui";
 import "@agentxjs/ui/globals.css";
 
 import { useAuth, getAuthToken } from "../hooks/useAuth";
@@ -171,7 +171,7 @@ export function ChatPage() {
     <div className="h-screen flex flex-col bg-background">
       <Header onLogout={logout} />
       <div className="flex-1 overflow-hidden">
-        <Workspace
+        <Studio
           agentx={agentx}
           userId={user.userId}
           containerId={user.containerId}

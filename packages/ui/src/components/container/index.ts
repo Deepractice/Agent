@@ -3,7 +3,7 @@
  *
  * Part of UI-Backend API Consistency design (see index.ts ADR #5):
  * - These are pure UI components (presentational)
- * - For integration, use Workspace from ~/components/workspace
+ * - For integration, use Studio from ~/components/studio
  */
 
 // ContainerView - Pure UI layout component

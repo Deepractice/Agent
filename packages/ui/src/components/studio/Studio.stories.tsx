@@ -1,11 +1,11 @@
 /**
- * Workspace Stories
+ * Studio Stories
  *
- * Demonstrates the full Workspace component with business logic.
+ * Demonstrates the full Studio component with business logic.
  *
  * Two modes:
- * 1. FullWorkspace - Complete integration with all panes and hooks
- * 2. LiveWorkspace - Simplified demo for isomorphic architecture testing
+ * 1. FullStudio - Complete integration with all panes and hooks
+ * 2. LiveStudio - Simplified demo for isomorphic architecture testing
  *
  * Prerequisites:
  * - Run `pnpm dev:server` first
@@ -24,7 +24,7 @@ import { createAgentX } from "agentxjs";
 import { createSSERuntime } from "agentxjs/client";
 
 // Components
-import { Workspace } from "./Workspace";
+import { Studio } from "./Studio";
 import { AgentPane } from "~/components/container/AgentPane";
 import { InputPane } from "~/components/container/InputPane";
 import { MainContent } from "~/components/layout/MainContent";
@@ -35,15 +35,15 @@ import { useAgent } from "~/hooks/useAgent";
 import type { AgentDefinitionItem, SessionItem } from "~/components/container/types";
 
 const meta: Meta = {
-  title: "Workspace/Workspace",
+  title: "Studio/Studio",
   parameters: {
     layout: "fullscreen",
     docs: {
       description: {
         component: `
-**Workspace - Full Integration Layer**
+**Studio - Full Integration Layer**
 
-The Workspace component integrates:
+The Studio component integrates:
 - useSession hook (maps to agentx.sessions)
 - useAgent hook (maps to agentx.agents)
 - All UI panes (DefinitionPane, SessionPane, AgentPane, InputPane)
@@ -114,12 +114,12 @@ function LoadingScreen() {
   );
 }
 
-// ===== Full Workspace Story =====
+// ===== Full Studio Story =====
 
 /**
- * FullWorkspaceComponent - Uses the Workspace component with full business logic
+ * FullStudioComponent - Uses the Studio component with full business logic
  */
-function FullWorkspaceComponent() {
+function FullStudioComponent() {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [agentx, setAgentx] = useState<AgentX | null>(null);
@@ -140,7 +140,7 @@ function FullWorkspaceComponent() {
         setIsConnected(true);
         setConnectionError(null);
 
-        // 2. Create SSERuntime (without agentId - Workspace will create agents as needed)
+        // 2. Create SSERuntime (without agentId - Studio will create agents as needed)
         const runtime = createSSERuntime({
           serverUrl: SERVER_URL,
         });
@@ -177,7 +177,7 @@ function FullWorkspaceComponent() {
 
   return (
     <div className="h-screen bg-background">
-      <Workspace
+      <Studio
         agentx={agentx}
         userId="user_storybook"
         containerId="container_storybook"
@@ -190,23 +190,23 @@ function FullWorkspaceComponent() {
 }
 
 /**
- * Full Workspace - Complete Integration
+ * Full Studio - Complete Integration
  *
- * Uses the Workspace component with all business logic:
+ * Uses the Studio component with all business logic:
  * - DefinitionPane (left)
  * - SessionPane (middle)
  * - AgentPane + InputPane (right)
  */
-export const FullWorkspace: Story = {
-  render: () => <FullWorkspaceComponent />,
+export const FullStudio: Story = {
+  render: () => <FullStudioComponent />,
 };
 
-// ===== Live Workspace Story (Simplified) =====
+// ===== Live Studio Story (Simplified) =====
 
 /**
- * LiveWorkspaceComponent - Simplified demo for isomorphic architecture
+ * LiveStudioComponent - Simplified demo for isomorphic architecture
  */
-function LiveWorkspaceComponent() {
+function LiveStudioComponent() {
   const [isConnected, setIsConnected] = useState(false);
   const [connectionError, setConnectionError] = useState<string | null>(null);
   const [agent, setAgent] = useState<Agent | null>(null);
@@ -323,11 +323,11 @@ function LiveWorkspaceComponent() {
 }
 
 /**
- * Live Workspace - Isomorphic Architecture Demo
+ * Live Studio - Isomorphic Architecture Demo
  *
  * Simplified version showing just AgentPane + InputPane.
  * Demonstrates the isomorphic design where browser uses same Agent API as Node.js.
  */
-export const LiveWorkspace: Story = {
-  render: () => <LiveWorkspaceComponent />,
+export const LiveStudio: Story = {
+  render: () => <LiveStudioComponent />,
 };

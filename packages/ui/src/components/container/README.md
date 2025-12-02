@@ -126,7 +126,7 @@ import {
   MainContent,
 } from "@agentxjs/ui";
 
-function Workspace() {
+function MyStudio() {
   return (
     <div className="h-screen">
       <Container
@@ -185,7 +185,7 @@ function Workspace() {
 ## Data Model
 
 ```
-Container (User Workspace)
+Container (User Studio)
 └── definitions: AgentDefinitionItem[]
     └── name, description, icon, color, isOnline, activeSessionCount
 
@@ -230,7 +230,7 @@ For custom integration without the Container component:
 ```tsx
 import { useContainer } from "@agentxjs/ui";
 
-function MyCustomWorkspace() {
+function MyCustomStudio() {
   const {
     definitions,
     currentDefinition,
