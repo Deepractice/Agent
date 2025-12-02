@@ -29,6 +29,7 @@ import { createLogger, setLoggerFactory } from "@deepractice-ai/agentx-common";
 import { createClaudeDriver, type ClaudeDriverOptions } from "./ClaudeDriver";
 import { SQLiteRepository } from "./repository";
 import { FileLoggerFactory } from "./logger";
+import { EnvLLMProvider, type LLMSupply } from "./llm";
 import { homedir } from "node:os";
 import { mkdirSync, existsSync } from "node:fs";
 import { join } from "node:path";
@@ -74,11 +75,14 @@ class NodeContainer implements Container {
     // Create sandbox
     const sandbox = this.runtime.createSandbox(`sandbox-${agentId}`);
 
+    // Get LLM config from sandbox (provided by EnvLLMProvider)
+    const llmSupply = (sandbox.llm as LLMProvider<LLMSupply>).provide();
+
     // Create driver config
     const driverConfig = {
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      baseUrl: process.env.ANTHROPIC_BASE_URL,
-      model: process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514",
+      apiKey: llmSupply.apiKey,
+      baseUrl: llmSupply.baseUrl,
+      model: llmSupply.model,
       systemPrompt: image.definition.systemPrompt,
     };
 
@@ -138,12 +142,15 @@ class NodeContainer implements Container {
     // Create sandbox
     const sandbox = this.runtime.createSandbox(`sandbox-${agentId}`);
 
+    // Get LLM config from sandbox (provided by EnvLLMProvider)
+    const llmSupply = (sandbox.llm as LLMProvider<LLMSupply>).provide();
+
     // Create driver config
     const definition = imageRecord.definition as unknown as AgentDefinition;
     const driverConfig = {
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      baseUrl: process.env.ANTHROPIC_BASE_URL,
-      model: process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514",
+      apiKey: llmSupply.apiKey,
+      baseUrl: llmSupply.baseUrl,
+      model: llmSupply.model,
       systemPrompt: definition.systemPrompt,
     };
 
@@ -234,28 +241,25 @@ class NodeContainer implements Container {
 }
 
 // ============================================================================
-// NoopSandbox - Placeholder Sandbox (OS resources TBD)
+// NodeSandbox - Node.js Sandbox with EnvLLMProvider
 // ============================================================================
 
-class NoopSandbox implements Sandbox {
+class NodeSandbox implements Sandbox {
   readonly name: string;
   readonly os: OS;
-  readonly llm: LLMProvider;
+  readonly llm: LLMProvider<LLMSupply>;
 
-  constructor(name: string) {
+  constructor(name: string, llmProvider: LLMProvider<LLMSupply>) {
     this.name = name;
-    // Placeholder - real implementation TBD
+    // OS resources - placeholder for now
     this.os = {
-      name: "noop",
+      name: "node",
       fs: null as any,
       process: null as any,
       env: null as any,
       disk: null as any,
     };
-    this.llm = {
-      name: "noop",
-      provide: () => ({}),
-    };
+    this.llm = llmProvider;
   }
 }
 
@@ -280,10 +284,10 @@ function ensureDir(dir: string): void {
 /**
  * NodeRuntime - Runtime for Node.js with Claude driver
  *
- * RuntimeConfig is collected from environment:
- * - ANTHROPIC_API_KEY
- * - ANTHROPIC_BASE_URL
- * - CLAUDE_MODEL (optional, defaults to claude-sonnet-4-20250514)
+ * RuntimeConfig is collected from environment via EnvLLMProvider:
+ * - LLM_PROVIDER_KEY (required) - API key for LLM provider
+ * - LLM_PROVIDER_URL (optional) - Base URL for API endpoint
+ * - LLM_PROVIDER_MODEL (optional) - Model name
  *
  * Data is stored in ~/.agentx/data/ by default.
  */
@@ -293,6 +297,7 @@ class NodeRuntime implements Runtime {
   readonly repository: Repository;
   readonly loggerFactory: LoggerFactory;
   private readonly engine: AgentEngine;
+  private readonly llmProvider: LLMProvider<LLMSupply>;
 
   constructor(dataDir: string = DEFAULT_DATA_DIR) {
     // Ensure data directory exists
@@ -311,6 +316,9 @@ class NodeRuntime implements Runtime {
     // Set as global logger factory
     setLoggerFactory(this.loggerFactory);
 
+    // Create LLM provider (reads from environment)
+    this.llmProvider = new EnvLLMProvider();
+
     // Create SQLite repository
     const dbPath = join(dataDir, "agentx.db");
     this.repository = new SQLiteRepository(dbPath);
@@ -326,7 +334,7 @@ class NodeRuntime implements Runtime {
 
   createSandbox(name: string): Sandbox {
     logger.debug("Creating sandbox", { name });
-    return new NoopSandbox(name);
+    return new NodeSandbox(name, this.llmProvider);
   }
 
   createDriver(
@@ -336,16 +344,14 @@ class NodeRuntime implements Runtime {
   ): RuntimeDriver {
     logger.debug("Creating driver", { agentId: context.agentId, name: definition.name });
 
-    // Collect RuntimeConfig from environment
-    const runtimeConfig = {
-      apiKey: process.env.ANTHROPIC_API_KEY,
-      baseUrl: process.env.ANTHROPIC_BASE_URL,
-      model: process.env.CLAUDE_MODEL || "claude-sonnet-4-20250514",
-    };
+    // Get LLM config from sandbox (provided by EnvLLMProvider)
+    const llmSupply = (sandbox.llm as LLMProvider<LLMSupply>).provide();
 
-    // Merge AgentDefinition (business) + RuntimeConfig (infrastructure)
+    // Merge AgentDefinition (business) + LLMSupply (infrastructure)
     const driverConfig = {
-      ...runtimeConfig,
+      apiKey: llmSupply.apiKey,
+      baseUrl: llmSupply.baseUrl,
+      model: llmSupply.model,
       systemPrompt: definition.systemPrompt,
     };
 
@@ -361,9 +367,9 @@ class NodeRuntime implements Runtime {
  * Node.js Runtime singleton
  *
  * Requires environment variables:
- * - ANTHROPIC_API_KEY (required)
- * - ANTHROPIC_BASE_URL (optional)
- * - CLAUDE_MODEL (optional, defaults to claude-sonnet-4-20250514)
+ * - LLM_PROVIDER_KEY (required) - API key for LLM provider
+ * - LLM_PROVIDER_URL (optional) - Base URL for API endpoint
+ * - LLM_PROVIDER_MODEL (optional) - Model name (default: claude-sonnet-4-20250514)
  *
  * @example
  * ```typescript

@@ -23,13 +23,17 @@ const logger = createLogger("agentx/RemoteRepository");
 
 export interface RemoteRepositoryOptions {
   serverUrl: string;
+  headers?: Record<string, string>;
 }
 
 export class RemoteRepository implements Repository {
   private readonly client: KyInstance;
 
   constructor(options: RemoteRepositoryOptions) {
-    this.client = createHttpClient({ baseUrl: options.serverUrl });
+    this.client = createHttpClient({
+      baseUrl: options.serverUrl,
+      headers: options.headers,
+    });
     logger.debug("RemoteRepository created", { serverUrl: options.serverUrl });
   }
 

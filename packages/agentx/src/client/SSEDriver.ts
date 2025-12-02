@@ -45,7 +45,8 @@ class PersistentSSEConnection {
 
   constructor(
     private readonly serverUrl: string,
-    private readonly agentId: string
+    private readonly agentId: string,
+    private readonly sseParams: Record<string, string> = {}
   ) {}
 
   /**
@@ -56,7 +57,12 @@ class PersistentSSEConnection {
       return; // Already connected
     }
 
-    const sseUrl = `${this.serverUrl}/agents/${this.agentId}/sse`;
+    // Build SSE URL with optional query parameters (for auth, etc.)
+    let sseUrl = `${this.serverUrl}/agents/${this.agentId}/sse`;
+    if (Object.keys(this.sseParams).length > 0) {
+      const params = new URLSearchParams(this.sseParams);
+      sseUrl += `?${params.toString()}`;
+    }
     this.eventSource = new EventSource(sseUrl);
 
     const handleEvent = (event: MessageEvent) => {
@@ -205,6 +211,11 @@ export interface SSEDriverConfig {
   serverUrl: string;
   agentId: string;
   headers?: Record<string, string>;
+  /**
+   * Query parameters to append to SSE URL.
+   * Use this for authentication since EventSource doesn't support headers.
+   */
+  sseParams?: Record<string, string>;
 }
 
 /**
@@ -213,7 +224,7 @@ export interface SSEDriverConfig {
  * Factory function for browser-side SSE driver.
  */
 export function createSSEDriver(config: SSEDriverConfig): AgentDriver {
-  const { serverUrl, agentId, headers = {} } = config;
+  const { serverUrl, agentId, headers = {}, sseParams = {} } = config;
   let connection: PersistentSSEConnection | null = null;
 
   return {
@@ -222,7 +233,7 @@ export function createSSEDriver(config: SSEDriverConfig): AgentDriver {
     async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
       // 1. Ensure SSE connection is established
       if (!connection) {
-        connection = new PersistentSSEConnection(serverUrl, agentId);
+        connection = new PersistentSSEConnection(serverUrl, agentId, sseParams);
         connection.connect();
       }
 

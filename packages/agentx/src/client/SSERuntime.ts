@@ -76,12 +76,18 @@ class RemoteContainer implements Container {
   private readonly agents = new Map<string, Agent>();
   private readonly serverUrl: string;
   private readonly headers: Record<string, string>;
+  private readonly sseParams: Record<string, string>;
   private readonly engine: AgentEngine;
 
-  constructor(serverUrl: string, headers: Record<string, string> = {}) {
+  constructor(
+    serverUrl: string,
+    headers: Record<string, string> = {},
+    sseParams: Record<string, string> = {}
+  ) {
     this.id = "remote-container";
     this.serverUrl = serverUrl;
     this.headers = headers;
+    this.sseParams = sseParams;
     this.engine = new AgentEngine();
   }
 
@@ -162,6 +168,7 @@ class RemoteContainer implements Container {
       serverUrl: this.serverUrl,
       agentId,
       headers: this.headers,
+      sseParams: this.sseParams,
     });
 
     // Create agent instance
@@ -246,8 +253,26 @@ export interface SSERuntimeConfig {
 
   /**
    * Optional request headers (for auth, etc.)
+   * Note: These headers are used for HTTP requests (POST, DELETE, etc.)
+   * but NOT for SSE connections (EventSource doesn't support headers).
+   * For SSE auth, use sseParams to pass token via query string.
    */
   headers?: Record<string, string>;
+
+  /**
+   * Optional query parameters to append to SSE URL.
+   * Use this for authentication since EventSource doesn't support headers.
+   *
+   * @example
+   * ```typescript
+   * createSSERuntime({
+   *   serverUrl: "http://localhost:5200/agentx",
+   *   headers: { Authorization: "Bearer xxx" }, // For HTTP requests
+   *   sseParams: { token: "xxx" }, // For SSE connections
+   * });
+   * ```
+   */
+  sseParams?: Record<string, string>;
 }
 
 /**
@@ -267,10 +292,12 @@ class SSERuntime implements Runtime {
 
   private readonly serverUrl: string;
   private readonly headers: Record<string, string>;
+  private readonly sseParams: Record<string, string>;
 
   constructor(config: SSERuntimeConfig) {
     this.serverUrl = config.serverUrl.replace(/\/+$/, ""); // Remove trailing slash
     this.headers = config.headers ?? {};
+    this.sseParams = config.sseParams ?? {};
 
     // Create and configure BrowserLoggerFactory
     this.loggerFactory = new BrowserLoggerFactory({
@@ -281,8 +308,11 @@ class SSERuntime implements Runtime {
     setLoggerFactory(this.loggerFactory);
 
     // Use RemoteContainer - it calls server to resolve agentId
-    this.container = new RemoteContainer(this.serverUrl, this.headers);
-    this.repository = new RemoteRepository({ serverUrl: this.serverUrl });
+    this.container = new RemoteContainer(this.serverUrl, this.headers, this.sseParams);
+    this.repository = new RemoteRepository({
+      serverUrl: this.serverUrl,
+      headers: this.headers,
+    });
   }
 
   createSandbox(_name: string): Sandbox {
@@ -301,6 +331,7 @@ class SSERuntime implements Runtime {
       serverUrl: this.serverUrl,
       agentId: context.agentId,
       headers: this.headers,
+      sseParams: this.sseParams,
     });
 
     // SSEDriver implements AgentDriver, wrap it as RuntimeDriver

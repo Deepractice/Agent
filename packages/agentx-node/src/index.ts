@@ -4,12 +4,12 @@
  * "Define Once, Run Anywhere"
  *
  * Node.js Runtime for AgentX with Claude driver.
- * RuntimeConfig collected from environment variables.
+ * RuntimeConfig collected from environment variables via EnvLLMProvider.
  *
  * Required env vars:
- * - ANTHROPIC_API_KEY (required)
- * - ANTHROPIC_BASE_URL (optional)
- * - CLAUDE_MODEL (optional, defaults to claude-sonnet-4-20250514)
+ * - LLM_PROVIDER_KEY (required) - API key for LLM provider
+ * - LLM_PROVIDER_URL (optional) - Base URL for API endpoint
+ * - LLM_PROVIDER_MODEL (optional, defaults to claude-sonnet-4-20250514)
  *
  * @example
  * ```typescript
@@ -30,6 +30,9 @@
 
 // ==================== Runtime ====================
 export { runtime, NodeRuntime } from "./NodeRuntime";
+
+// ==================== LLM Provider ====================
+export { EnvLLMProvider, type LLMSupply } from "./llm";
 
 // ==================== Driver (for advanced use) ====================
 export { createClaudeDriver } from "./ClaudeDriver";
