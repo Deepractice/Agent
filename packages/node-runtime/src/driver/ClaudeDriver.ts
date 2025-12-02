@@ -145,6 +145,8 @@ export function createClaudeDriver(
       ...config,
       // Set working directory from sandbox workspace
       cwd: sandbox.workspace.path,
+      // Default to bypass permissions (agent runs autonomously)
+      permissionMode: "bypassPermissions",
       // Pass resume session ID if provided (for conversation continuity)
       resume: options?.resumeSessionId,
     };
