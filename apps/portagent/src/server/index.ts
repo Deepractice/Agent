@@ -23,11 +23,10 @@ import { cors } from "hono/cors";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { existsSync, readFileSync } from "fs";
 
-import { createAgentX } from "@deepractice-ai/agentx";
+import { createAgentX, defineAgent } from "@deepractice-ai/agentx";
 import { createAgentXHandler } from "@deepractice-ai/agentx/server";
 import { toHonoHandler } from "@deepractice-ai/agentx/server/adapters/hono";
-import { runtime } from "@deepractice-ai/agentx/runtime/node";
-import { defineAgent } from "@deepractice-ai/agentx";
+import { nodeRuntime } from "@deepractice-ai/agentx/runtime/node";
 
 import { createAuthMiddleware, authRoutes, generatePassword } from "./auth";
 
@@ -63,7 +62,8 @@ function createApp() {
     })
   );
 
-  // Create AgentX instance
+  // Create runtime and AgentX instance
+  const runtime = nodeRuntime();
   const agentx = createAgentX(runtime);
 
   // Register default definition

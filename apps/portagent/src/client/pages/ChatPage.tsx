@@ -7,7 +7,7 @@
 import { useState, useEffect } from "react";
 import type { AgentX } from "@deepractice-ai/agentx-types";
 import { createAgentX } from "@deepractice-ai/agentx";
-import { createSSERuntime } from "@deepractice-ai/agentx/client";
+import { sseRuntime } from "@deepractice-ai/agentx/runtime/sse";
 import { Workspace, type AgentDefinitionItem } from "@deepractice-ai/agentx-ui";
 import "@deepractice-ai/agentx-ui/globals.css";
 
@@ -116,17 +116,17 @@ export function ChatPage() {
         // Create SSERuntime with auth token
         // - headers: Used for HTTP requests (POST, DELETE, etc.)
         // - sseParams: Used for SSE connections (EventSource doesn't support headers)
-        const runtime = createSSERuntime({
-          serverUrl: AGENTX_URL,
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-          sseParams: {
-            token: token,
-          },
-        });
-
-        const agentxInstance = createAgentX(runtime);
+        const agentxInstance = createAgentX(
+          sseRuntime({
+            serverUrl: AGENTX_URL,
+            headers: {
+              Authorization: `Bearer ${token}`,
+            },
+            sseParams: {
+              token: token,
+            },
+          })
+        );
 
         if (!mounted) return;
         setAgentx(agentxInstance);
