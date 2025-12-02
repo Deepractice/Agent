@@ -313,7 +313,11 @@ export function Studio({
               </Allotment.Pane>
 
               <Allotment.Pane minSize={150} maxSize={600} preferredSize={220}>
-                <InputPane onSend={handleSend} disabled={isLoading} />
+                <InputPane
+                  key={currentSession?.sessionId ?? "new"}
+                  onSend={handleSend}
+                  disabled={isLoading}
+                />
               </Allotment.Pane>
             </Allotment>
           </MainContent>
