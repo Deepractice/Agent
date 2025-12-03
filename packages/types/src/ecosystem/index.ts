@@ -1,51 +1,16 @@
 /**
  * Ecosystem Module - Runtime environment for AI Agents
  *
- * ## ADR: Three-Layer Architecture (Ontological Foundation)
+ * ## Event Architecture (Simplified)
  *
- * Based on three fundamental ontological categories from issue #026:
+ * Two types of events:
+ * 1. **EnvironmentEvent** - External raw materials (text_chunk, stream_start, etc.)
+ * 2. **AgentEvent** - Agent internal events (assembled by Mealy Machine)
  *
- * | Layer       | Ontology  | Protocol    | Content                          |
- * |-------------|-----------|-------------|----------------------------------|
- * | Application | Structure | HTTP        | Definition, Image, User          |
- * | Network     | Relation  | HTTP + WS   | Server, Client, Channel          |
- * | Ecosystem   | Process   | WS Events   | Runtime, Container, Session, Agent |
+ * EnvironmentEvent + context flows on SystemBus directly.
+ * No separate RuntimeEvent definition needed.
  *
- * This module defines the **Ecosystem Layer** - dynamic processes and activities.
- *
- * ```
- * ┌─────────────────────────────────────────────────────────────┐
- * │                    Ecosystem Layer                          │
- * ├─────────────────────────────────────────────────────────────┤
- * │  Pure Abstractions (Systems Theory)                         │
- * │  - Ecosystem: Event bus interface                           │
- * │  - Receptor: Input boundary (senses external signals)       │
- * │  - Effector: Output boundary (transmits events)             │
- * ├─────────────────────────────────────────────────────────────┤
- * │  Runtime Layer                                              │
- * │  - Runtime: Infrastructure interface                        │
- * │  - Container: Agent isolation boundary                      │
- * │  - Session: User conversation context                       │
- * │  - Repository: Storage abstraction                          │
- * ├─────────────────────────────────────────────────────────────┤
- * │  Agent Layer                                                │
- * │  - Agent: AI agent runtime instance                         │
- * │  - Message: Conversation messages                           │
- * │  - Events: Stream, State, Message, Turn (4-layer system)    │
- * └─────────────────────────────────────────────────────────────┘
- * ```
- *
- * ## ADR: Event-Driven Architecture
- *
- * All runtime communication uses events (WebSocket), not HTTP:
- * - Agent lifecycle events (started, ready, destroyed)
- * - Conversation events (start, thinking, responding, end)
- * - Stream events (text_delta, tool_call, tool_result)
- *
- * This enables real-time bidirectional communication and
- * clean separation from static resource management (HTTP).
- *
- * @see issues/026-three-layer-architecture.md
+ * @see issues/029-simplified-event-architecture.md
  * @packageDocumentation
  */
 
@@ -54,11 +19,16 @@
 // ============================================================================
 
 export type { Ecosystem, EcosystemEventHandler } from "./Ecosystem";
-export type { EcosystemEvent } from "./event/EcosystemEvent";
 export type { Environment } from "./Environment";
 export type { Receptor } from "./Receptor";
 export type { Effector } from "./Effector";
-export type { SystemBus, BusEvent, BusEventHandler } from "./SystemBus";
+export type { SystemBus, BusEvent, BusEventHandler, Unsubscribe } from "./SystemBus";
+
+// ============================================================================
+// Environment Events
+// ============================================================================
+
+export * from "./event";
 
 // ============================================================================
 // Runtime Layer
@@ -79,12 +49,6 @@ export * from "./runtime/session";
 
 // Repository
 export * from "./runtime/repository";
-
-// Receptors
-export * from "./receptors";
-
-// Runtime Events
-export * from "./event";
 
 // ============================================================================
 // Agent Layer

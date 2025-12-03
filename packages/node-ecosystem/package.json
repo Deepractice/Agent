@@ -1,0 +1,48 @@
+{
+  "name": "@agentxjs/node-ecosystem",
+  "version": "0.1.0",
+  "description": "Node.js Ecosystem for AgentX - SystemBus, Environment, Receptors",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Deepractice/AgentX.git"
+  },
+  "homepage": "https://github.com/Deepractice/AgentX",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@agentxjs/common": "workspace:*",
+    "@agentxjs/types": "workspace:*",
+    "@anthropic-ai/claude-agent-sdk": "^0.1.30",
+    "better-sqlite3": "^11.7.0",
+    "rxjs": "^7.8.2"
+  },
+  "devDependencies": {
+    "@types/better-sqlite3": "^7.6.12",
+    "@types/node": "^24.9.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}

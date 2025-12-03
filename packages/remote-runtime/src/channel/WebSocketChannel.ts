@@ -34,7 +34,7 @@ import type {
   ChannelEventHandler,
   ChannelStateHandler,
   ChannelUnsubscribe,
-  AnyRuntimeEvent,
+  AnyEnvironmentEvent,
 } from "@agentxjs/types";
 import { createLogger } from "@agentxjs/common";
 
@@ -196,7 +196,7 @@ export class WebSocketChannel implements Channel {
     this.setState("disconnected");
   }
 
-  send(event: AnyRuntimeEvent): void {
+  send(event: AnyEnvironmentEvent): void {
     if (this._state !== "connected" || !this.ws) {
       throw new Error(`Cannot send event: channel is ${this._state}`);
     }
@@ -224,7 +224,7 @@ export class WebSocketChannel implements Channel {
 
   private handleMessage(data: string): void {
     try {
-      const event = JSON.parse(data) as AnyRuntimeEvent;
+      const event = JSON.parse(data) as AnyEnvironmentEvent;
       logger.debug("Received event", { type: event.type });
 
       for (const handler of this.eventHandlers) {

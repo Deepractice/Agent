@@ -1,22 +1,20 @@
 /**
  * EnvironmentEvent - Raw external information that the system cares about
  *
- * Inheritance chain:
- * ```
- * EcosystemEvent (base: type, timestamp, data)
- *     └── EnvironmentEvent (外部原始物料)
- *         └── RuntimeEvent (+ agentId, sessionId, containerId)
- * ```
- *
  * Design principles:
  * - Only raw streaming materials from external world
  * - Even if SDK assembles tool_call/tool_result, we don't use them
  * - We have our own internal world (Mealy Machine) to assemble
  *
- * @see issues/028-reactor-pattern-systembus-architecture.md
+ * On SystemBus, EnvironmentEvent can be enriched with context:
+ * - agentId
+ * - sessionId
+ * - containerId
+ *
+ * But we don't define a separate RuntimeEvent type for this.
+ *
+ * @see issues/029-simplified-event-architecture.md
  */
-
-import type { EcosystemEvent } from "../EcosystemEvent";
 
 // ============================================================================
 // Base EnvironmentEvent Interface
@@ -24,10 +22,12 @@ import type { EcosystemEvent } from "../EcosystemEvent";
 
 /**
  * Base interface for all EnvironmentEvents.
- * Extends EcosystemEvent - no additional context fields.
  */
-export interface EnvironmentEvent<T extends string = string, D = unknown>
-  extends EcosystemEvent<T, D> {}
+export interface EnvironmentEvent<T extends string = string, D = unknown> {
+  readonly type: T;
+  readonly timestamp: number;
+  readonly data: D;
+}
 
 // ============================================================================
 // Stream Events - Raw LLM output streaming

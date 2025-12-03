@@ -20,7 +20,7 @@ import type {
   LLMProvider,
   Logger,
   LoggerFactory,
-  AnyRuntimeEvent,
+  AnyEnvironmentEvent,
   Unsubscribe,
   EcosystemEventHandler,
 } from "@agentxjs/types";
@@ -118,7 +118,7 @@ class NodeRuntime implements Runtime {
   private readonly basePath: string;
 
   // Ecosystem event bus
-  private readonly eventSubject = new Subject<AnyRuntimeEvent>();
+  private readonly eventSubject = new Subject<AnyEnvironmentEvent>();
 
   constructor(config: NodeRuntimeConfig = {}) {
     // Set base path for all agentx data
@@ -229,7 +229,7 @@ class NodeRuntime implements Runtime {
    * @param handler - Callback invoked for each event
    * @returns Unsubscribe function
    */
-  on(handler: EcosystemEventHandler<AnyRuntimeEvent>): Unsubscribe {
+  on(handler: EcosystemEventHandler<AnyEnvironmentEvent>): Unsubscribe {
     const subscription = this.eventSubject.subscribe(handler);
     return () => subscription.unsubscribe();
   }
@@ -240,7 +240,7 @@ class NodeRuntime implements Runtime {
    *
    * @param event - The event to emit
    */
-  emit(event: AnyRuntimeEvent): void {
+  emit(event: AnyEnvironmentEvent): void {
     this.eventSubject.next(event);
   }
 

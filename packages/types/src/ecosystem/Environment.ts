@@ -20,7 +20,7 @@
  * @see issues/028-reactor-pattern-systembus-architecture.md
  */
 
-import type { EnvironmentEvent } from "./event/environment";
+import type { EnvironmentEvent } from "./event/EnvironmentEvent";
 import type { UserMessage } from "./runtime/agent/message";
 
 /**

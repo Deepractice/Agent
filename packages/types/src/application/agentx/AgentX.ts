@@ -46,13 +46,13 @@ import type { DefinitionManager } from "./definition";
 import type { ImageManager } from "./image";
 import type { ContainerManager } from "./container";
 import type { Ecosystem } from "~/ecosystem/Ecosystem";
-import type { AnyRuntimeEvent } from "~/ecosystem/event";
+import type { AnyEnvironmentEvent } from "~/ecosystem/event";
 
 /**
  * Base AgentX interface (shared by Local and Remote)
  * Extends Ecosystem to provide event subscription across the entire ecosystem.
  */
-interface AgentXBase extends Ecosystem<AnyRuntimeEvent> {
+interface AgentXBase extends Ecosystem<AnyEnvironmentEvent> {
   /**
    * Container management (resource isolation units)
    *

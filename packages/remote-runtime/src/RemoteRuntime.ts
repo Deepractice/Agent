@@ -47,7 +47,7 @@ import type {
   LoggerFactory,
   Logger,
   AgentIdResolver,
-  AnyRuntimeEvent,
+  AnyEnvironmentEvent,
   Unsubscribe,
   EcosystemEventHandler,
 } from "@agentxjs/types";
@@ -133,7 +133,7 @@ class RemoteRuntime implements Runtime {
   private readonly sseParams: Record<string, string>;
 
   // Ecosystem event bus
-  private readonly eventSubject = new Subject<AnyRuntimeEvent>();
+  private readonly eventSubject = new Subject<AnyEnvironmentEvent>();
 
   constructor(config: RemoteRuntimeConfig) {
     this.serverUrl = config.serverUrl.replace(/\/+$/, ""); // Remove trailing slash
@@ -200,7 +200,7 @@ class RemoteRuntime implements Runtime {
    * @param handler - Callback invoked for each event
    * @returns Unsubscribe function
    */
-  on(handler: EcosystemEventHandler<AnyRuntimeEvent>): Unsubscribe {
+  on(handler: EcosystemEventHandler<AnyEnvironmentEvent>): Unsubscribe {
     const subscription = this.eventSubject.subscribe(handler);
     return () => subscription.unsubscribe();
   }
@@ -211,7 +211,7 @@ class RemoteRuntime implements Runtime {
    *
    * @param event - The event to emit
    */
-  emit(event: AnyRuntimeEvent): void {
+  emit(event: AnyEnvironmentEvent): void {
     this.eventSubject.next(event);
   }
 
