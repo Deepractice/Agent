@@ -1,7 +1,7 @@
 {
   "name": "@agentxjs/engine",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Runtime engine for AgentX ecosystem - Core event processing and state management",
   "type": "module",
   "main": "./dist/index.js",

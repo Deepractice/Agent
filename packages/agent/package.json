@@ -1,7 +1,7 @@
 {
   "name": "@agentxjs/agent",
   "private": true,
-  "version": "0.1.4",
+  "version": "0.1.5",
   "description": "Agent runtime for AgentX ecosystem - Agent lifecycle and event management",
   "type": "module",
   "main": "./dist/index.js",

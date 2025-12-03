@@ -1,6 +1,6 @@
 {
   "name": "@agentxjs/ui",
-  "version": "0.0.9",
+  "version": "0.1.0",
   "description": "AgentX UI Components - React component library for building AI agent interfaces",
   "license": "MIT",
   "repository": {

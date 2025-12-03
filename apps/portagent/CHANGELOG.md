@@ -1,5 +1,23 @@
 # @agentxjs/portagent
 
+## 0.1.0
+
+### Minor Changes
+
+- a22942e: Add invite code validation for user registration
+  - Add invite code field to registration form (required by default)
+  - Invite code is validated as today's 00:00:01 Unix timestamp
+  - Make email field optional during registration
+  - Add `INVITE_CODE_REQUIRED` environment variable to enable/disable invite code requirement
+  - Add `/api/auth/config` endpoint for frontend to fetch auth configuration
+
+### Patch Changes
+
+- agentxjs@0.1.0
+- @agentxjs/types@0.1.0
+- @agentxjs/node-runtime@0.1.0
+- @agentxjs/ui@0.1.0
+
 ## 0.0.9
 
 ### Patch Changes
