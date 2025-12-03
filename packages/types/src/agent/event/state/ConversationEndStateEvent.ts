@@ -14,7 +14,7 @@
  */
 
 import type { StateEvent } from "./StateEvent";
-import type { AssistantMessage } from "~/message";
+import type { AssistantMessage } from "~/agent/message";
 import type { TokenUsage } from "~/llm/TokenUsage";
 
 export interface ConversationEndStateEvent extends StateEvent {

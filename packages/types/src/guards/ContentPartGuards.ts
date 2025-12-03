@@ -1,10 +1,10 @@
-import type { ContentPart } from "~/message/parts/ContentPart";
-import type { TextPart } from "~/message/parts/TextPart";
-import type { ThinkingPart } from "~/message/parts/ThinkingPart";
-import type { ImagePart } from "~/message/parts/ImagePart";
-import type { FilePart } from "~/message/parts/FilePart";
-import type { ToolCallPart } from "~/message/parts/ToolCallPart";
-import type { ToolResultPart } from "~/message/parts/ToolResultPart";
+import type { ContentPart } from "~/agent/message/parts/ContentPart";
+import type { TextPart } from "~/agent/message/parts/TextPart";
+import type { ThinkingPart } from "~/agent/message/parts/ThinkingPart";
+import type { ImagePart } from "~/agent/message/parts/ImagePart";
+import type { FilePart } from "~/agent/message/parts/FilePart";
+import type { ToolCallPart } from "~/agent/message/parts/ToolCallPart";
+import type { ToolResultPart } from "~/agent/message/parts/ToolResultPart";
 
 /**
  * Type guard for TextPart

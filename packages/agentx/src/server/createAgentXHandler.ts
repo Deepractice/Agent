@@ -452,6 +452,10 @@ export function createAgentXHandler(
   }
 
   async function handleConnectSSE(agentId: string): Promise<Response> {
+    // TODO: Remove this delay - only for testing SSE race condition
+    // Simulate network latency (500ms) to reproduce race condition bug
+    await new Promise((resolve) => setTimeout(resolve, 500));
+
     const result = getAgentOrError(agentId);
     if (result instanceof Response) return result;
 

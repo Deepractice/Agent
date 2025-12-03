@@ -9,7 +9,7 @@
  */
 
 import type { AgentEvent } from "../base/AgentEvent";
-import type { ToolCallMessage } from "~/message";
+import type { ToolCallMessage } from "~/agent/message";
 
 export interface ToolCallMessageEvent extends AgentEvent {
   type: "tool_call_message";

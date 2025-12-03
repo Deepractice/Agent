@@ -11,7 +11,7 @@
  */
 
 import type { StateEvent } from "./StateEvent";
-import type { UserMessage } from "~/message";
+import type { UserMessage } from "~/agent/message";
 
 export interface ConversationStartStateEvent extends StateEvent {
   type: "conversation_start";

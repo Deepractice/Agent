@@ -35,7 +35,7 @@
  */
 
 import type { Agent } from "~/agent/Agent";
-import type { Message } from "~/message/Message";
+import type { Message } from "~/agent/message/Message";
 
 /**
  * Session represents a user-facing conversation context

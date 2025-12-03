@@ -174,7 +174,7 @@ export type {
   AgentDriver,
   AgentPresenter,
   AgentDefinition,
-  AgentContainer,
+  Container,
   AgentContext,
   AgentOutput,
   AgentLifecycle,

@@ -90,8 +90,7 @@ export type { AgentPresenter } from "./AgentPresenter";
 // Config & Definition
 export type { AgentConfig } from "./AgentConfig";
 // AgentDefinition moved to ~/definition, re-export for backwards compatibility
-export type { AgentDefinition } from "~/definition";
-export type { AgentContainer } from "./AgentContainer";
+export type { AgentDefinition } from "~/environment/definition";
 
 // Context
 export type { AgentContext } from "./AgentContext";

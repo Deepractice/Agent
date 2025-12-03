@@ -11,7 +11,7 @@ export type {
   AgentDriver,
   AgentPresenter,
   AgentDefinition,
-  AgentContainer,
+  Container,
   AgentContext,
   AgentOutput,
   AgentLifecycle,
@@ -39,7 +39,7 @@ export type { StateChangeHandler as StateMachineHandler } from "./AgentStateMach
 export { AgentEventBus } from "./AgentEventBus";
 
 // Container implementation
-export { MemoryAgentContainer } from "./MemoryAgentContainer";
+export { MemoryContainer } from "./MemoryContainer";
 
 // Context utilities
 export { generateAgentId, createAgentContext } from "./AgentContext";

@@ -24,8 +24,8 @@
  */
 
 import type { Agent } from "~/agent";
-import type { AgentImage } from "~/image";
-import type { Session } from "~/session";
+import type { AgentImage } from "~/environment/image";
+import type { Session } from "~/environment/session";
 import type { ContainerRecord, ContainerConfig } from "~/runtime/repository/record";
 
 /**

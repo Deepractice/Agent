@@ -10,7 +10,7 @@
  */
 
 import type { AgentEvent } from "../base/AgentEvent";
-import type { AssistantMessage } from "~/message";
+import type { AssistantMessage } from "~/agent/message";
 
 export interface AssistantMessageEvent extends AgentEvent {
   type: "assistant_message";

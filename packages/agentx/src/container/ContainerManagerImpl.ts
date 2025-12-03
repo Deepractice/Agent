@@ -17,8 +17,9 @@ import type {
   Runtime,
   AgentContext,
   AgentDefinition,
+  Container,
 } from "@agentxjs/types";
-import { AgentInstance } from "@agentxjs/agent";
+import { AgentInstance, MemoryContainer } from "@agentxjs/agent";
 import { AgentEngine } from "@agentxjs/engine";
 import { createLogger } from "@agentxjs/common";
 import type { ContainerManager } from "./ContainerManager";
@@ -47,7 +48,7 @@ function generateAgentId(): string {
  * ContainerManager implementation
  */
 export class ContainerManagerImpl implements ContainerManager {
-  private readonly agents = new Map<string, Agent>();
+  private readonly container: Container = new MemoryContainer();
   private readonly engine: AgentEngine;
   private readonly runtime: Runtime;
   private readonly repository: Repository;
@@ -138,8 +139,8 @@ export class ContainerManagerImpl implements ContainerManager {
     // Create agent
     const agent = new AgentInstance(image.definition, context, this.engine, driver, sandbox);
 
-    // Register agent
-    this.agents.set(agentId, agent);
+    // Register agent in container
+    this.container.register(agent);
 
     logger.info("Agent started", {
       agentId,
@@ -194,8 +195,8 @@ export class ContainerManagerImpl implements ContainerManager {
     // Create agent
     const agent = new AgentInstance(definition, context, this.engine, driver, sandbox);
 
-    // Register agent
-    this.agents.set(agentId, agent);
+    // Register agent in container
+    this.container.register(agent);
 
     logger.info("Agent resumed", {
       agentId,
@@ -208,7 +209,7 @@ export class ContainerManagerImpl implements ContainerManager {
   }
 
   async destroyAgent(agentId: string): Promise<void> {
-    const agent = this.agents.get(agentId);
+    const agent = this.container.get(agentId);
     if (!agent) {
       logger.warn("Agent not found for destroy", { agentId });
       return;
@@ -216,24 +217,24 @@ export class ContainerManagerImpl implements ContainerManager {
 
     logger.debug("Destroying agent", { agentId });
     await agent.destroy();
-    this.agents.delete(agentId);
+    this.container.unregister(agentId);
     logger.info("Agent destroyed", { agentId });
   }
 
   getAgent(agentId: string): Agent | undefined {
-    return this.agents.get(agentId);
+    return this.container.get(agentId);
   }
 
   hasAgent(agentId: string): boolean {
-    return this.agents.has(agentId);
+    return this.container.has(agentId);
   }
 
   listAgents(): Agent[] {
-    return Array.from(this.agents.values());
+    return this.container.list();
   }
 
   async destroyAllAgents(): Promise<void> {
-    const agentIds = Array.from(this.agents.keys());
+    const agentIds = this.container.listIds();
     logger.debug("Destroying all agents", { count: agentIds.length });
     await Promise.all(agentIds.map((id) => this.destroyAgent(id)));
     logger.info("All agents destroyed", { count: agentIds.length });

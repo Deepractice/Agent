@@ -25,7 +25,7 @@
  */
 
 import type { AgentError } from "~/error";
-import type { ErrorEvent } from "~/event/error";
+import type { ErrorEvent } from "~/agent/event/error";
 import type { Unsubscribe } from "~/agent/AgentEventHandler";
 
 /**

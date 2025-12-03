@@ -9,8 +9,13 @@
  * - Error: Independent error events (transportable via SSE)
  */
 
-import type { StreamEventType, StateEventType, MessageEventType, TurnEventType } from "~/event";
-import type { ErrorEvent } from "~/event/error";
+import type {
+  StreamEventType,
+  StateEventType,
+  MessageEventType,
+  TurnEventType,
+} from "~/agent/event";
+import type { ErrorEvent } from "~/agent/event/error";
 
 /**
  * All possible output types from Agent

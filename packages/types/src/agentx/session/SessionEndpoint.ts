@@ -3,7 +3,7 @@
  */
 
 import type { Endpoint } from "~/agentx/Endpoint";
-import type { Session } from "~/session/Session";
+import type { Session } from "~/environment/session/Session";
 
 // ============================================================================
 // Response Types

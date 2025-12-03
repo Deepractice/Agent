@@ -27,7 +27,7 @@
  * ```
  */
 
-import type { AgentDefinition } from "~/definition";
+import type { AgentDefinition } from "~/environment/definition";
 import type { ImageMessage } from "./AgentImage";
 
 /**

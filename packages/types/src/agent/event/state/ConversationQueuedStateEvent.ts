@@ -12,7 +12,7 @@
  */
 
 import type { StateEvent } from "./StateEvent";
-import type { UserMessage } from "~/message";
+import type { UserMessage } from "~/agent/message";
 
 export interface ConversationQueuedStateEvent extends StateEvent {
   type: "conversation_queued";

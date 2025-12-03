@@ -8,7 +8,7 @@
  */
 
 import type { TurnEvent } from "./TurnEvent";
-import type { AssistantMessage } from "~/message";
+import type { AssistantMessage } from "~/agent/message";
 
 export interface TurnResponseEvent extends TurnEvent {
   type: "turn_response";

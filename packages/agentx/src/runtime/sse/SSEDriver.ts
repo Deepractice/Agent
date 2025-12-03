@@ -42,6 +42,7 @@ class PersistentSSEConnection {
     reject: (error: Error) => void;
   }> = new Set();
   private isDone = false;
+  private connectPromise: Promise<void> | null = null;
 
   constructor(
     private readonly serverUrl: string,
@@ -51,65 +52,80 @@ class PersistentSSEConnection {
 
   /**
    * Initialize SSE connection
+   * Returns a Promise that resolves when the connection is established
    */
-  connect(): void {
-    if (this.eventSource) {
-      return; // Already connected
+  connect(): Promise<void> {
+    // Return existing promise if already connecting/connected
+    if (this.connectPromise) {
+      return this.connectPromise;
     }
 
-    // Build SSE URL with optional query parameters (for auth, etc.)
-    let sseUrl = `${this.serverUrl}/agents/${this.agentId}/sse`;
-    if (Object.keys(this.sseParams).length > 0) {
-      const params = new URLSearchParams(this.sseParams);
-      sseUrl += `?${params.toString()}`;
-    }
-    this.eventSource = new EventSource(sseUrl);
+    this.connectPromise = new Promise((resolve, reject) => {
+      // Build SSE URL with optional query parameters (for auth, etc.)
+      let sseUrl = `${this.serverUrl}/agents/${this.agentId}/sse`;
+      if (Object.keys(this.sseParams).length > 0) {
+        const params = new URLSearchParams(this.sseParams);
+        sseUrl += `?${params.toString()}`;
+      }
+      this.eventSource = new EventSource(sseUrl);
 
-    const handleEvent = (event: MessageEvent) => {
-      try {
-        const data = JSON.parse(event.data) as StreamEventType;
+      const handleEvent = (event: MessageEvent) => {
+        try {
+          const data = JSON.parse(event.data) as StreamEventType;
 
-        // Notify all active iterators
-        if (this.activeIterators.size > 0) {
-          const iterator = this.activeIterators.values().next().value;
-          if (iterator) {
-            this.activeIterators.delete(iterator);
-            iterator.resolve({ value: data, done: false });
+          // Notify all active iterators
+          if (this.activeIterators.size > 0) {
+            const iterator = this.activeIterators.values().next().value;
+            if (iterator) {
+              this.activeIterators.delete(iterator);
+              iterator.resolve({ value: data, done: false });
+            }
+          } else {
+            // Queue event if no iterator is waiting
+            this.messageQueue.push(data);
           }
-        } else {
-          // Queue event if no iterator is waiting
-          this.messageQueue.push(data);
+        } catch {
+          // Ignore parse errors
         }
-      } catch {
-        // Ignore parse errors
+      };
+
+      const handleError = () => {
+        this.isDone = true;
+        this.eventSource?.close();
+        this.eventSource = null;
+        this.connectPromise = null;
+
+        // Reject all waiting iterators
+        for (const iterator of this.activeIterators) {
+          iterator.reject(new Error("SSE connection error"));
+        }
+        this.activeIterators.clear();
+
+        // Reject the connect promise if not yet resolved
+        reject(new Error("SSE connection error"));
+      };
+
+      // Handle connection open - resolve the promise
+      this.eventSource.onopen = () => {
+        resolve();
+      };
+
+      // Listen for all stream event types
+      for (const eventType of STREAM_EVENT_TYPE_NAMES) {
+        this.eventSource.addEventListener(eventType, handleEvent as any);
       }
-    };
 
-    const handleError = () => {
-      this.isDone = true;
-      this.eventSource?.close();
-      this.eventSource = null;
+      // Listen for error events (independent from stream events, transportable via SSE)
+      this.eventSource.addEventListener("error", handleEvent as any);
 
-      // Reject all waiting iterators
-      for (const iterator of this.activeIterators) {
-        iterator.reject(new Error("SSE connection error"));
-      }
-      this.activeIterators.clear();
-    };
+      // Also listen for generic message events (fallback)
+      this.eventSource.onmessage = handleEvent;
 
-    // Listen for all stream event types
-    for (const eventType of STREAM_EVENT_TYPE_NAMES) {
-      this.eventSource.addEventListener(eventType, handleEvent as any);
-    }
+      // Handle SSE connection errors (different from our ErrorEvent)
+      this.eventSource.onerror = handleError;
+    });
 
-    // Listen for error events (independent from stream events, transportable via SSE)
-    this.eventSource.addEventListener("error", handleEvent as any);
-
-    // Also listen for generic message events (fallback)
-    this.eventSource.onmessage = handleEvent;
-
-    // Handle SSE connection errors (different from our ErrorEvent)
-    this.eventSource.onerror = handleError;
+    return this.connectPromise;
   }
 
   /**
@@ -231,11 +247,11 @@ export function createSSEDriver(config: SSEDriverConfig): AgentDriver {
     name: "SSEDriver",
 
     async *receive(message: UserMessage): AsyncIterable<StreamEventType> {
-      // 1. Ensure SSE connection is established
+      // 1. Ensure SSE connection is established and wait for it to open
       if (!connection) {
         connection = new PersistentSSEConnection(serverUrl, agentId, sseParams);
-        connection.connect();
       }
+      await connection.connect(); // Wait for connection to be ready
 
       // 2. Send message to server via HTTP POST
       const messageUrl = `${serverUrl}/agents/${agentId}/messages`;

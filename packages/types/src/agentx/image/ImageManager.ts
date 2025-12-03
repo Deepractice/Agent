@@ -28,7 +28,7 @@
  */
 
 import type { Agent } from "~/agent/Agent";
-import type { AgentImage, MetaImage } from "~/image";
+import type { AgentImage, MetaImage } from "~/environment/image";
 
 /**
  * ImageManager - Registry for agent images

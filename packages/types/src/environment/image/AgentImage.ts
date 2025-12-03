@@ -32,10 +32,10 @@
  * ```
  */
 
-import type { UserMessage } from "~/message/UserMessage";
-import type { AssistantMessage } from "~/message/AssistantMessage";
-import type { ToolCallMessage } from "~/message/ToolCallMessage";
-import type { ToolResultMessage } from "~/message/ToolResultMessage";
+import type { UserMessage } from "~/agent/message/UserMessage";
+import type { AssistantMessage } from "~/agent/message/AssistantMessage";
+import type { ToolCallMessage } from "~/agent/message/ToolCallMessage";
+import type { ToolResultMessage } from "~/agent/message/ToolResultMessage";
 import type { MetaImage } from "./MetaImage";
 import type { DerivedImage } from "./DerivedImage";
 

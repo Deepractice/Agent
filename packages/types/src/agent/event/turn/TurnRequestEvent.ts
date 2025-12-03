@@ -8,7 +8,7 @@
  */
 
 import type { TurnEvent } from "./TurnEvent";
-import type { UserMessage } from "~/message";
+import type { UserMessage } from "~/agent/message";
 
 export interface TurnRequestEvent extends TurnEvent {
   type: "turn_request";

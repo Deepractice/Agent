@@ -5,11 +5,11 @@
  */
 
 import type { AgentOutput } from "~/agent/AgentOutput";
-import type { StateEventType } from "~/event/state";
-import type { StreamEventType } from "~/event/stream";
-import type { MessageEventType } from "~/event/message";
-import type { TurnEventType } from "~/event/turn";
-import type { ErrorEvent } from "~/event/error";
+import type { StateEventType } from "~/agent/event/state";
+import type { StreamEventType } from "~/agent/event/stream";
+import type { MessageEventType } from "~/agent/event/message";
+import type { TurnEventType } from "~/agent/event/turn";
+import type { ErrorEvent } from "~/agent/event/error";
 
 /**
  * State event type names (single source of truth)

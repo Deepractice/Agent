@@ -5,7 +5,7 @@
  * Content is stored as JSON to accommodate different message types.
  */
 
-import type { MessageRole } from "~/message/MessageRole";
+import type { MessageRole } from "~/agent/message/MessageRole";
 
 /**
  * Message storage record

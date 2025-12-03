@@ -87,11 +87,11 @@ export {
   type AgentEventHandler,
   type AgentEventType,
   type Unsubscribe,
-  type AgentContainer,
+  type Container,
   type AgentOutput,
   // Classes (implementations)
   AgentInstance,
-  MemoryAgentContainer,
+  MemoryContainer,
   // Functions
   generateAgentId,
   createAgentContext,

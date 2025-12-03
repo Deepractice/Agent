@@ -60,13 +60,13 @@
 export type { AgentState } from "./agent/AgentState";
 
 // User types
-export * from "./user";
+export * from "./environment/user";
 
 // Definition types (Docker-style: source template, like Dockerfile)
-export * from "./definition";
+export * from "./environment/definition";
 
 // Image types (Docker-style: built artifact, like Docker Image)
-export * from "./image";
+export * from "./environment/image";
 
 // ============================================================================
 // Business Logic Layer (Platform API)
@@ -101,10 +101,10 @@ export * from "./common";
 export * from "./error";
 
 // Message types
-export * from "./message";
+export * from "./agent/message";
 
 // Event types (4-layer: Stream → State → Message → Turn)
-export * from "./event";
+export * from "./agent/event";
 
 // LLM types
 export * from "./llm";
@@ -113,7 +113,10 @@ export * from "./llm";
 export * from "./mcp";
 
 // Session types
-export * from "./session";
+export * from "./environment/session";
+
+// Container types
+export * from "./environment/container";
 
 // Type guards
 export * from "./guards";

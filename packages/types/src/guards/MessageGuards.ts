@@ -1,9 +1,9 @@
-import type { Message } from "~/message/Message";
-import type { UserMessage } from "~/message/UserMessage";
-import type { AssistantMessage } from "~/message/AssistantMessage";
-import type { SystemMessage } from "~/message/SystemMessage";
-import type { ToolCallMessage } from "~/message/ToolCallMessage";
-import type { ToolResultMessage } from "~/message/ToolResultMessage";
+import type { Message } from "~/agent/message/Message";
+import type { UserMessage } from "~/agent/message/UserMessage";
+import type { AssistantMessage } from "~/agent/message/AssistantMessage";
+import type { SystemMessage } from "~/agent/message/SystemMessage";
+import type { ToolCallMessage } from "~/agent/message/ToolCallMessage";
+import type { ToolResultMessage } from "~/agent/message/ToolResultMessage";
 
 /**
  * Type guard for UserMessage

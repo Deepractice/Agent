@@ -1,4 +1,4 @@
-import type { Message } from "~/message/Message";
+import type { Message } from "~/agent/message/Message";
 import type { LLMConfig } from "./LLMConfig";
 
 /**

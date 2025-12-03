@@ -1,4 +1,4 @@
-import type { ContentPart } from "~/message/parts/ContentPart";
+import type { ContentPart } from "~/agent/message/parts/ContentPart";
 import type { TokenUsage } from "./TokenUsage";
 import type { StopReason } from "./StopReason";
 

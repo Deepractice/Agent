@@ -12,7 +12,7 @@
  */
 
 import type { AgentEvent } from "../base/AgentEvent";
-import type { UserMessage } from "~/message";
+import type { UserMessage } from "~/agent/message";
 
 export interface UserMessageEvent extends AgentEvent {
   type: "user_message";

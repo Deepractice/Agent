@@ -33,8 +33,8 @@
  * ```
  */
 
-import type { StreamEventType } from "~/event";
-import type { UserMessage } from "~/message";
+import type { StreamEventType } from "~/agent/event";
+import type { UserMessage } from "~/agent/message";
 
 /**
  * AgentDriver interface

@@ -17,7 +17,7 @@
  * - destroy(): Clean up resources
  */
 
-import type { UserMessage } from "~/message";
+import type { UserMessage } from "~/agent/message";
 import type { AgentState } from "~/agent/AgentState";
 import type { Sandbox } from "~/runtime/container/sandbox";
 import type { AgentDefinition } from "./AgentDefinition";
@@ -40,7 +40,7 @@ import type {
   ToolUseContentBlockStopEvent,
   ToolCallEvent,
   ToolResultEvent,
-} from "~/event/stream";
+} from "~/agent/event/stream";
 
 // Message Layer Events
 import type {
@@ -48,13 +48,13 @@ import type {
   AssistantMessageEvent,
   ToolCallMessageEvent,
   ToolResultMessageEvent,
-} from "~/event/message";
+} from "~/agent/event/message";
 
 // Error Layer Events (independent, transportable via SSE)
-import type { ErrorEvent } from "~/event/error";
+import type { ErrorEvent } from "~/agent/event/error";
 
 // Turn Layer Events
-import type { TurnRequestEvent, TurnResponseEvent } from "~/event/turn";
+import type { TurnRequestEvent, TurnResponseEvent } from "~/agent/event/turn";
 
 /**
  * State change event payload

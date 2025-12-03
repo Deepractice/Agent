@@ -1,15 +1,15 @@
 /**
- * MemoryAgentContainer - In-memory implementation of AgentContainer
+ * MemoryContainer - In-memory implementation of Container
  *
- * Interface definition is in @agentxjs/types.
+ * Simple Map-based container for managing Agent instances at runtime.
  */
 
-import type { Agent, AgentContainer } from "@agentxjs/types";
+import type { Agent, Container } from "@agentxjs/types";
 
 /**
- * In-memory implementation of AgentContainer
+ * In-memory implementation of Container
  */
-export class MemoryAgentContainer implements AgentContainer {
+export class MemoryContainer implements Container {
   private readonly agents: Map<string, Agent> = new Map();
 
   register(agent: Agent): void {
@@ -28,7 +28,11 @@ export class MemoryAgentContainer implements AgentContainer {
     return this.agents.delete(agentId);
   }
 
-  getAllIds(): string[] {
+  list(): Agent[] {
+    return Array.from(this.agents.values());
+  }
+
+  listIds(): string[] {
     return Array.from(this.agents.keys());
   }
 
