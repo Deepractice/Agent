@@ -1,0 +1,45 @@
+{
+  "name": "@agentxjs/persistence",
+  "version": "0.1.0",
+  "description": "Local persistence implementation for AgentX - Multi-backend storage (SQLite, Redis, Memory)",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Deepractice/AgentX.git"
+  },
+  "homepage": "https://github.com/Deepractice/AgentX",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    }
+  },
+  "files": [
+    "dist"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "clean": "rm -rf dist",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "test": "vitest run",
+    "test:watch": "vitest"
+  },
+  "dependencies": {
+    "@agentxjs/common": "workspace:*",
+    "@agentxjs/types": "workspace:*",
+    "unstorage": "^1.14.4"
+  },
+  "devDependencies": {
+    "@types/node": "^24.9.2",
+    "tsup": "^8.3.5",
+    "typescript": "^5.7.2",
+    "vitest": "^3.2.4"
+  }
+}

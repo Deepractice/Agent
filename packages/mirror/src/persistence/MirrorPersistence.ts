@@ -1,7 +1,7 @@
 /**
- * MirrorPersistence - HTTP-based Persistence implementation
+ * MirrorPersistence - Network-based Persistence implementation
  *
- * Implements Persistence interface by making HTTP requests to the server.
+ * Implements Persistence interface using ApplicationClient from @agentxjs/network.
  * Used by browser clients to persist data via the AgentX server.
  *
  * @example
@@ -10,8 +10,8 @@
  *   baseUrl: "http://localhost:5200/api",
  * });
  *
- * await persistence.definitions.save(record);
- * const image = await persistence.images.findById(imageId);
+ * await persistence.definitions.saveDefinition(record);
+ * const image = await persistence.images.findImageById(imageId);
  * ```
  */
 
@@ -25,7 +25,9 @@ import type {
   ImageRecord,
   ContainerRecord,
   SessionRecord,
+  ApplicationClient,
 } from "@agentxjs/types";
+import { createApplicationClient } from "@agentxjs/network";
 import { createLogger } from "@agentxjs/common";
 
 const logger = createLogger("mirror/MirrorPersistence");
@@ -56,236 +58,158 @@ export interface MirrorPersistenceConfig {
 }
 
 /**
- * HTTP client helper
+ * Adapter: ApplicationClient.definitions -> DefinitionRepository
  */
-class HttpClient {
-  private readonly baseUrl: string;
-  private readonly headers: Record<string, string>;
-  private readonly timeout: number;
-
-  constructor(config: MirrorPersistenceConfig) {
-    this.baseUrl = config.baseUrl.replace(/\/$/, "");
-    this.timeout = config.timeout ?? 30000;
-
-    this.headers = {
-      "Content-Type": "application/json",
-      ...config.headers,
-    };
-
-    if (config.token) {
-      this.headers["Authorization"] = `Bearer ${config.token}`;
-    }
-  }
-
-  async request<T>(method: string, path: string, body?: unknown): Promise<T> {
-    const url = `${this.baseUrl}${path}`;
-    const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), this.timeout);
-
-    try {
-      const response = await fetch(url, {
-        method,
-        headers: this.headers,
-        body: body ? JSON.stringify(body) : undefined,
-        signal: controller.signal,
-      });
-
-      if (!response.ok) {
-        const error = await response.text();
-        throw new Error(`HTTP ${response.status}: ${error}`);
-      }
-
-      const text = await response.text();
-      if (!text) {
-        return undefined as T;
-      }
-
-      return JSON.parse(text) as T;
-    } finally {
-      clearTimeout(timeoutId);
-    }
-  }
-}
-
-/**
- * HTTP-based DefinitionRepository
- */
-class HttpDefinitionRepository implements DefinitionRepository {
-  constructor(private readonly http: HttpClient) {}
+class ClientDefinitionRepository implements DefinitionRepository {
+  constructor(private readonly client: ApplicationClient) {}
 
   async saveDefinition(record: DefinitionRecord): Promise<void> {
-    await this.http.request("PUT", `/definitions/${record.name}`, record);
+    await this.client.definitions.save(record);
     logger.debug("Definition saved", { name: record.name });
   }
 
   async findDefinitionByName(name: string): Promise<DefinitionRecord | null> {
     try {
-      return await this.http.request<DefinitionRecord>("GET", `/definitions/${name}`);
-    } catch (error) {
-      if ((error as Error).message.includes("404")) {
-        return null;
-      }
-      throw error;
+      return await this.client.definitions.get(name);
+    } catch {
+      return null;
     }
   }
 
   async findAllDefinitions(): Promise<DefinitionRecord[]> {
-    return await this.http.request<DefinitionRecord[]>("GET", "/definitions");
+    return await this.client.definitions.list();
   }
 
   async deleteDefinition(name: string): Promise<void> {
-    await this.http.request("DELETE", `/definitions/${name}`);
+    await this.client.definitions.delete(name);
     logger.debug("Definition deleted", { name });
   }
 
   async definitionExists(name: string): Promise<boolean> {
-    const record = await this.findDefinitionByName(name);
-    return record !== null;
+    return await this.client.definitions.exists(name);
   }
 }
 
 /**
- * HTTP-based ImageRepository
+ * Adapter: ApplicationClient.images -> ImageRepository
  */
-class HttpImageRepository implements ImageRepository {
-  constructor(private readonly http: HttpClient) {}
+class ClientImageRepository implements ImageRepository {
+  constructor(private readonly client: ApplicationClient) {}
 
   async saveImage(record: ImageRecord): Promise<void> {
-    await this.http.request("PUT", `/images/${record.imageId}`, record);
+    await this.client.images.save(record);
     logger.debug("Image saved", { imageId: record.imageId });
   }
 
   async findImageById(imageId: string): Promise<ImageRecord | null> {
     try {
-      return await this.http.request<ImageRecord>("GET", `/images/${imageId}`);
-    } catch (error) {
-      if ((error as Error).message.includes("404")) {
-        return null;
-      }
-      throw error;
+      return await this.client.images.get(imageId);
+    } catch {
+      return null;
     }
   }
 
   async findAllImages(): Promise<ImageRecord[]> {
-    return await this.http.request<ImageRecord[]>("GET", "/images");
+    return await this.client.images.list();
   }
 
   async findImagesByDefinitionName(definitionName: string): Promise<ImageRecord[]> {
-    return await this.http.request<ImageRecord[]>(
-      "GET",
-      `/images?definitionName=${encodeURIComponent(definitionName)}`
-    );
+    return await this.client.images.listByDefinition(definitionName);
   }
 
   async deleteImage(imageId: string): Promise<void> {
-    await this.http.request("DELETE", `/images/${imageId}`);
+    await this.client.images.delete(imageId);
     logger.debug("Image deleted", { imageId });
   }
 
   async imageExists(imageId: string): Promise<boolean> {
-    const record = await this.findImageById(imageId);
-    return record !== null;
+    return await this.client.images.exists(imageId);
   }
 }
 
 /**
- * HTTP-based ContainerRepository
+ * Adapter: ApplicationClient.containers -> ContainerRepository
  */
-class HttpContainerRepository implements ContainerRepository {
-  constructor(private readonly http: HttpClient) {}
+class ClientContainerRepository implements ContainerRepository {
+  constructor(private readonly client: ApplicationClient) {}
 
   async saveContainer(record: ContainerRecord): Promise<void> {
-    await this.http.request("PUT", `/containers/${record.containerId}`, record);
+    await this.client.containers.save(record);
     logger.debug("Container saved", { containerId: record.containerId });
   }
 
   async findContainerById(containerId: string): Promise<ContainerRecord | null> {
     try {
-      return await this.http.request<ContainerRecord>("GET", `/containers/${containerId}`);
-    } catch (error) {
-      if ((error as Error).message.includes("404")) {
-        return null;
-      }
-      throw error;
+      return await this.client.containers.get(containerId);
+    } catch {
+      return null;
     }
   }
 
   async findAllContainers(): Promise<ContainerRecord[]> {
-    return await this.http.request<ContainerRecord[]>("GET", "/containers");
+    return await this.client.containers.list();
   }
 
   async deleteContainer(containerId: string): Promise<void> {
-    await this.http.request("DELETE", `/containers/${containerId}`);
+    await this.client.containers.delete(containerId);
     logger.debug("Container deleted", { containerId });
   }
 
   async containerExists(containerId: string): Promise<boolean> {
-    const record = await this.findContainerById(containerId);
-    return record !== null;
+    return await this.client.containers.exists(containerId);
   }
 }
 
 /**
- * HTTP-based SessionRepository
+ * Adapter: ApplicationClient.sessions -> SessionRepository
  */
-class HttpSessionRepository implements SessionRepository {
-  constructor(private readonly http: HttpClient) {}
+class ClientSessionRepository implements SessionRepository {
+  constructor(private readonly client: ApplicationClient) {}
 
   async saveSession(record: SessionRecord): Promise<void> {
-    await this.http.request("PUT", `/sessions/${record.sessionId}`, record);
+    await this.client.sessions.save(record);
     logger.debug("Session saved", { sessionId: record.sessionId });
   }
 
   async findSessionById(sessionId: string): Promise<SessionRecord | null> {
     try {
-      return await this.http.request<SessionRecord>("GET", `/sessions/${sessionId}`);
-    } catch (error) {
-      if ((error as Error).message.includes("404")) {
-        return null;
-      }
-      throw error;
+      return await this.client.sessions.get(sessionId);
+    } catch {
+      return null;
     }
   }
 
   async findSessionsByImageId(imageId: string): Promise<SessionRecord[]> {
-    return await this.http.request<SessionRecord[]>(
-      "GET",
-      `/sessions?imageId=${encodeURIComponent(imageId)}`
-    );
+    return await this.client.images.listSessions(imageId);
   }
 
   async findSessionsByContainerId(containerId: string): Promise<SessionRecord[]> {
-    return await this.http.request<SessionRecord[]>(
-      "GET",
-      `/sessions?containerId=${encodeURIComponent(containerId)}`
-    );
+    return await this.client.sessions.listByContainer(containerId);
   }
 
   async findAllSessions(): Promise<SessionRecord[]> {
-    return await this.http.request<SessionRecord[]>("GET", "/sessions");
+    return await this.client.sessions.list();
   }
 
   async deleteSession(sessionId: string): Promise<void> {
-    await this.http.request("DELETE", `/sessions/${sessionId}`);
+    await this.client.sessions.delete(sessionId);
     logger.debug("Session deleted", { sessionId });
   }
 
   async deleteSessionsByImageId(imageId: string): Promise<void> {
-    await this.http.request(
-      "DELETE",
-      `/sessions?imageId=${encodeURIComponent(imageId)}`
-    );
+    await this.client.images.deleteSessions(imageId);
     logger.debug("Sessions deleted by imageId", { imageId });
   }
 
   async sessionExists(sessionId: string): Promise<boolean> {
-    const record = await this.findSessionById(sessionId);
-    return record !== null;
+    return await this.client.sessions.exists(sessionId);
   }
 }
 
 /**
- * MirrorPersistence - HTTP-based Persistence implementation
+ * MirrorPersistence - Network-based Persistence implementation
+ *
+ * Uses ApplicationClient from @agentxjs/network for all HTTP communication.
  */
 export class MirrorPersistence implements Persistence {
   readonly definitions: DefinitionRepository;
@@ -294,12 +218,24 @@ export class MirrorPersistence implements Persistence {
   readonly sessions: SessionRepository;
 
   constructor(config: MirrorPersistenceConfig) {
-    const http = new HttpClient(config);
+    // Build headers with auth token
+    const headers: Record<string, string> = { ...config.headers };
+    if (config.token) {
+      headers["Authorization"] = `Bearer ${config.token}`;
+    }
 
-    this.definitions = new HttpDefinitionRepository(http);
-    this.images = new HttpImageRepository(http);
-    this.containers = new HttpContainerRepository(http);
-    this.sessions = new HttpSessionRepository(http);
+    // Create ApplicationClient from network package
+    const client = createApplicationClient({
+      baseUrl: config.baseUrl,
+      headers,
+      timeout: config.timeout,
+    });
+
+    // Create repository adapters
+    this.definitions = new ClientDefinitionRepository(client);
+    this.images = new ClientImageRepository(client);
+    this.containers = new ClientContainerRepository(client);
+    this.sessions = new ClientSessionRepository(client);
 
     logger.debug("MirrorPersistence created", { baseUrl: config.baseUrl });
   }

@@ -154,6 +154,11 @@ export interface ApplicationClient {
      * Delete all sessions for image
      */
     deleteSessions(imageId: string): Promise<void>;
+
+    /**
+     * List images by definition name
+     */
+    listByDefinition(definitionName: string): Promise<ImageRecord[]>;
   };
 
   /**
@@ -204,6 +209,11 @@ export interface ApplicationClient {
      * Count messages for session
      */
     countMessages(sessionId: string): Promise<number>;
+
+    /**
+     * List sessions by container ID
+     */
+    listByContainer(containerId: string): Promise<SessionRecord[]>;
   };
 
   /**

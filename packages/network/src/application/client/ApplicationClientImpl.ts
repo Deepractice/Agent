@@ -218,6 +218,13 @@ class ApplicationClientImpl implements ApplicationClient {
         `/images/${encodeURIComponent(imageId)}/sessions`
       );
     },
+
+    listByDefinition: async (definitionName: string): Promise<ImageRecord[]> => {
+      return this.request<ImageRecord[]>(
+        "GET",
+        `/images?definitionName=${encodeURIComponent(definitionName)}`
+      );
+    },
   };
 
   // ============================================================================
@@ -280,6 +287,13 @@ class ApplicationClientImpl implements ApplicationClient {
         `/sessions/${encodeURIComponent(sessionId)}/messages/count`
       );
       return result.count;
+    },
+
+    listByContainer: async (containerId: string): Promise<SessionRecord[]> => {
+      return this.request<SessionRecord[]>(
+        "GET",
+        `/sessions?containerId=${encodeURIComponent(containerId)}`
+      );
     },
   };
 
