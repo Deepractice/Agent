@@ -7,10 +7,8 @@ import {
   Image,
   Smile,
   AtSign,
-  Hash,
-  Bold,
-  Italic,
-  Code,
+  Scissors,
+  FolderOpen,
 } from "lucide-react";
 
 const meta: Meta<typeof InputPane> = {
@@ -21,7 +19,7 @@ const meta: Meta<typeof InputPane> = {
     docs: {
       description: {
         component:
-          "Input area with optional toolbar for chat interfaces. Pure UI component with send/stop functionality.",
+          "WeChat-style full-height input area. The entire pane is an input zone with toolbar at top and send button at bottom right.",
       },
     },
   },
@@ -48,6 +46,13 @@ const meta: Meta<typeof InputPane> = {
 export default meta;
 type Story = StoryObj<typeof InputPane>;
 
+// WeChat-style toolbar items
+const wechatToolbarItems = [
+  { id: "emoji", icon: <Smile className="w-4 h-4" />, label: "Emoji" },
+  { id: "capture", icon: <Scissors className="w-4 h-4" />, label: "Screenshot" },
+  { id: "folder", icon: <FolderOpen className="w-4 h-4" />, label: "File" },
+];
+
 // Common toolbar items
 const commonToolbarItems = [
   { id: "attach", icon: <Paperclip className="w-4 h-4" />, label: "Attach file" },
@@ -55,20 +60,13 @@ const commonToolbarItems = [
   { id: "emoji", icon: <Smile className="w-4 h-4" />, label: "Add emoji" },
 ];
 
-const formattingItems = [
-  { id: "bold", icon: <Bold className="w-4 h-4" />, label: "Bold" },
-  { id: "italic", icon: <Italic className="w-4 h-4" />, label: "Italic" },
-  { id: "code", icon: <Code className="w-4 h-4" />, label: "Code" },
-];
-
 const mentionItems = [
   { id: "mention", icon: <AtSign className="w-4 h-4" />, label: "Mention" },
-  { id: "channel", icon: <Hash className="w-4 h-4" />, label: "Channel" },
 ];
 
 export const Default: Story = {
   render: () => (
-    <div className="w-full max-w-2xl border border-border rounded-lg overflow-hidden">
+    <div className="w-full max-w-2xl h-40 border border-border rounded-lg overflow-hidden">
       <InputPane
         onSend={(text) => console.log("Send:", text)}
         placeholder="Type a message..."
@@ -77,22 +75,29 @@ export const Default: Story = {
   ),
 };
 
-export const WithToolbar: Story = {
+export const WeChatStyle: Story = {
   render: () => (
-    <div className="w-full max-w-2xl border border-border rounded-lg overflow-hidden">
+    <div className="w-full max-w-2xl h-40 border border-border rounded-lg overflow-hidden">
       <InputPane
         onSend={(text) => console.log("Send:", text)}
         placeholder="Type a message..."
-        toolbarItems={commonToolbarItems}
+        toolbarItems={wechatToolbarItems}
         onToolbarItemClick={(id) => console.log("Toolbar click:", id)}
       />
     </div>
   ),
+  parameters: {
+    docs: {
+      description: {
+        story: "WeChat-style input with emoji, screenshot, and file buttons",
+      },
+    },
+  },
 };
 
-export const WithLeftAndRightToolbar: Story = {
+export const WithToolbar: Story = {
   render: () => (
-    <div className="w-full max-w-2xl border border-border rounded-lg overflow-hidden">
+    <div className="w-full max-w-2xl h-40 border border-border rounded-lg overflow-hidden">
       <InputPane
         onSend={(text) => console.log("Send:", text)}
         placeholder="Type a message..."
@@ -106,12 +111,12 @@ export const WithLeftAndRightToolbar: Story = {
 
 export const Loading: Story = {
   render: () => (
-    <div className="w-full max-w-2xl border border-border rounded-lg overflow-hidden">
+    <div className="w-full max-w-2xl h-40 border border-border rounded-lg overflow-hidden">
       <InputPane
         onSend={(text) => console.log("Send:", text)}
         onStop={() => console.log("Stop clicked")}
         placeholder="Type a message..."
-        toolbarItems={commonToolbarItems}
+        toolbarItems={wechatToolbarItems}
         isLoading
       />
     </div>
@@ -127,12 +132,43 @@ export const Loading: Story = {
 
 export const Disabled: Story = {
   render: () => (
-    <div className="w-full max-w-2xl border border-border rounded-lg overflow-hidden">
+    <div className="w-full max-w-2xl h-40 border border-border rounded-lg overflow-hidden">
       <InputPane
         onSend={(text) => console.log("Send:", text)}
         placeholder="Input disabled..."
-        toolbarItems={commonToolbarItems}
+        toolbarItems={wechatToolbarItems}
         disabled
+      />
+    </div>
+  ),
+};
+
+export const TallInput: Story = {
+  render: () => (
+    <div className="w-full max-w-2xl h-64 border border-border rounded-lg overflow-hidden">
+      <InputPane
+        onSend={(text) => console.log("Send:", text)}
+        placeholder="This is a taller input area for longer messages..."
+        toolbarItems={wechatToolbarItems}
+        onToolbarItemClick={(id) => console.log("Toolbar click:", id)}
+      />
+    </div>
+  ),
+  parameters: {
+    docs: {
+      description: {
+        story: "InputPane fills the container height - just make the container taller",
+      },
+    },
+  },
+};
+
+export const NoToolbar: Story = {
+  render: () => (
+    <div className="w-full max-w-2xl h-32 border border-border rounded-lg overflow-hidden">
+      <InputPane
+        onSend={(text) => console.log("Send:", text)}
+        placeholder="Simple input without toolbar..."
       />
     </div>
   ),
@@ -146,20 +182,13 @@ export const Interactive: Story = {
     const handleSend = (text: string) => {
       setMessages((prev) => [...prev, text]);
       setIsLoading(true);
-      // Simulate response
-      setTimeout(() => {
-        setIsLoading(false);
-      }, 2000);
-    };
-
-    const handleStop = () => {
-      setIsLoading(false);
+      setTimeout(() => setIsLoading(false), 2000);
     };
 
     return (
       <div className="w-full max-w-2xl border border-border rounded-lg overflow-hidden">
         {/* Messages display */}
-        <div className="h-48 overflow-y-auto p-4 bg-muted/20">
+        <div className="h-48 overflow-y-auto p-4 bg-background">
           {messages.length === 0 ? (
             <p className="text-sm text-muted-foreground text-center">
               No messages yet. Type something below!
@@ -184,15 +213,17 @@ export const Interactive: Story = {
           )}
         </div>
 
-        {/* Input */}
-        <InputPane
-          onSend={handleSend}
-          onStop={handleStop}
-          isLoading={isLoading}
-          placeholder="Type a message..."
-          toolbarItems={commonToolbarItems}
-          onToolbarItemClick={(id) => console.log("Toolbar click:", id)}
-        />
+        {/* Input - WeChat style */}
+        <div className="h-36">
+          <InputPane
+            onSend={handleSend}
+            onStop={() => setIsLoading(false)}
+            isLoading={isLoading}
+            placeholder="Type a message..."
+            toolbarItems={wechatToolbarItems}
+            onToolbarItemClick={(id) => console.log("Toolbar click:", id)}
+          />
+        </div>
       </div>
     );
   },
@@ -205,63 +236,12 @@ export const Interactive: Story = {
   },
 };
 
-export const CustomHeight: Story = {
-  render: () => (
-    <div className="w-full max-w-2xl border border-border rounded-lg overflow-hidden">
-      <InputPane
-        onSend={(text) => console.log("Send:", text)}
-        placeholder="This input has custom min/max height..."
-        minHeight={100}
-        maxHeight={300}
-      />
-    </div>
-  ),
-  parameters: {
-    docs: {
-      description: {
-        story: "Input with custom minimum and maximum heights",
-      },
-    },
-  },
-};
-
-export const WithActiveToolbarItem: Story = {
-  render: () => {
-    const [activeItem, setActiveItem] = React.useState<string | null>("bold");
-
-    const toggleItems = formattingItems.map((item) => ({
-      ...item,
-      active: item.id === activeItem,
-    }));
-
-    return (
-      <div className="w-full max-w-2xl border border-border rounded-lg overflow-hidden">
-        <InputPane
-          onSend={(text) => console.log("Send:", text)}
-          placeholder="Type a message..."
-          toolbarItems={toggleItems}
-          onToolbarItemClick={(id) => {
-            setActiveItem(activeItem === id ? null : id);
-          }}
-        />
-      </div>
-    );
-  },
-  parameters: {
-    docs: {
-      description: {
-        story: "Toolbar items can show active/toggled state",
-      },
-    },
-  },
-};
-
 // InputToolBar standalone story
 export const ToolBarOnly: Story = {
   render: () => (
-    <div className="w-full max-w-2xl border border-border rounded-lg p-2">
+    <div className="w-full max-w-2xl border border-border rounded-lg p-2 bg-muted/30">
       <InputToolBar
-        items={commonToolbarItems}
+        items={wechatToolbarItems}
         rightItems={mentionItems}
         onItemClick={(id) => console.log("Click:", id)}
       />
@@ -279,26 +259,26 @@ export const ToolBarOnly: Story = {
 export const ToolBarSizes: Story = {
   render: () => (
     <div className="w-full max-w-2xl space-y-4">
-      <div className="border border-border rounded-lg p-2">
+      <div className="border border-border rounded-lg p-2 bg-muted/30">
         <p className="text-xs text-muted-foreground mb-2">Size: xs</p>
         <InputToolBar
-          items={commonToolbarItems}
+          items={wechatToolbarItems}
           onItemClick={(id) => console.log("Click:", id)}
           size="xs"
         />
       </div>
-      <div className="border border-border rounded-lg p-2">
+      <div className="border border-border rounded-lg p-2 bg-muted/30">
         <p className="text-xs text-muted-foreground mb-2">Size: sm (default)</p>
         <InputToolBar
-          items={commonToolbarItems}
+          items={wechatToolbarItems}
           onItemClick={(id) => console.log("Click:", id)}
           size="sm"
         />
       </div>
-      <div className="border border-border rounded-lg p-2">
+      <div className="border border-border rounded-lg p-2 bg-muted/30">
         <p className="text-xs text-muted-foreground mb-2">Size: md</p>
         <InputToolBar
-          items={commonToolbarItems}
+          items={wechatToolbarItems}
           onItemClick={(id) => console.log("Click:", id)}
           size="md"
         />

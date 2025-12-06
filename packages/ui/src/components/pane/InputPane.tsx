@@ -1,11 +1,10 @@
 /**
- * InputPane - Input area with optional toolbar
+ * InputPane - Full-height input area (WeChat style)
  *
- * A pure UI component for text input with:
- * - Multi-line textarea
- * - Optional toolbar for actions
- * - Send button
- * - Loading/disabled states
+ * A pure UI component where the entire pane is an input area:
+ * - Toolbar at the top
+ * - Full-height textarea filling the space
+ * - Send button at bottom right corner
  *
  * @example
  * ```tsx
@@ -13,6 +12,7 @@
  *   onSend={(text) => handleSend(text)}
  *   placeholder="Type a message..."
  *   toolbarItems={[
+ *     { id: 'emoji', icon: <Smile />, label: 'Emoji' },
  *     { id: 'attach', icon: <Paperclip />, label: 'Attach' },
  *   ]}
  * />
@@ -63,23 +63,13 @@ export interface InputPaneProps {
    */
   showToolbar?: boolean;
   /**
-   * Minimum height of textarea
-   * @default 60
-   */
-  minHeight?: number;
-  /**
-   * Maximum height of textarea (auto-grows up to this)
-   * @default 200
-   */
-  maxHeight?: number;
-  /**
    * Additional class name
    */
   className?: string;
 }
 
 /**
- * InputPane component
+ * InputPane component - WeChat style full-height input
  */
 export const InputPane = React.forwardRef<HTMLDivElement, InputPaneProps>(
   (
@@ -93,8 +83,6 @@ export const InputPane = React.forwardRef<HTMLDivElement, InputPaneProps>(
       toolbarRightItems,
       onToolbarItemClick,
       showToolbar,
-      minHeight = 60,
-      maxHeight = 200,
       className,
     },
     ref
@@ -102,26 +90,10 @@ export const InputPane = React.forwardRef<HTMLDivElement, InputPaneProps>(
     const [text, setText] = React.useState("");
     const textareaRef = React.useRef<HTMLTextAreaElement>(null);
 
-    // Auto-resize textarea
-    React.useEffect(() => {
-      const textarea = textareaRef.current;
-      if (!textarea) return;
-
-      // Reset height to recalculate
-      textarea.style.height = "auto";
-      const scrollHeight = textarea.scrollHeight;
-      textarea.style.height = `${Math.min(Math.max(scrollHeight, minHeight), maxHeight)}px`;
-    }, [text, minHeight, maxHeight]);
-
     const handleSend = () => {
       if (!text.trim() || disabled || isLoading) return;
       onSend?.(text.trim());
       setText("");
-
-      // Reset textarea height
-      if (textareaRef.current) {
-        textareaRef.current.style.height = `${minHeight}px`;
-      }
     };
 
     const handleKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
@@ -141,22 +113,22 @@ export const InputPane = React.forwardRef<HTMLDivElement, InputPaneProps>(
       <div
         ref={ref}
         className={cn(
-          "flex flex-col border-t border-border bg-background",
+          "flex flex-col h-full border-t border-border bg-muted/30",
           className
         )}
       >
-        {/* Toolbar */}
+        {/* Toolbar at top */}
         {shouldShowToolbar && (
           <InputToolBar
             items={toolbarItems || []}
             rightItems={toolbarRightItems}
             onItemClick={onToolbarItemClick}
-            className="border-b border-border"
+            className="flex-shrink-0 border-b border-border"
           />
         )}
 
-        {/* Input area */}
-        <div className="flex items-end gap-2 p-3">
+        {/* Full-height textarea area */}
+        <div className="flex-1 relative min-h-0">
           <textarea
             ref={textareaRef}
             value={text}
@@ -165,49 +137,49 @@ export const InputPane = React.forwardRef<HTMLDivElement, InputPaneProps>(
             placeholder={placeholder}
             disabled={disabled}
             className={cn(
-              "flex-1 resize-none rounded-lg border border-input bg-background",
-              "px-3 py-2 text-sm",
+              "w-full h-full resize-none bg-transparent",
+              "px-3 py-3 pr-14 text-sm",
               "placeholder:text-muted-foreground",
-              "focus:outline-none focus:ring-2 focus:ring-ring focus:ring-offset-0",
+              "focus:outline-none",
               "disabled:opacity-50 disabled:cursor-not-allowed",
               "overflow-y-auto"
             )}
-            style={{
-              minHeight: `${minHeight}px`,
-              maxHeight: `${maxHeight}px`,
-            }}
           />
 
-          {/* Send/Stop button */}
-          {isLoading && onStop ? (
-            <button
-              type="button"
-              onClick={onStop}
-              className={cn(
-                "flex-shrink-0 p-2 rounded-lg transition-colors",
-                "bg-destructive text-destructive-foreground",
-                "hover:bg-destructive/90"
-              )}
-              title="Stop"
-            >
-              <Square className="w-5 h-5" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              onClick={handleSend}
-              disabled={!canSend}
-              className={cn(
-                "flex-shrink-0 p-2 rounded-lg transition-colors",
-                "bg-primary text-primary-foreground",
-                "hover:bg-primary/90",
-                "disabled:opacity-50 disabled:cursor-not-allowed"
-              )}
-              title="Send (Enter)"
-            >
-              <Send className="w-5 h-5" />
-            </button>
-          )}
+          {/* Send/Stop button at bottom right */}
+          <div className="absolute bottom-3 right-3">
+            {isLoading && onStop ? (
+              <button
+                type="button"
+                onClick={onStop}
+                className={cn(
+                  "p-2 rounded-lg transition-all duration-150",
+                  "bg-destructive text-destructive-foreground",
+                  "hover:bg-destructive/90",
+                  "active:scale-95"
+                )}
+                title="Stop"
+              >
+                <Square className="w-4 h-4" />
+              </button>
+            ) : (
+              <button
+                type="button"
+                onClick={handleSend}
+                disabled={!canSend}
+                className={cn(
+                  "p-2 rounded-lg transition-all duration-150",
+                  "bg-primary text-primary-foreground",
+                  "hover:bg-primary/90",
+                  "active:scale-95",
+                  "disabled:opacity-50 disabled:cursor-not-allowed"
+                )}
+                title="Send (Enter)"
+              >
+                <Send className="w-4 h-4" />
+              </button>
+            )}
+          </div>
         </div>
       </div>
     );

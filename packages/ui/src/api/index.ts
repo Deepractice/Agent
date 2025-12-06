@@ -7,15 +7,6 @@ export * from "~/hooks";
 // Pane Components (pure UI layer)
 export * from "~/components/pane";
 
-// Container Components (business logic layer)
-export * from "~/components/container";
-
-// Studio Components (integration layer)
-export * from "~/components/studio";
-
-// Input Components (user input)
-export * from "~/components/input";
-
 // Layout Components (structural)
 export * from "~/components/layout";
 
