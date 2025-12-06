@@ -3,31 +3,28 @@
  *
  * @example
  * ```typescript
- * import { createAgentX, defineAgent } from "agentxjs";
- *
- * const config = defineAgent({ name: "Assistant", systemPrompt: "You are helpful" });
+ * // Local mode
  * const agentx = await createAgentX();
- * const container = await agentx.containers.create();
- * const agent = await agentx.agents.run(container.id, config);
+ *
+ * // Local mode with server
+ * const agentx = await createAgentX({ apiKey: "sk-..." });
+ * await agentx.listen(5200);
+ *
+ * // Remote mode
+ * const agentx = await createAgentX({ server: "ws://localhost:5200" });
+ *
+ * // Same API for both modes!
+ * const res = await agentx.request("container_create_request", {
+ *   containerId: "my-container"
+ * });
+ *
+ * agentx.on("text_delta", (e) => console.log(e.data.text));
  * ```
  *
  * @packageDocumentation
  */
 
 export { createAgentX } from "./createAgentX";
-export { defineAgent } from "./defineAgent";
 
 // Re-export types
-export type {
-  AgentX,
-  SourceConfig,
-  AgentDefinition,
-  AgentConfig,
-  Agent,
-  AgentImage,
-  Container,
-  ContainersAPI,
-  AgentsAPI,
-  ImagesAPI,
-  Unsubscribe,
-} from "@agentxjs/types/agentx";
+export type { AgentX, AgentXConfig, Unsubscribe } from "@agentxjs/types/agentx";

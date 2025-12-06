@@ -1,221 +1,182 @@
 /**
- * AgentX - User-facing API Types
+ * AgentX - Unified API for AI Agents
+ *
+ * Simple, consistent API for both local and remote modes.
+ *
+ * @example
+ * ```typescript
+ * // Local mode (default)
+ * const agentx = await createAgentX();
+ *
+ * // Local mode with server
+ * const agentx = await createAgentX({ apiKey: "sk-..." });
+ * await agentx.listen(5200);
+ *
+ * // Remote mode
+ * const agentx = await createAgentX({ server: "ws://localhost:5200" });
+ *
+ * // Same API for both modes!
+ * const res = await agentx.request("container_create_request", {
+ *   containerId: "my-container"
+ * });
+ *
+ * agentx.on("text_delta", (e) => console.log(e.data.text));
+ *
+ * await agentx.dispose();
+ * ```
  *
  * @packageDocumentation
  */
 
 import type { Persistence } from "~/persistence";
-import type { EnvironmentEvent } from "~/event";
+import type { SystemEvent } from "~/event/base";
+import type {
+  CommandEventMap,
+  CommandRequestType,
+  ResponseEventFor,
+  RequestDataFor,
+} from "~/event/command";
 
 // ============================================================================
-// Event Types
-// ============================================================================
-
-/**
- * All possible event types from EnvironmentEvent
- */
-export type AgentXEventType = EnvironmentEvent["type"];
-
-/**
- * Extract specific event by type
- */
-export type AgentXEvent<T extends AgentXEventType> = Extract<EnvironmentEvent, { type: T }>;
-
-// ============================================================================
-// Configuration Types
+// Configuration
 // ============================================================================
 
 /**
- * SourceConfig - Server-side configuration
+ * AgentX configuration
+ *
+ * - No `server`: Local mode (uses Claude API directly)
+ * - With `server`: Remote mode (connects to AgentX server)
  */
-export interface SourceConfig {
+export interface AgentXConfig {
   /**
-   * Anthropic API key
+   * Remote server URL (WebSocket)
+   * If provided, AgentX runs in remote mode.
+   * @example "ws://localhost:5200"
+   */
+  server?: string;
+
+  /**
+   * Anthropic API key (local mode only)
    * @default process.env.ANTHROPIC_API_KEY
    */
   apiKey?: string;
 
   /**
-   * Claude model to use
+   * Claude model to use (local mode only)
    * @default "claude-sonnet-4-20250514"
    */
   model?: string;
 
   /**
-   * Anthropic API base URL (for proxies)
-   * @default "https://api.anthropic.com"
-   */
-  baseUrl?: string;
-
-  /**
-   * Persistence layer for storing data
+   * Persistence layer (local mode only)
    * @default In-memory persistence
    */
   persistence?: Persistence;
 }
 
-/**
- * MirrorConfig - Browser-side configuration
- */
-export interface MirrorConfig {
-  /**
-   * WebSocket URL of the AgentX server
-   * @example "ws://localhost:5200"
-   */
-  serverUrl: string;
-
-  /**
-   * Authentication token (optional)
-   */
-  token?: string;
-
-  /**
-   * Additional headers for WebSocket connection
-   */
-  headers?: Record<string, string>;
-}
-
-/**
- * AgentXConfig - Union of Source and Mirror configurations
- */
-export type AgentXConfig = SourceConfig | MirrorConfig;
-
-/**
- * Type guard: is this a MirrorConfig?
- */
-export declare function isMirrorConfig(config: AgentXConfig): config is MirrorConfig;
-
-/**
- * Type guard: is this a SourceConfig?
- */
-export declare function isSourceConfig(config: AgentXConfig): config is SourceConfig;
-
-// ============================================================================
-// Agent Definition & Config
-// ============================================================================
-
-/**
- * AgentDefinition - User-defined agent template
- */
-export interface AgentDefinition {
-  name: string;
-  systemPrompt?: string;
-  description?: string;
-}
-
-/**
- * AgentConfig - Runtime configuration for running an agent
- */
-export interface AgentConfig {
-  name: string;
-  systemPrompt?: string;
-  description?: string;
-}
-
-/**
- * defineAgent - Convert AgentDefinition to AgentConfig
- */
-export declare function defineAgent(definition: AgentDefinition): AgentConfig;
-
 // ============================================================================
 // Unsubscribe
 // ============================================================================
 
+/**
+ * Unsubscribe function
+ */
 export type Unsubscribe = () => void;
 
 // ============================================================================
-// Container
+// AgentX Interface
 // ============================================================================
 
 /**
- * Container - Isolated environment for agents
- */
-export interface Container {
-  readonly id: string;
-}
-
-/**
- * ContainersAPI - Container management
- */
-export interface ContainersAPI {
-  create(): Promise<Container>;
-  get(containerId: string): Container | undefined;
-  list(): Container[];
-}
-
-// ============================================================================
-// Agent
-// ============================================================================
-
-/**
- * Agent - Running AI agent instance
+ * AgentX - Main API interface
  *
- * Events are received via agentx.on(), not agent.on().
- * Use event.context.agentId to filter by agent.
- */
-export interface Agent {
-  readonly id: string;
-  readonly containerId: string;
-
-  receive(message: string): Promise<void>;
-}
-
-/**
- * AgentsAPI - Agent management
- */
-export interface AgentsAPI {
-  run(containerId: string, config: AgentConfig): Promise<Agent>;
-  get(agentId: string): Agent | undefined;
-  list(): Agent[];
-  list(containerId: string): Agent[];
-  destroy(agentId: string): Promise<boolean>;
-}
-
-// ============================================================================
-// Image
-// ============================================================================
-
-/**
- * AgentImage - Snapshot of agent state
- */
-export interface AgentImage {
-  readonly id: string;
-  readonly agentId: string;
-  readonly containerId: string;
-  readonly name: string;
-  readonly createdAt: number;
-
-  resume(): Promise<Agent>;
-}
-
-/**
- * ImagesAPI - Image management
- */
-export interface ImagesAPI {
-  snapshot(agentId: string): Promise<AgentImage>;
-  get(imageId: string): Promise<AgentImage | null>;
-  list(): Promise<AgentImage[]>;
-  delete(imageId: string): Promise<void>;
-}
-
-// ============================================================================
-// AgentX
-// ============================================================================
-
-/**
- * AgentX - Main user-facing API
+ * Unified API for both local and remote modes.
  */
 export interface AgentX {
-  readonly containers: ContainersAPI;
-  readonly agents: AgentsAPI;
-  readonly images: ImagesAPI;
+  // ==================== Core API ====================
 
-  on<T extends AgentXEventType>(
+  /**
+   * Send a command request and wait for response.
+   *
+   * @example
+   * ```typescript
+   * const res = await agentx.request("container_create_request", {
+   *   containerId: "my-container"
+   * });
+   * console.log(res.data.containerId);
+   * ```
+   */
+  request<T extends CommandRequestType>(
     type: T,
-    handler: (event: AgentXEvent<T>) => void
-  ): Unsubscribe;
-  onAll(handler: (event: EnvironmentEvent) => void): Unsubscribe;
+    data: RequestDataFor<T>,
+    timeout?: number
+  ): Promise<ResponseEventFor<T>>;
 
+  /**
+   * Subscribe to events.
+   *
+   * @example
+   * ```typescript
+   * agentx.on("text_delta", (e) => {
+   *   process.stdout.write(e.data.text);
+   * });
+   * ```
+   */
+  on<T extends string>(
+    type: T,
+    handler: (event: SystemEvent & { type: T }) => void
+  ): Unsubscribe;
+
+  /**
+   * Subscribe to command events with full type safety.
+   *
+   * @example
+   * ```typescript
+   * agentx.onCommand("container_create_response", (e) => {
+   *   console.log(e.data.containerId);
+   * });
+   * ```
+   */
+  onCommand<T extends keyof CommandEventMap>(
+    type: T,
+    handler: (event: CommandEventMap[T]) => void
+  ): Unsubscribe;
+
+  /**
+   * Emit a command event.
+   *
+   * For fine-grained control. Usually prefer `request()`.
+   */
+  emitCommand<T extends keyof CommandEventMap>(
+    type: T,
+    data: CommandEventMap[T]["data"]
+  ): void;
+
+  // ==================== Server API (local mode only) ====================
+
+  /**
+   * Start listening for remote connections.
+   *
+   * Only available in local mode.
+   *
+   * @example
+   * ```typescript
+   * await agentx.listen(5200);
+   * console.log("Server running on ws://localhost:5200");
+   * ```
+   */
+  listen(port: number, host?: string): Promise<void>;
+
+  /**
+   * Stop listening for remote connections.
+   */
+  close(): Promise<void>;
+
+  // ==================== Lifecycle ====================
+
+  /**
+   * Dispose AgentX and release all resources.
+   */
   dispose(): Promise<void>;
 }
 
@@ -224,7 +185,15 @@ export interface AgentX {
 // ============================================================================
 
 /**
- * createAgentX - Create AgentX instance
+ * Create AgentX instance
+ *
+ * @example
+ * ```typescript
+ * // Local mode
+ * const agentx = await createAgentX();
+ *
+ * // Remote mode
+ * const agentx = await createAgentX({ server: "ws://localhost:5200" });
+ * ```
  */
-export declare function createAgentX(): AgentX;
-export declare function createAgentX(config: AgentXConfig): AgentX;
+export declare function createAgentX(config?: AgentXConfig): Promise<AgentX>;
