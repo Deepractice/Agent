@@ -1,70 +1,47 @@
 /**
- * Agent Turn Events
+ * Engine Turn Events (Lightweight)
  *
- * Turn-level events for analytics, billing, and metrics.
- * A turn = one user message + assistant response cycle.
+ * Lightweight turn events for AgentEngine internal use.
+ * Derived from full AgentTurnEvent in @agentxjs/types/event/agent.
  */
 
-import type { AgentEvent } from "../AgentEvent";
+import type {
+  AgentTurnEvent as FullAgentTurnEvent,
+  TurnRequestEvent as FullTurnRequestEvent,
+  TurnResponseEvent as FullTurnResponseEvent,
+  TokenUsage,
+} from "~/event/agent/turn";
+import type { EngineEvent, ToEngineEvent, ToEngineEventUnion } from "../EngineEvent";
 
-/**
- * Token usage information
- */
-export interface TokenUsage {
-  inputTokens: number;
-  outputTokens: number;
-  totalTokens?: number;
-}
-
-/**
- * Base TurnEvent
- */
-export interface TurnEvent<T extends string = string, D = unknown> extends AgentEvent<T, D> {}
+// Re-export TokenUsage (it's not an event, just a type)
+export type { TokenUsage };
 
 // ============================================================================
-// Turn Events
+// Base Type (for backward compatibility)
 // ============================================================================
 
 /**
- * TurnRequestEvent - Turn started (user message received)
+ * TurnEvent - Base type for turn events
+ * @deprecated Use specific event types instead
  */
-export interface TurnRequestEvent extends TurnEvent<"turn_request"> {
-  data: {
-    turnId: string;
-    messageId: string;
-    content: string;
-    timestamp: number;
-  };
-}
-
-/**
- * TurnResponseEvent - Turn completed (assistant response finished)
- */
-export interface TurnResponseEvent extends TurnEvent<"turn_response"> {
-  data: {
-    turnId: string;
-    messageId: string;
-    duration: number;
-    usage?: TokenUsage;
-    model?: string;
-    stopReason?: string;
-    timestamp: number;
-  };
-}
+export interface TurnEvent<T extends string = string, D = unknown> extends EngineEvent<T, D> {}
 
 // ============================================================================
-// Union Type
+// Lightweight Event Types
 // ============================================================================
 
+export type TurnRequestEvent = ToEngineEvent<FullTurnRequestEvent>;
+export type TurnResponseEvent = ToEngineEvent<FullTurnResponseEvent>;
+
 /**
- * AgentTurnEvent - All agent turn events
+ * AgentTurnEvent - All lightweight turn events
  */
-export type AgentTurnEvent = TurnRequestEvent | TurnResponseEvent;
+export type AgentTurnEvent = ToEngineEventUnion<FullAgentTurnEvent>;
 
 /**
  * Type guard: is this a turn event?
  */
-export function isTurnEvent(event: AgentEvent): event is AgentTurnEvent {
+export function isTurnEvent(event: EngineEvent): event is AgentTurnEvent {
   const turnTypes = ["turn_request", "turn_response"];
   return turnTypes.includes(event.type);
 }

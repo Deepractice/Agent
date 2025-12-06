@@ -8,7 +8,7 @@
  * - Session: Message persistence
  */
 
-import type { Agent as RuntimeAgentInterface, AgentLifecycle, AgentConfig } from "@agentxjs/types/runtime";
+import type { Agent as RuntimeAgentInterface, AgentLifecycle, AgentConfig, SystemEvent, EventCategory } from "@agentxjs/types/runtime";
 import type { AgentEngine, AgentPresenter, AgentOutput, Message } from "@agentxjs/types/agent";
 import type { SystemBus, Sandbox, Session } from "@agentxjs/types/runtime/internal";
 import { createAgent } from "@agentxjs/agent";
@@ -27,7 +27,10 @@ export interface RuntimeAgentConfig {
 }
 
 /**
- * BusPresenter - Forwards AgentOutput to SystemBus and collects messages
+ * BusPresenter - Forwards AgentOutput to SystemBus as proper SystemEvent
+ *
+ * Converts lightweight EngineEvent (type, timestamp, data) to full SystemEvent
+ * by adding source, category, intent, and context.
  */
 class BusPresenter implements AgentPresenter {
   readonly name = "BusPresenter";
@@ -41,17 +44,66 @@ class BusPresenter implements AgentPresenter {
   ) {}
 
   present(_agentId: string, output: AgentOutput): void {
-    // Add runtime context and emit to bus
-    this.bus.emit({
-      ...output,
-      agentId: this.agentId,
-      containerId: this.containerId,
-    } as never);
+    // Convert EngineEvent to SystemEvent
+    const systemEvent: SystemEvent = {
+      type: output.type,
+      timestamp: output.timestamp,
+      data: output.data,
+      source: "agent",
+      category: this.getCategoryForOutput(output),
+      intent: "notification",
+      context: {
+        containerId: this.containerId,
+        agentId: this.agentId,
+        sessionId: this.session.sessionId,
+      },
+    };
+
+    this.bus.emit(systemEvent);
 
     // Collect message events to session
     if (this.isMessageEvent(output)) {
       this.session.addMessage(output.data as Message);
     }
+  }
+
+  /**
+   * Determine event category from output type
+   */
+  private getCategoryForOutput(output: AgentOutput): EventCategory {
+    const type = output.type;
+
+    // Stream events
+    if (
+      type === "message_start" ||
+      type === "message_delta" ||
+      type === "message_stop" ||
+      type === "text_delta" ||
+      type === "tool_use_start" ||
+      type === "input_json_delta" ||
+      type === "tool_use_stop" ||
+      type === "tool_result"
+    ) {
+      return "stream";
+    }
+
+    // Message events
+    if (
+      type === "user_message" ||
+      type === "assistant_message" ||
+      type === "tool_call_message" ||
+      type === "tool_result_message"
+    ) {
+      return "message";
+    }
+
+    // Turn events
+    if (type === "turn_request" || type === "turn_response") {
+      return "turn";
+    }
+
+    // State events (default)
+    return "state";
   }
 
   private isMessageEvent(output: AgentOutput): boolean {

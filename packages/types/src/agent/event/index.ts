@@ -1,20 +1,46 @@
 /**
- * Agent Event Types
+ * Engine Event Types (Lightweight)
  *
- * All event types used by Agent:
- * - StateEvent: State transitions
- * - MessageEvent: Assembled messages
- * - TurnEvent: Turn analytics
- * - StreamEvent: Stream context wrapper
+ * Lightweight event types for AgentEngine internal use.
+ * These only contain: type, timestamp, data
  *
- * Note: DriveableEvent is in runtime/event/environment (external perception)
+ * Full events (with source, category, intent, context) are in:
+ * @agentxjs/types/event/agent
+ *
+ * ## Relationship
+ *
+ * ```
+ * @agentxjs/types/event/agent     @agentxjs/types/agent/event
+ * (Runtime domain - Full)          (Engine domain - Lightweight)
+ * ────────────────────────────────────────────────────────────────
+ * AgentEvent (SystemEvent)         EngineEvent
+ *   type, timestamp, data            type, timestamp, data
+ *   source, category, intent
+ *   context
+ *
+ * TextDeltaEvent                   TextDeltaEvent
+ *   (full SystemEvent)               = ToEngineEvent<Full>
+ * ```
  */
 
 // Base event type
-export type { AgentEvent } from "./AgentEvent";
+export type { EngineEvent, ToEngineEvent, ToEngineEventUnion } from "./EngineEvent";
 
-// Processed events (from Engine)
-export * from "./message";
-export * from "./state";
-export * from "./turn";
+// For backward compatibility, alias EngineEvent as AgentEvent
+import type { EngineEvent } from "./EngineEvent";
+/**
+ * @deprecated Use EngineEvent instead
+ */
+export type AgentEvent<T extends string = string, D = unknown> = EngineEvent<T, D>;
+
+// Stream events
 export * from "./stream";
+
+// State events
+export * from "./state";
+
+// Message events
+export * from "./message";
+
+// Turn events
+export * from "./turn";

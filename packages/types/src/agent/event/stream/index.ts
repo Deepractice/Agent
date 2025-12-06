@@ -1,139 +1,46 @@
 /**
- * Agent Stream Events
+ * Engine Stream Events (Lightweight)
  *
- * Real-time streaming events produced by AgentDriver.
- *
- * Flow:
- * ```
- * Driver → StreamEvent
- *              ↓
- *          Agent/Engine
- *              ↓
- *          Presenter
- * ```
+ * Lightweight stream events for AgentEngine internal use.
+ * Derived from full AgentStreamEvent in @agentxjs/types/event/agent.
  */
 
-import type { AgentEvent } from "../AgentEvent";
+import type {
+  AgentStreamEvent as FullAgentStreamEvent,
+  AgentMessageStartEvent as FullMessageStartEvent,
+  AgentMessageDeltaEvent as FullMessageDeltaEvent,
+  AgentMessageStopEvent as FullMessageStopEvent,
+  AgentTextDeltaEvent as FullTextDeltaEvent,
+  AgentToolUseStartEvent as FullToolUseStartEvent,
+  AgentInputJsonDeltaEvent as FullInputJsonDeltaEvent,
+  AgentToolUseStopEvent as FullToolUseStopEvent,
+  AgentToolResultEvent as FullToolResultEvent,
+  StopReason,
+} from "~/event/agent/stream";
+import type { ToEngineEvent, ToEngineEventUnion } from "../EngineEvent";
 
-/**
- * Stop reason for message completion
- */
-export type StopReason = "end_turn" | "max_tokens" | "stop_sequence" | "tool_use";
+// Re-export StopReason (it's not an event, just a type)
+export type { StopReason };
 
 // ============================================================================
-// Message Lifecycle Events
+// Lightweight Event Types
 // ============================================================================
 
+export type MessageStartEvent = ToEngineEvent<FullMessageStartEvent>;
+export type MessageDeltaEvent = ToEngineEvent<FullMessageDeltaEvent>;
+export type MessageStopEvent = ToEngineEvent<FullMessageStopEvent>;
+export type TextDeltaEvent = ToEngineEvent<FullTextDeltaEvent>;
+export type ToolUseStartEvent = ToEngineEvent<FullToolUseStartEvent>;
+export type InputJsonDeltaEvent = ToEngineEvent<FullInputJsonDeltaEvent>;
+export type ToolUseStopEvent = ToEngineEvent<FullToolUseStopEvent>;
+export type ToolResultEvent = ToEngineEvent<FullToolResultEvent>;
+
 /**
- * MessageStartEvent - Emitted when streaming message begins
+ * StreamEvent - All lightweight stream events
  */
-export interface MessageStartEvent extends AgentEvent<"message_start"> {
-  data: {
-    messageId: string;
-    model: string;
-  };
-}
+export type StreamEvent = ToEngineEventUnion<FullAgentStreamEvent>;
 
 /**
- * MessageDeltaEvent - Emitted with message-level updates
- */
-export interface MessageDeltaEvent extends AgentEvent<"message_delta"> {
-  data: {
-    usage?: {
-      inputTokens: number;
-      outputTokens: number;
-    };
-  };
-}
-
-/**
- * MessageStopEvent - Emitted when streaming message completes
- */
-export interface MessageStopEvent extends AgentEvent<"message_stop"> {
-  data: {
-    stopReason?: StopReason;
-  };
-}
-
-// ============================================================================
-// Text Content Events
-// ============================================================================
-
-/**
- * TextDeltaEvent - Incremental text output
- */
-export interface TextDeltaEvent extends AgentEvent<"text_delta"> {
-  data: {
-    text: string;
-  };
-}
-
-// ============================================================================
-// Tool Use Events
-// ============================================================================
-
-/**
- * ToolUseStartEvent - Tool use block started
- */
-export interface ToolUseStartEvent extends AgentEvent<"tool_use_start"> {
-  data: {
-    toolCallId: string;
-    toolName: string;
-  };
-}
-
-/**
- * InputJsonDeltaEvent - Incremental tool input JSON
- */
-export interface InputJsonDeltaEvent extends AgentEvent<"input_json_delta"> {
-  data: {
-    partialJson: string;
-  };
-}
-
-/**
- * ToolUseStopEvent - Tool use block completed, ready for execution
- */
-export interface ToolUseStopEvent extends AgentEvent<"tool_use_stop"> {
-  data: {
-    toolCallId: string;
-    toolName: string;
-    input: Record<string, unknown>;
-  };
-}
-
-/**
- * ToolResultEvent - Tool execution result
- */
-export interface ToolResultEvent extends AgentEvent<"tool_result"> {
-  data: {
-    toolCallId: string;
-    result: unknown;
-    isError?: boolean;
-  };
-}
-
-// ============================================================================
-// Union Type
-// ============================================================================
-
-/**
- * StreamEvent - All stream events produced by AgentDriver
- */
-export type StreamEvent =
-  // Message lifecycle
-  | MessageStartEvent
-  | MessageDeltaEvent
-  | MessageStopEvent
-  // Text content
-  | TextDeltaEvent
-  // Tool use
-  | ToolUseStartEvent
-  | InputJsonDeltaEvent
-  | ToolUseStopEvent
-  | ToolResultEvent;
-
-/**
- * StreamEventType - String literal union of all stream event types
+ * StreamEventType - String literal union
  */
 export type StreamEventType = StreamEvent["type"];

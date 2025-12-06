@@ -1,85 +1,50 @@
 /**
- * Agent Message Events
+ * Engine Message Events (Lightweight)
  *
- * Complete message events assembled from stream events.
- * Represent full conversation messages ready for persistence and display.
+ * Lightweight message events for AgentEngine internal use.
+ * Derived from full AgentMessageEvent in @agentxjs/types/event/agent.
  */
 
-import type { AgentEvent } from "../AgentEvent";
-import type { ContentPart, ToolCallPart, ToolResultPart } from "../../message/parts";
+import type {
+  AgentMessageEvent as FullAgentMessageEvent,
+  UserMessageEvent as FullUserMessageEvent,
+  AssistantMessageEvent as FullAssistantMessageEvent,
+  ToolCallMessageEvent as FullToolCallMessageEvent,
+  ToolResultMessageEvent as FullToolResultMessageEvent,
+} from "~/event/agent/message";
+import type { EngineEvent, ToEngineEvent, ToEngineEventUnion } from "../EngineEvent";
 
-/**
- * Base MessageEvent
- */
-export interface MessageEvent<T extends string = string, D = unknown> extends AgentEvent<T, D> {}
+// Re-export parts (they're not events, just types)
+export type { ContentPart, ToolCallPart, ToolResultPart } from "../../message/parts";
 
 // ============================================================================
-// Message Events
-// ============================================================================
-
-/**
- * UserMessageEvent - User sent a message
- */
-export interface UserMessageEvent extends MessageEvent<"user_message"> {
-  data: {
-    messageId: string;
-    content: string;
-    timestamp: number;
-  };
-}
-
-/**
- * AssistantMessageEvent - Assistant response message
- */
-export interface AssistantMessageEvent extends MessageEvent<"assistant_message"> {
-  data: {
-    messageId: string;
-    content: ContentPart[];
-    model?: string;
-    stopReason?: string;
-    timestamp: number;
-  };
-}
-
-/**
- * ToolCallMessageEvent - Tool call message (part of assistant turn)
- */
-export interface ToolCallMessageEvent extends MessageEvent<"tool_call_message"> {
-  data: {
-    messageId: string;
-    toolCalls: ToolCallPart[];
-    timestamp: number;
-  };
-}
-
-/**
- * ToolResultMessageEvent - Tool result message
- */
-export interface ToolResultMessageEvent extends MessageEvent<"tool_result_message"> {
-  data: {
-    messageId: string;
-    results: ToolResultPart[];
-    timestamp: number;
-  };
-}
-
-// ============================================================================
-// Union Type
+// Base Type (for backward compatibility)
 // ============================================================================
 
 /**
- * AgentMessageEvent - All agent message events
+ * MessageEvent - Base type for message events
+ * @deprecated Use specific event types instead
  */
-export type AgentMessageEvent =
-  | UserMessageEvent
-  | AssistantMessageEvent
-  | ToolCallMessageEvent
-  | ToolResultMessageEvent;
+export interface MessageEvent<T extends string = string, D = unknown> extends EngineEvent<T, D> {}
+
+// ============================================================================
+// Lightweight Event Types
+// ============================================================================
+
+export type UserMessageEvent = ToEngineEvent<FullUserMessageEvent>;
+export type AssistantMessageEvent = ToEngineEvent<FullAssistantMessageEvent>;
+export type ToolCallMessageEvent = ToEngineEvent<FullToolCallMessageEvent>;
+export type ToolResultMessageEvent = ToEngineEvent<FullToolResultMessageEvent>;
+
+/**
+ * AgentMessageEvent - All lightweight message events
+ */
+export type AgentMessageEvent = ToEngineEventUnion<FullAgentMessageEvent>;
 
 /**
  * Type guard: is this a message event?
  */
-export function isMessageEvent(event: AgentEvent): event is AgentMessageEvent {
+export function isMessageEvent(event: EngineEvent): event is AgentMessageEvent {
   const messageTypes = ["user_message", "assistant_message", "tool_call_message", "tool_result_message"];
   return messageTypes.includes(event.type);
 }
