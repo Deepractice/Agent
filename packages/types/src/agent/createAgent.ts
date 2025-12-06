@@ -1,13 +1,13 @@
 /**
- * CreateAgentOptions - Factory options for creating an Agent
+ * CreateAgentOptions - Factory options for creating an AgentEngine
  */
 
 import type { AgentDriver } from "./AgentDriver";
 import type { AgentPresenter } from "./AgentPresenter";
-import type { Agent } from "./Agent";
+import type { AgentEngine } from "./Agent";
 
 /**
- * Options for creating an Agent
+ * Options for creating an AgentEngine
  */
 export interface CreateAgentOptions {
   /**
@@ -22,22 +22,22 @@ export interface CreateAgentOptions {
 }
 
 /**
- * Factory function to create an Agent
+ * Factory function to create an AgentEngine
  *
- * Agent is a logical processing unit that coordinates:
+ * AgentEngine is a logical processing unit that coordinates:
  * - Driver: produces stream events from LLM
- * - Engine: assembles events (internal, created automatically)
+ * - MealyMachine: assembles events (internal, created automatically)
  * - Presenter: consumes processed events
  *
  * @example
  * ```typescript
- * const agent = createAgent({
+ * const engine = createAgent({
  *   driver: new ClaudeDriver(config),
  *   presenter: new SSEPresenter(connection),
  * });
  *
- * agent.on("text_delta", (e) => console.log(e.data.text));
- * await agent.receive("Hello!");
+ * engine.on("text_delta", (e) => console.log(e.data.text));
+ * await engine.receive("Hello!");
  * ```
  */
-export declare function createAgent(options: CreateAgentOptions): Agent;
+export declare function createAgent(options: CreateAgentOptions): AgentEngine;

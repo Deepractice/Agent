@@ -1,23 +1,26 @@
 /**
- * Agent - Event Processing Unit
+ * AgentEngine - Event Processing Unit
  *
- * Agent is a logical processing unit that coordinates:
+ * AgentEngine is a logical processing unit that coordinates:
  * - Driver: Event producer (LLM interaction)
- * - Engine: Event assembler (Mealy Machine)
+ * - MealyMachine: Event assembler (pure Mealy Machine)
  * - Presenter: Event consumer (side effects)
  *
  * ```text
  * Driver (event producer)
  *     ↓ Stream Events
- *   Agent (logical processor)
- *     - Engine: event assembly
+ *   AgentEngine (logical processor)
+ *     - MealyMachine: event assembly
  *     - State: state management
  *     ↓ Processed Events
  * Presenter (event consumer)
  * ```
  *
- * Agent is independent of Runtime system (Container, Session, Bus).
+ * AgentEngine is independent of Runtime system (Container, Session, Bus).
  * It can be tested in isolation with mock Driver and Presenter.
+ *
+ * Note: This is distinct from runtime/Agent which is the complete runtime entity
+ * with LLM, Sandbox, Session, and lifecycle management (stop/resume).
  *
  * API:
  * - receive(message): Send message to agent
@@ -51,11 +54,11 @@ export type StateChangeHandler = (change: StateChange) => void;
  * Event handler map for batch subscription
  *
  * Generic handler map - concrete event types are defined in runtime/event.
- * Agent package is independent of specific event type definitions.
+ * AgentEngine package is independent of specific event type definitions.
  *
  * Usage:
  * ```typescript
- * agent.on({
+ * engine.on({
  *   text_delta: (event) => console.log(event.data.text),
  *   assistant_message: (event) => setMessages(prev => [...prev, event.data]),
  * });
@@ -67,11 +70,11 @@ export type EventHandlerMap = Record<string, ((event: AgentOutput) => void) | un
  * React-style handler map for fluent event subscription
  *
  * Generic handler map - concrete event types are defined in runtime/event.
- * Agent package is independent of specific event type definitions.
+ * AgentEngine package is independent of specific event type definitions.
  *
  * Usage:
  * ```typescript
- * agent.react({
+ * engine.react({
  *   onTextDelta: (event) => console.log(event.data.text),
  *   onAssistantMessage: (event) => setMessages(prev => [...prev, event.data]),
  * });
@@ -80,14 +83,14 @@ export type EventHandlerMap = Record<string, ((event: AgentOutput) => void) | un
 export type ReactHandlerMap = Record<string, ((event: AgentOutput) => void) | undefined>;
 
 /**
- * Agent interface - Event Processing Unit
+ * AgentEngine interface - Event Processing Unit
  *
  * Core responsibilities:
  * - State management (AgentState)
  * - Event subscription and distribution
  * - Middleware/Interceptor chain
  */
-export interface Agent {
+export interface AgentEngine {
   /**
    * Unique agent instance ID
    */
@@ -186,4 +189,3 @@ export interface Agent {
    */
   destroy(): Promise<void>;
 }
-

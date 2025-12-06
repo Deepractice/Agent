@@ -31,14 +31,14 @@
 // ============================================================================
 
 export { createAgent } from "./createAgent";
-export type { Agent, CreateAgentOptions } from "@agentxjs/types/agent";
+export type { AgentEngine, CreateAgentOptions } from "@agentxjs/types/agent";
 
 // ============================================================================
 // Engine (Stateless)
 // ============================================================================
 
-// AgentEngine
-export { AgentEngine, createAgentEngine } from "./engine/AgentEngine";
+// MealyMachine
+export { MealyMachine, createMealyMachine } from "./engine/MealyMachine";
 
 // AgentProcessor (for advanced use cases)
 export {

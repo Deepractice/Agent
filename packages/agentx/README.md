@@ -1,19 +1,17 @@
 # agentxjs
 
-> "Define Once, Run Anywhere" - Unified Platform API for AI Agents
+> Unified API for AI Agents - Server and Browser
 
 ## Overview
 
-`agentxjs` is the **central entry point** for the AgentX platform, providing a complete API for building and managing AI agents across different deployment scenarios.
+`agentxjs` provides a **unified API** for building AI agents that works seamlessly across server (Node.js) and browser environments.
 
-**Key Characteristics:**
+**Key Features:**
 
-- **"Define Once, Run Anywhere"** - Same AgentDefinition works on Server and Browser
-- **Docker-Style Layered Architecture** - Definition → Image → Agent lifecycle
-- **Runtime Abstraction** - Platform provides Runtime (NodeRuntime, SSERuntime)
-- **Web Standard Based** - Server built on Request/Response API, framework-agnostic
-- **Stream-First Transport** - Efficient SSE transmission with client-side reassembly
-- **Framework Adapters** - Ready-to-use adapters for Express, Hono, Next.js
+- **Unified API** - Same `createAgentX()` function for both server and browser
+- **Type-Safe Configuration** - TypeScript discriminates between Source and Mirror modes
+- **Docker-Style Lifecycle** - Container → Agent → Image
+- **Event-Driven** - Real-time streaming events (text_delta, tool_call, etc.)
 
 ## Installation
 
@@ -23,577 +21,359 @@ pnpm add agentxjs
 
 ---
 
-## Architecture Overview
+## Quick Start
 
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                            agentxjs                                  │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│  ┌─────────────────────────────────────────────────────────────┐    │
-│  │                  createAgentX(runtime)                       │    │
-│  │                                                              │    │
-│  │   NodeRuntime (server)           SSERuntime (browser)        │    │
-│  │           │                              │                   │    │
-│  │           ▼                              ▼                   │    │
-│  │   ┌──────────────┐              ┌───────────────────┐       │    │
-│  │   │ ClaudeDriver │              │    SSEDriver      │       │    │
-│  │   │ LocalSandbox │              │ RemoteContainer   │       │    │
-│  │   │ SQLiteRepo   │              │ RemoteRepository  │       │    │
-│  │   └──────────────┘              └───────────────────┘       │    │
-│  └─────────────────────────────────────────────────────────────┘    │
-│                                                                      │
-│  ┌──────────────────────────────────────────────────────────────┐   │
-│  │                     AgentX Platform API                       │   │
-│  │                                                               │   │
-│  │   agentx.containers   - Container lifecycle management        │   │
-│  │   agentx.definitions  - Register agent templates              │   │
-│  │   agentx.images       - Build/manage agent snapshots          │   │
-│  │   agentx.agents       - Query running agents                  │   │
-│  │   agentx.sessions     - User-facing session management        │   │
-│  │   agentx.errors       - Platform-level error handling         │   │
-│  └──────────────────────────────────────────────────────────────┘   │
-│                                                                      │
-│  ┌──────────────────────┐    ┌──────────────────────────────────┐   │
-│  │      /server         │    │           /client                 │   │
-│  │                      │    │                                   │   │
-│  │ createAgentXHandler  │    │  sseRuntime (browser)             │   │
-│  │ SSEConnection        │    │  SSERuntime                       │   │
-│  │                      │    │  SSEDriver                        │   │
-│  │ /adapters:           │    │  RemoteContainer                  │   │
-│  │  • express           │    │  RemoteRepository                 │   │
-│  │  • hono              │    │                                   │   │
-│  │  • next              │    │                                   │   │
-│  └──────────────────────┘    └──────────────────────────────────┘   │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
----
-
-## Docker-Style Layered Architecture
-
-AgentX uses a Docker-inspired lifecycle for agent management:
-
-```text
-┌─────────────────────────────────────────────────────────────────────┐
-│                     Docker-Style Lifecycle                           │
-├─────────────────────────────────────────────────────────────────────┤
-│                                                                      │
-│   Definition (template)                                              │
-│        │                                                             │
-│        │ register                                                    │
-│        ▼                                                             │
-│   DefinitionManager + (auto-create MetaImage)                        │
-│        │                                                             │
-│        │ build (optional: create DerivedImage)                       │
-│        ▼                                                             │
-│   ImageManager (MetaImage or DerivedImage snapshot)                  │
-│        │                                                             │
-│        │ run                                                         │
-│        ▼                                                             │
-│   Container (creates Agent from Image)                               │
-│        │                                                             │
-│        │ runtime                                                     │
-│        ▼                                                             │
-│   Agent (running instance)                                           │
-│        │                                                             │
-│        │ user action                                                 │
-│        ▼                                                             │
-│   SessionManager (wrap for UI/external)                              │
-│        │                                                             │
-│        ▼                                                             │
-│   Session (external view with metadata: title, userId)               │
-│                                                                      │
-└─────────────────────────────────────────────────────────────────────┘
-```
-
-**Key Principle**: Definition cannot directly become Agent. Must go through Image first.
-
----
-
-## Module Reference
-
-### Core API (`/`)
-
-The main entry point for creating AgentX instances.
-
-| Export         | Type     | Description                              |
-| -------------- | -------- | ---------------------------------------- |
-| `defineAgent`  | Function | Define an agent template                 |
-| `createAgentX` | Function | Factory for AgentX platform with Runtime |
-| `sseRuntime`   | Function | Create browser SSE runtime               |
+### Server (Source Mode)
 
 ```typescript
-import { defineAgent, createAgentX } from "agentxjs";
-import { nodeRuntime } from "@agentxjs/node-runtime";
+import { createAgentX } from "agentxjs";
 
-// 1. Define agent (business config only)
-const MyAgent = defineAgent({
-  name: "Assistant",
-  description: "A helpful assistant",
-  systemPrompt: "You are a helpful assistant",
+// Minimal - reads ANTHROPIC_API_KEY from environment
+const agentx = createAgentX();
+
+// Or with explicit configuration
+const agentx = createAgentX({
+  apiKey: "sk-ant-...",
+  model: "claude-sonnet-4-20250514",
 });
 
-// 2. Create platform with runtime
-const agentx = createAgentX(nodeRuntime());
+// Run an agent
+const agent = await agentx.run({ name: "Assistant" });
 
-// 3. Register definition (creates MetaImage automatically)
-agentx.definitions.register(MyAgent);
+// Subscribe to events
+agent.on("text_delta", (e) => process.stdout.write(e.data.text));
 
-// 4. Run agent from image
-const metaImage = agentx.images.getMetaImage(MyAgent.name);
-const agent = await agentx.images.run(metaImage.id);
+// Send message
+await agent.receive("Hello!");
 
-// 5. Use agent
+// Cleanup
+await agentx.dispose();
+```
+
+### Browser (Mirror Mode)
+
+```typescript
+import { createAgentX } from "agentxjs";
+
+// Connect to remote server via WebSocket
+const agentx = createAgentX({
+  serverUrl: "ws://localhost:5200",
+  token: "optional-auth-token",
+});
+
+// Same API as server!
+const agent = await agentx.run({ name: "Assistant" });
+
+agent.on("text_delta", (e) => console.log(e.data.text));
+
 await agent.receive("Hello!");
 ```
 
-#### AgentX Interface
+---
+
+## API Design
+
+### Configuration Types
+
+```typescript
+// Server-side configuration (Source mode)
+interface SourceConfig {
+  apiKey?: string;        // Default: process.env.ANTHROPIC_API_KEY
+  model?: string;         // Default: "claude-sonnet-4-20250514"
+  baseUrl?: string;       // Default: "https://api.anthropic.com"
+  persistence?: Persistence;
+}
+
+// Browser-side configuration (Mirror mode)
+interface MirrorConfig {
+  serverUrl: string;      // WebSocket URL, e.g., "ws://localhost:5200"
+  token?: string;         // Authentication token
+  headers?: Record<string, string>;
+}
+
+// Type discrimination: presence of `serverUrl` determines mode
+type AgentXConfig = SourceConfig | MirrorConfig;
+```
+
+### Type Guards
+
+```typescript
+import { isMirrorConfig, isSourceConfig } from "agentxjs";
+
+const config: AgentXConfig = { serverUrl: "ws://localhost:5200" };
+
+if (isMirrorConfig(config)) {
+  // TypeScript knows this is MirrorConfig
+  console.log(config.serverUrl);
+}
+
+if (isSourceConfig(config)) {
+  // TypeScript knows this is SourceConfig
+  console.log(config.apiKey);
+}
+```
+
+### AgentX Interface
 
 ```typescript
 interface AgentX {
-  readonly runtime: Runtime;
-  readonly definitions: DefinitionManager;
-  readonly images: ImageManager;
-  readonly agents: AgentManager;
-  readonly sessions: SessionManager;
-  readonly errors: ErrorManager;
-}
+  // Quick start - run agent in default container
+  run(config: AgentRunConfig): Promise<Agent>;
 
-interface DefinitionManager {
-  register(definition: AgentDefinition): void;
-  get(name: string): AgentDefinition | undefined;
-  has(name: string): boolean;
-  list(): AgentDefinition[];
-  unregister(name: string): boolean;
-}
+  // Container management
+  readonly containers: ContainersAPI;
 
-interface ImageManager {
-  get(imageId: string): AgentImage | undefined;
-  getMetaImage(definitionName: string): AgentImage | undefined;
-  list(): AgentImage[];
-  listByDefinition(definitionName: string): AgentImage[];
-  exists(imageId: string): boolean;
-  delete(imageId: string): boolean;
-  run(imageId: string): Promise<Agent>;
-}
+  // Agent management (cross-container)
+  readonly agents: AgentsAPI;
 
-interface AgentManager {
-  get(agentId: string): Agent | undefined;
-  has(agentId: string): boolean;
-  list(): Agent[];
-  destroy(agentId: string): boolean;
-  destroyAll(): void;
-}
+  // Image (snapshot) management
+  readonly images: ImagesAPI;
 
-interface SessionManager {
-  create(imageId: string, options?: SessionOptions): Promise<Session>;
-  get(sessionId: string): Session | undefined;
-  list(): Session[];
-  listByImage(imageId: string): Session[];
-  listByUser(userId: string): Session[];
-  destroy(sessionId: string): boolean;
-  destroyByImage(imageId: string): boolean;
-  destroyAll(): void;
-}
-
-interface ErrorManager {
-  handle(error: AgentError): void;
-  addHandler(handler: ErrorHandler): void;
-  removeHandler(handler: ErrorHandler): void;
+  // Cleanup
+  dispose(): Promise<void>;
 }
 ```
 
-#### Session Interface
+### Sub-APIs
 
 ```typescript
-interface Session {
-  readonly id: string;
-  readonly imageId: string;
-  readonly agent: Agent;
+// Container management
+interface ContainersAPI {
+  create(containerId: string): Promise<Container>;
+  get(containerId: string): Container | undefined;
+  list(): Container[];
+}
 
-  // Resume from previous state
-  resume(): Promise<void>;
+// Agent management
+interface AgentsAPI {
+  run(containerId: string, config: AgentRunConfig): Promise<Agent>;
+  get(agentId: string): Agent | undefined;
+  list(containerId: string): Agent[];
+  destroy(agentId: string): Promise<boolean>;
+  destroyAll(containerId: string): Promise<void>;
+}
 
-  // Fork session with copied message history
-  fork(): Promise<Session>;
+// Image management
+interface ImagesAPI {
+  snapshot(agent: Agent): Promise<AgentImage>;
+  list(): Promise<AgentImage[]>;
+  get(imageId: string): Promise<AgentImage | null>;
+  delete(imageId: string): Promise<void>;
+}
+```
 
-  // Auto-subscribe and persist messages
-  collect(): Unsubscribe;
+### Agent Run Configuration
 
-  // Get persisted conversation history
-  getMessages(): Promise<Message[]>;
-
-  // Update session metadata
-  setTitle(title: string): Promise<void>;
+```typescript
+interface AgentRunConfig {
+  name: string;
+  systemPrompt?: string;
 }
 ```
 
 ---
 
-### Server Module (`/server`)
-
-HTTP handler and SSE transport for exposing agents over the network.
-
-```typescript
-import { createAgentXHandler } from "agentxjs/server";
-```
-
-#### `createAgentXHandler(agentx, options?)`
-
-Creates a framework-agnostic HTTP handler based on Web Standard Request/Response.
-
-```typescript
-const handler = createAgentXHandler(agentx, {
-  basePath: "/agentx", // URL prefix
-  allowDynamicCreation: false, // Enable POST /agents
-  allowedDefinitions: [], // Whitelist for dynamic creation
-  hooks: {
-    onConnect: (agentId, connectionId) => {
-      /* SSE connected */
-    },
-    onDisconnect: (agentId, connectionId) => {
-      /* SSE disconnected */
-    },
-    onMessage: (agentId, message) => {
-      /* Message received */
-    },
-    onError: (agentId, error) => {
-      /* Error occurred */
-    },
-  },
-});
-
-// Returns: (request: Request) => Promise<Response>
-```
-
-#### HTTP API Endpoints
-
-| Method | Path                            | Description            |
-| ------ | ------------------------------- | ---------------------- |
-| GET    | `/info`                         | Platform info          |
-| GET    | `/health`                       | Health check           |
-| GET    | `/definitions`                  | List all definitions   |
-| GET    | `/definitions/:name`            | Get definition by name |
-| POST   | `/definitions`                  | Register definition    |
-| DELETE | `/definitions/:name`            | Unregister definition  |
-| GET    | `/images`                       | List all images        |
-| GET    | `/images/:imageId`              | Get image by ID        |
-| POST   | `/images/:imageId/run`          | Run agent from image   |
-| DELETE | `/images/:imageId`              | Delete image           |
-| GET    | `/agents`                       | List all agents        |
-| GET    | `/agents/:agentId`              | Get agent info         |
-| DELETE | `/agents/:agentId`              | Destroy agent          |
-| GET    | `/agents/:agentId/sse`          | SSE event stream       |
-| POST   | `/agents/:agentId/messages`     | Send message to agent  |
-| POST   | `/agents/:agentId/interrupt`    | Interrupt processing   |
-| GET    | `/sessions`                     | List all sessions      |
-| GET    | `/sessions/:sessionId`          | Get session by ID      |
-| POST   | `/sessions`                     | Create session         |
-| POST   | `/sessions/:sessionId/resume`   | Resume session         |
-| POST   | `/sessions/:sessionId/fork`     | Fork session           |
-| GET    | `/sessions/:sessionId/messages` | Get session messages   |
-| DELETE | `/sessions/:sessionId`          | Destroy session        |
-
-#### SSE Transport
-
-The server only forwards **Stream Layer events** via SSE:
+## Architecture
 
 ```text
-Server AgentEngine
-       │
-       ├── text_delta          ─┐
-       ├── tool_call            │
-       ├── message_start        ├──▶ SSE Stream
-       ├── message_stop         │
-       └── error               ─┘
-                                │
-                                ▼
-                         Browser Client
-                                │
-                        AgentEngine (client)
-                                │
-                        Reassembles:
-                        ├── assistant_message
-                        ├── tool_call_message
-                        └── turn_response
+┌─────────────────────────────────────────────────────────────────┐
+│                         createAgentX(config)                      │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│  config has serverUrl?                                            │
+│         │                                                         │
+│         ├── YES ──▶ Mirror Mode (Browser)                         │
+│         │           - MirrorRuntime                               │
+│         │           - WebSocket communication                     │
+│         │           - Local state mirrors server                  │
+│         │                                                         │
+│         └── NO ───▶ Source Mode (Server)                          │
+│                     - Runtime                                     │
+│                     - Direct LLM access                           │
+│                     - Persistence layer                           │
+│                                                                   │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│                        AgentX API                                 │
+│                                                                   │
+│   agentx.run(config)           Quick start                        │
+│   agentx.containers.*          Container lifecycle                │
+│   agentx.agents.*              Agent operations                   │
+│   agentx.images.*              Snapshot management                │
+│   agentx.dispose()             Cleanup                            │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
 ```
+
+### Source vs Mirror
+
+| Aspect | Source (Server) | Mirror (Browser) |
+|--------|-----------------|------------------|
+| Runtime | Runtime | MirrorRuntime |
+| LLM Access | Direct API calls | Via server |
+| Persistence | Local (SQLite, etc.) | Server-side |
+| Communication | N/A | WebSocket events |
+| Use Case | Backend services | Frontend apps |
 
 ---
 
-### Server Adapters (`/server/adapters`)
+## Docker-Style Lifecycle
 
-Ready-to-use adapters for popular HTTP frameworks.
-
-#### Express
-
-```typescript
-import { toExpressHandler } from "agentxjs/server/adapters/express";
-import express from "express";
-
-const app = express();
-app.use(express.json());
-app.use("/agentx", toExpressHandler(handler));
+```text
+┌─────────────────────────────────────────────────────────────────┐
+│                     Lifecycle Flow                                │
+├─────────────────────────────────────────────────────────────────┤
+│                                                                   │
+│   Container                                                       │
+│       │                                                           │
+│       │ run(config)                                               │
+│       ▼                                                           │
+│   Agent (running instance)                                        │
+│       │                                                           │
+│       │ snapshot()                                                │
+│       ▼                                                           │
+│   AgentImage (frozen state)                                       │
+│       │                                                           │
+│       │ resume()                                                  │
+│       ▼                                                           │
+│   Agent (restored from image)                                     │
+│                                                                   │
+└─────────────────────────────────────────────────────────────────┘
 ```
 
-#### Hono
+### Image Operations
 
 ```typescript
-import { createHonoRoutes } from "agentxjs/server/adapters/hono";
-import { Hono } from "hono";
-
-const app = new Hono();
-createHonoRoutes(app, "/agentx", handler);
-// or: app.all("/agentx/*", toHonoHandler(handler));
-```
-
-#### Next.js App Router
-
-```typescript
-// app/agentx/[...path]/route.ts
-import { createNextHandler } from "agentxjs/server/adapters/next";
-
-const handler = createAgentXHandler(agentx);
-export const { GET, POST, DELETE } = createNextHandler(handler, {
-  basePath: "/agentx",
-});
-```
-
----
-
-### Client Module (`/client`)
-
-Browser SDK for connecting to remote AgentX servers using the same API.
-
-```typescript
-import { sseRuntime } from "agentxjs/client";
-```
-
-#### `sseRuntime(config)`
-
-Creates a browser-compatible Runtime that connects to remote server:
-
-```typescript
-import { defineAgent, createAgentX } from "agentxjs";
-import { sseRuntime } from "agentxjs/client";
-
-// Same agent definition as server!
-const MyAgent = defineAgent({
-  name: "Assistant",
-  systemPrompt: "You are a helpful assistant",
-});
-
-// Create SSE runtime for browser
-const runtime = sseRuntime({
-  serverUrl: "http://localhost:5200/agentx",
-  headers: { Authorization: "Bearer xxx" }, // Optional: for HTTP requests
-  sseParams: { token: "xxx" }, // Optional: for SSE auth via query string
-});
-
-// Same API as server-side!
-const agentx = createAgentX(runtime);
-
-// Register definition (syncs with server)
-agentx.definitions.register(MyAgent);
-
-// Run agent
-const metaImage = agentx.images.getMetaImage(MyAgent.name);
-const agent = await agentx.images.run(metaImage.id);
-
-// Subscribe to events
-agent.on("assistant_message", (event) => {
-  console.log(event.data.content);
-});
-
+// Create snapshot
+const agent = await agentx.run({ name: "Assistant" });
 await agent.receive("Hello!");
+const image = await agentx.images.snapshot(agent);
+
+// Resume from snapshot
+const resumedAgent = await image.resume();
+// Agent has previous conversation history
 ```
 
-**Key Point**: Browser uses the same `defineAgent` + `createAgentX` API.
-Only the Runtime differs (`sseRuntime` vs `nodeRuntime`).
+---
 
-#### Browser Runtime Components
+## Event System
 
-| Component          | Description                                         |
-| ------------------ | --------------------------------------------------- |
-| `SSERuntime`       | Browser runtime implementation                      |
-| `RemoteContainer`  | Calls server to create agents, caches locally       |
-| `RemoteRepository` | HTTP-based persistence (noop for saveMessage)       |
-| `SSEDriver`        | EventSource-based driver with persistent connection |
-| `BrowserLogger`    | Styled console logging for browser                  |
+### Stream Events (Real-time)
+
+```typescript
+agent.on("message_start", (e) => { /* Response started */ });
+agent.on("text_delta", (e) => console.log(e.data.text));
+agent.on("tool_call", (e) => { /* Tool being called */ });
+agent.on("tool_result", (e) => { /* Tool result received */ });
+agent.on("message_stop", (e) => { /* Response complete */ });
+```
+
+### Subscribe to All Events
+
+```typescript
+agent.on((event) => {
+  console.log(event.type, event.data);
+});
+```
+
+---
+
+## Advanced Usage
+
+### Container Management
+
+```typescript
+// Create named container
+const container = await agentx.containers.create("my-container");
+
+// Run agent in container
+const agent = await agentx.agents.run("my-container", {
+  name: "Assistant",
+  systemPrompt: "You are helpful",
+});
+
+// List agents in container
+const agents = agentx.agents.list("my-container");
+
+// Destroy all agents in container
+await agentx.agents.destroyAll("my-container");
+```
+
+### Custom Persistence (Source Mode)
+
+```typescript
+import { createAgentX } from "agentxjs";
+import { createPersistence } from "@agentxjs/persistence";
+
+const agentx = createAgentX({
+  apiKey: "sk-ant-...",
+  persistence: createPersistence({
+    driver: "sqlite",
+    path: "./data.db",
+  }),
+});
+```
 
 ---
 
 ## Design Decisions
 
-### Why Docker-Style Architecture?
+### Why Unified `createAgentX`?
 
-The Definition → Image → Agent flow mirrors Docker's Dockerfile → Image → Container:
+Instead of separate `createSource()` and `createMirror()` functions, we use a single `createAgentX()` with type discrimination:
 
-1. **Definition** = Template (like Dockerfile)
-2. **Image** = Frozen snapshot (like Docker image)
-3. **Agent** = Running instance (like Docker container)
-4. **Session** = User-facing wrapper (like Docker compose service)
+```typescript
+// Type system determines mode automatically
+createAgentX();                          // Source (no serverUrl)
+createAgentX({ apiKey: "..." });         // Source (no serverUrl)
+createAgentX({ serverUrl: "ws://..." }); // Mirror (has serverUrl)
+```
 
 **Benefits:**
+- Single import, single function to learn
+- TypeScript enforces correct configuration
+- Easy refactoring between modes
 
-- Versioning: Create derived images with different configs
-- Rollback: Return to previous image versions
-- Consistency: Same image produces same behavior
-- Separation: Business config (definition) vs runtime state (image)
+### Why WebSocket for Mirror?
 
-### Why Five Managers?
+Mirror mode uses WebSocket (not HTTP/SSE) for bidirectional communication:
 
-| Manager     | Scope    | Responsibility                           |
-| ----------- | -------- | ---------------------------------------- |
-| definitions | Platform | Template registry (register, get, list)  |
-| images      | Platform | Snapshot management (build, list, run)   |
-| agents      | Platform | Running agent query (get, list, destroy) |
-| sessions    | Platform | User-facing wrapper (create, resume)     |
-| errors      | Platform | Centralized error handling               |
+1. **Request/Response pattern** - Browser sends commands, server responds
+2. **Real-time events** - Server pushes stream events to browser
+3. **State synchronization** - Browser maintains local mirror of server state
 
-**Key Principle**: AgentManager only queries. Creation happens via `images.run()` or `sessions.create()`.
+### Why No `defineAgent`?
 
-### Why "Define Once, Run Anywhere"?
-
-AgentDefinition contains only business config (name, systemPrompt).
-Runtime provides infrastructure (Driver, Sandbox).
-
-| Environment | Runtime       | Driver       | Use Case                    |
-| ----------- | ------------- | ------------ | --------------------------- |
-| Server      | `nodeRuntime` | ClaudeDriver | Direct LLM API calls        |
-| Browser     | `sseRuntime`  | SSEDriver    | Connect to server via SSE   |
-| Edge        | EdgeRuntime   | EdgeDriver   | Cloudflare Workers (future) |
-
+Previous versions required:
 ```typescript
-// Same agent definition everywhere
-const MyAgent = defineAgent({
-  name: "Assistant",
-  systemPrompt: "You are helpful",
-});
-
-// Different runtimes for different environments
-const agentx = createAgentX(nodeRuntime()); // Server
-const agentx = createAgentX(sseRuntime({ serverUrl })); // Browser
+const MyAgent = defineAgent({ name: "Assistant", ... });
+agentx.definitions.register(MyAgent);
+const image = agentx.images.getMetaImage(MyAgent.name);
+const agent = await image.run();
 ```
 
-### Why Web Standard Request/Response?
-
-The server handler is built on Web Standard APIs instead of Express/Fastify/etc:
-
-1. **Framework Agnostic** - Works with any framework via thin adapters
-2. **Edge Compatible** - Runs on Cloudflare Workers, Deno Deploy, etc.
-3. **Future Proof** - Web Standards are stable and widely supported
-4. **Testable** - Can test handlers without framework boilerplate
-
+New API is simpler:
 ```typescript
-// The handler is just a function
-type AgentXHandler = (request: Request) => Promise<Response>;
-
-// Adapters are thin wrappers
-const toExpressHandler = (handler) => (req, res) => {
-  const request = toWebRequest(req);
-  const response = await handler(request);
-  copyToExpressResponse(response, res);
-};
+const agent = await agentx.run({ name: "Assistant", ... });
 ```
 
-### Why Stream-Only SSE Transport?
-
-Server forwards only Stream Layer events, not Message/State/Turn events:
-
-1. **Efficient Bandwidth** - Only transmit incremental deltas
-2. **Decoupling** - Server doesn't need to know client's event needs
-3. **Consistency** - Same AgentEngine code runs on server and client
-4. **Flexibility** - Different clients can process events differently
-
-```text
-┌─────────────────────────────────────────────────────────────────┐
-│ WRONG: Server sends assembled messages                           │
-│                                                                  │
-│ Server → [assembled message] → Client                            │
-│          (large payload)       (just displays)                   │
-└─────────────────────────────────────────────────────────────────┘
-
-┌─────────────────────────────────────────────────────────────────┐
-│ CORRECT: Server sends stream events                              │
-│                                                                  │
-│ Server → [text_delta, text_delta, ...] → Client.AgentEngine     │
-│          (small increments)              (reassembles)           │
-└─────────────────────────────────────────────────────────────────┘
-```
-
-### Why RemoteRepository noop for saveMessage?
-
-Browser's `RemoteRepository.saveMessage()` is intentionally a noop:
-
-1. Server-side `SessionCollector` persists messages
-2. Prevents duplicate persistence (both server and client saving)
-3. Browser only reads messages via HTTP GET
-
----
-
-## Package Structure
-
-```text
-agentxjs/src/
-├── AgentX.ts                    # Core platform factory
-├── defineAgent.ts               # Agent definition helper
-├── index.ts                     # Main entry point
-├── managers/                    # Platform-level managers
-│   ├── agent/                   # AgentManager (query running agents)
-│   ├── definition/              # DefinitionManager (agent templates)
-│   ├── image/                   # ImageManager (agent snapshots)
-│   ├── session/                 # SessionManager (user-facing wrapper)
-│   ├── error/                   # ErrorManager (error handling)
-│   └── remote/                  # Remote platform utilities
-├── runtime/                     # Runtime implementations
-│   └── sse/                     # Browser SSE runtime
-│       ├── SSERuntime.ts        # Main runtime + RemoteContainer
-│       ├── SSEDriver.ts         # Browser SSE driver
-│       ├── logger/              # BrowserLogger
-│       └── repository/          # RemoteRepository
-└── server/                      # Server-side HTTP handler
-    ├── createAgentXHandler.ts   # Framework-agnostic handler
-    ├── SSEServerTransport.ts    # SSE transport
-    └── adapters/                # Framework adapters
-        ├── express.ts
-        ├── hono.ts
-        └── next.ts
-```
+The `AgentRunConfig` replaces `AgentDefinition` for most use cases. For advanced scenarios (versioning, derived images), use the Images API directly.
 
 ---
 
 ## Package Dependencies
 
 ```text
-agentx-types (type definitions)
-     ↑
-agentx-common (logging facade)
-     ↑
-agentx-engine (event processing)
-     ↑
-agentx-agent (Agent runtime)
-     ↑
-agentx (this package) ← Platform API + defineAgent + sseRuntime
-     ↑
-agentx-runtime (NodeRuntime + ClaudeDriver)
-     ↑
-agentx-ui (React components)
+@agentxjs/types      Type definitions
+       ↑
+@agentxjs/common     Logger facade
+       ↑
+@agentxjs/runtime    Runtime implementation
+       ↑
+@agentxjs/mirror     MirrorRuntime implementation
+       ↑
+agentxjs             This package (unified API)
 ```
-
----
-
-## Related Packages
-
-| Package                                     | Description                |
-| ------------------------------------------- | -------------------------- |
-| [@agentxjs/types](../agentx-types)          | Type definitions           |
-| [@agentxjs/agent](../agentx-agent)          | Agent runtime              |
-| [@agentxjs/engine](../agentx-engine)        | Event processing engine    |
-| [@agentxjs/node-runtime](../agentx-runtime) | NodeRuntime + ClaudeDriver |
-| [@agentxjs/common](../agentx-common)        | Logging facade             |
-| [@agentxjs/ui](../agentx-ui)                | React components           |
 
 ---
 

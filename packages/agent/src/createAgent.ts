@@ -1,16 +1,16 @@
 /**
- * createAgent - Factory function to create an Agent
+ * createAgent - Factory function to create an AgentEngine
  *
- * Creates a standalone Agent instance with:
+ * Creates a standalone AgentEngine instance with:
  * - Driver: produces StreamEvents
  * - Presenter: consumes AgentOutput
  *
- * Agent is independent of Runtime (Container, Session, Bus).
+ * AgentEngine is independent of Runtime (Container, Session, Bus).
  * It can be tested in isolation with mock Driver and Presenter.
  */
 
 import type {
-  Agent,
+  AgentEngine,
   AgentState,
   AgentEventHandler,
   Unsubscribe,
@@ -63,9 +63,9 @@ class SimpleMessageQueue implements MessageQueue {
 }
 
 /**
- * SimpleAgent - Minimal Agent implementation
+ * SimpleAgent - Minimal AgentEngine implementation
  */
-class SimpleAgent implements Agent {
+class SimpleAgent implements AgentEngine {
   readonly agentId: string;
   readonly createdAt: number;
   readonly messageQueue: MessageQueue;
@@ -387,8 +387,8 @@ class SimpleAgent implements Agent {
 }
 
 /**
- * Create an Agent instance
+ * Create an AgentEngine instance
  */
-export function createAgent(options: CreateAgentOptions): Agent {
+export function createAgent(options: CreateAgentOptions): AgentEngine {
   return new SimpleAgent(options);
 }

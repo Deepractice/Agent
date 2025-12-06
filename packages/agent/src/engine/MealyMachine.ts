@@ -1,22 +1,22 @@
 /**
- * AgentEngine - Pure Mealy Machine Event Processor
+ * MealyMachine - Pure Mealy Machine Event Processor
  *
- * AgentEngine is a stateless event processor that transforms StreamEvents
+ * MealyMachine is a stateless event processor that transforms StreamEvents
  * into higher-level events (state, message, turn events).
  *
  * Key Design:
  * - Engine is a pure Mealy Machine: process(agentId, event) → outputs
- * - Engine does NOT hold driver or presenters (those belong to Agent layer)
+ * - Engine does NOT hold driver or presenters (those belong to AgentEngine layer)
  * - Engine manages intermediate processing state per agentId
- * - Multiple agents can share the same Engine instance
+ * - Multiple agents can share the same MealyMachine instance
  *
  * Type Relationship:
  * ```
  * StreamEvent (from Driver)
  * │
  * └── message_start, text_delta, tool_use_start, message_stop...
- *         ↓ Engine processes
- * AgentOutput (to Agent/Presenter)
+ *         ↓ MealyMachine processes
+ * AgentOutput (to AgentEngine/Presenter)
  * │
  * ├── StateEvent (conversation_start, conversation_end...)
  * ├── MessageEvent (assistant_message, tool_call_message...)
@@ -25,19 +25,19 @@
  *
  * State Management:
  * - Processing state (pendingContents, etc.) is managed internally per agentId
- * - Business data persistence is NOT handled here - that's Agent layer's job
+ * - Business data persistence is NOT handled here - that's AgentEngine layer's job
  *
  * Usage:
  * ```typescript
- * const engine = new AgentEngine();
+ * const machine = new MealyMachine();
  *
- * // Agent layer coordinates:
+ * // AgentEngine layer coordinates:
  * // 1. Driver produces StreamEvents
- * // 2. Engine processes events
+ * // 2. MealyMachine processes events
  * // 3. Presenters handle outputs
  *
  * for await (const streamEvent of driver.receive(message)) {
- *   const outputs = engine.process(agentId, streamEvent);
+ *   const outputs = machine.process(agentId, streamEvent);
  *   for (const output of outputs) {
  *     presenters.forEach(p => p.present(agentId, output));
  *   }
@@ -54,21 +54,21 @@ import { MemoryStore } from "~/engine/mealy";
 import type { AgentOutput, StreamEvent } from "@agentxjs/types/agent";
 import { createLogger } from "@agentxjs/common";
 
-const logger = createLogger("engine/AgentEngine");
+const logger = createLogger("engine/MealyMachine");
 
 /**
- * AgentEngine - Pure Mealy Machine for event processing
+ * MealyMachine - Pure Mealy Machine for event processing
  *
  * - Input: StreamEvent (from Driver)
  * - Output: AgentOutput[] (state, message, turn events)
  * - State: Managed internally per agentId
  */
-export class AgentEngine {
+export class MealyMachine {
   private readonly store: MemoryStore<AgentEngineState>;
 
   constructor() {
     this.store = new MemoryStore<AgentEngineState>();
-    logger.debug("AgentEngine initialized");
+    logger.debug("MealyMachine initialized");
   }
 
   /**
@@ -177,8 +177,8 @@ export class AgentEngine {
 }
 
 /**
- * Factory function to create AgentEngine
+ * Factory function to create MealyMachine
  */
-export function createAgentEngine(): AgentEngine {
-  return new AgentEngine();
+export function createMealyMachine(): MealyMachine {
+  return new MealyMachine();
 }

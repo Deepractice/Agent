@@ -7,7 +7,7 @@
 
 import { setWorldConstructor, World, Before, After } from "@cucumber/cucumber";
 import { createAgent } from "@agentxjs/agent";
-import type { Agent, AgentOutput, Unsubscribe, UserMessage, StateChange } from "@agentxjs/types/agent";
+import type { AgentEngine, AgentOutput, Unsubscribe, UserMessage, StateChange } from "@agentxjs/types/agent";
 import { MockDriver, MockPresenter } from "../../mocks/index.js";
 
 /**
@@ -17,8 +17,8 @@ export class AgentWorld extends World {
   // Core components
   driver!: MockDriver;
   presenter!: MockPresenter;
-  agent!: Agent;
-  agents: Agent[] = [];
+  agent!: AgentEngine;
+  agents: AgentEngine[] = [];
 
   // Event tracking
   receivedEvents: AgentOutput[] = [];
@@ -90,7 +90,7 @@ export class AgentWorld extends World {
   /**
    * Create an agent with current driver and presenter
    */
-  createAgent(): Agent {
+  createAgent(): AgentEngine {
     this.agent = createAgent({ driver: this.driver, presenter: this.presenter });
     return this.agent;
   }

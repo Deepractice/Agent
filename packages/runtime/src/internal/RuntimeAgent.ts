@@ -9,7 +9,7 @@
  */
 
 import type { Agent as RuntimeAgentInterface, AgentLifecycle, AgentConfig } from "@agentxjs/types/runtime";
-import type { Agent as AgentEngine, AgentPresenter, AgentOutput, Message } from "@agentxjs/types/agent";
+import type { AgentEngine, AgentPresenter, AgentOutput, Message } from "@agentxjs/types/agent";
 import type { SystemBus, Sandbox, Session } from "@agentxjs/types/runtime/internal";
 import { createAgent } from "@agentxjs/agent";
 import { BusDriver } from "./BusDriver";

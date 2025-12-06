@@ -4,7 +4,7 @@
  * ## Submodule Imports (Recommended)
  *
  * ```typescript
- * import { Agent, createAgent } from "@agentxjs/types/agent";
+ * import { AgentEngine, createAgent } from "@agentxjs/types/agent";
  * import { Runtime } from "@agentxjs/types/runtime";
  * ```
  *

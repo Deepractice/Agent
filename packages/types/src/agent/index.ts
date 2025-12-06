@@ -6,7 +6,7 @@
 
 // Core types
 export type {
-  Agent,
+  AgentEngine,
   StateChange,
   StateChangeHandler,
   EventHandlerMap,
