@@ -10,7 +10,14 @@ import type {
   SubscribeOptions,
   Unsubscribe,
 } from "@agentxjs/types/runtime/internal";
-import type { SystemEvent } from "@agentxjs/types/runtime";
+import type {
+  SystemEvent,
+  CommandEventMap,
+  CommandRequestType,
+  ResponseEventFor,
+  RequestDataFor,
+  CommandRequestResponseMap,
+} from "@agentxjs/types/event";
 import { Subject } from "rxjs";
 
 /**
@@ -96,6 +103,60 @@ export class SystemBusImpl implements SystemBus {
     handler: BusEventHandler<SystemEvent & { type: T }>
   ): Unsubscribe {
     return this.on(type, handler, { once: true });
+  }
+
+  onCommand<T extends keyof CommandEventMap>(
+    type: T,
+    handler: (event: CommandEventMap[T]) => void
+  ): Unsubscribe {
+    // Reuse the existing on() implementation with type casting
+    return this.on(type as string, handler as BusEventHandler);
+  }
+
+  emitCommand<T extends keyof CommandEventMap>(
+    type: T,
+    data: CommandEventMap[T]["data"]
+  ): void {
+    this.emit({
+      type,
+      timestamp: Date.now(),
+      data,
+      source: "command",
+      category: type.endsWith("_response") ? "response" : "request",
+      intent: type.endsWith("_response") ? "result" : "request",
+    } as SystemEvent);
+  }
+
+  request<T extends CommandRequestType>(
+    type: T,
+    data: RequestDataFor<T>,
+    timeout: number = 30000
+  ): Promise<ResponseEventFor<T>> {
+    return new Promise((resolve, reject) => {
+      const requestId = `req_${Date.now()}_${Math.random().toString(36).substring(2, 8)}`;
+
+      // Get response type from request type
+      const responseType = type.replace("_request", "_response") as CommandRequestResponseMap[T];
+
+      // Set up timeout
+      const timer = setTimeout(() => {
+        unsubscribe();
+        reject(new Error(`Request timeout: ${type}`));
+      }, timeout);
+
+      // Listen for response
+      const unsubscribe = this.onCommand(responseType, (event) => {
+        // Match by requestId
+        if ((event.data as { requestId: string }).requestId === requestId) {
+          clearTimeout(timer);
+          unsubscribe();
+          resolve(event as ResponseEventFor<T>);
+        }
+      });
+
+      // Emit request with generated requestId
+      this.emitCommand(type, { ...data, requestId } as CommandEventMap[T]["data"]);
+    });
   }
 
   destroy(): void {

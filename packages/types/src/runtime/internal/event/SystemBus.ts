@@ -39,6 +39,12 @@
  */
 
 import type { SystemEvent } from "~/event/base";
+import type {
+  CommandEventMap,
+  CommandRequestType,
+  ResponseEventFor,
+  RequestDataFor,
+} from "~/event/command";
 
 /**
  * Unsubscribe function type.
@@ -140,6 +146,70 @@ export interface SystemBus {
     type: T,
     handler: BusEventHandler<SystemEvent & { type: T }>
   ): Unsubscribe;
+
+  /**
+   * Subscribe to a CommandEvent with full type safety.
+   *
+   * @example
+   * ```typescript
+   * bus.onCommand("container_create_request", (event) => {
+   *   event.data.requestId;    // ✓ string
+   *   event.data.containerId;  // ✓ string
+   * });
+   * ```
+   *
+   * @param type - The command event type
+   * @param handler - Callback with fully typed event
+   * @returns Unsubscribe function
+   */
+  onCommand<T extends keyof CommandEventMap>(
+    type: T,
+    handler: (event: CommandEventMap[T]) => void
+  ): Unsubscribe;
+
+  /**
+   * Emit a CommandEvent with full type safety.
+   *
+   * @example
+   * ```typescript
+   * bus.emitCommand("container_create_request", {
+   *   requestId: "req_123",
+   *   containerId: "my-container"
+   * });
+   * ```
+   *
+   * @param type - The command event type
+   * @param data - Event data (type-checked)
+   */
+  emitCommand<T extends keyof CommandEventMap>(
+    type: T,
+    data: CommandEventMap[T]["data"]
+  ): void;
+
+  /**
+   * Send a command request and wait for response.
+   *
+   * Automatically generates requestId, emits request, waits for matching response.
+   *
+   * @example
+   * ```typescript
+   * const response = await bus.request("container_create_request", {
+   *   containerId: "my-container"
+   * });
+   * // response is ContainerCreateResponse
+   * console.log(response.data.containerId);
+   * ```
+   *
+   * @param type - The request event type
+   * @param data - Request data (without requestId)
+   * @param timeout - Timeout in milliseconds (default: 30000)
+   * @returns Promise of response event
+   */
+  request<T extends CommandRequestType>(
+    type: T,
+    data: RequestDataFor<T>,
+    timeout?: number
+  ): Promise<ResponseEventFor<T>>;
 
   /**
    * Destroy the bus and clean up resources.

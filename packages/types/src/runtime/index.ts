@@ -15,12 +15,8 @@
 
 export type {
   Runtime,
-  RuntimeEventHandler,
   Unsubscribe,
-  ContainersAPI,
-  AgentsAPI,
-  ImagesAPI,
-  EventsAPI,
+  BusEventHandler,
 } from "./Runtime";
 
 export type { Container } from "./internal/container/Container";

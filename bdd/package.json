@@ -11,7 +11,6 @@
   },
   "devDependencies": {
     "@agentxjs/agent": "workspace:*",
-    "@agentxjs/mirror": "workspace:*",
     "@agentxjs/runtime": "workspace:*",
     "@agentxjs/types": "workspace:*",
     "@cucumber/cucumber": "^11.2.0",

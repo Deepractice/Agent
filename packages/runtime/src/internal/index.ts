@@ -16,3 +16,4 @@ export {
   RuntimeContainer,
   type RuntimeContainerContext,
 } from "./RuntimeContainer";
+export { CommandHandler, type RuntimeOperations } from "./CommandHandler";

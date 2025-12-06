@@ -34,8 +34,6 @@
   },
   "dependencies": {
     "@agentxjs/common": "workspace:*",
-    "@agentxjs/mirror": "workspace:*",
-    "@agentxjs/network": "workspace:*",
     "@agentxjs/types": "workspace:*"
   },
   "peerDependencies": {

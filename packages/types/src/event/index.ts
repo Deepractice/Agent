@@ -14,6 +14,10 @@
  * ```
  * SystemEvent
  * │
+ * ├── source: "command"       ← API operations (request/response)
+ * │   ├── category: "request"    → container_create_request, agent_run_request...
+ * │   └── category: "response"   → container_create_response, agent_run_response...
+ * │
  * ├── source: "environment"   ← External world (Claude API, Network)
  * │   ├── category: "stream"     → message_start, text_delta, message_stop...
  * │   └── category: "connection" → connected, disconnected, reconnecting
@@ -76,7 +80,7 @@ export * from "./container";
 export * from "./session";
 
 // ============================================================================
-// Mirror Events (Browser-Server Communication)
+// Command Events (API Operations - Request/Response)
 // ============================================================================
 
-export * from "./mirror";
+export * from "./command";

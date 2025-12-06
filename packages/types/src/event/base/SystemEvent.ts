@@ -49,7 +49,7 @@ export type EventSource =
   | "session" // Session operations
   | "container" // Container operations
   | "sandbox" // Sandbox resources (Workspace, MCP)
-  | "mirror"; // Browser mirror (request/response)
+  | "command"; // Command request/response (API operations)
 
 /**
  * Event intent - what the event represents
