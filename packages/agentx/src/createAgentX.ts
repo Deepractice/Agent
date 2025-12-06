@@ -143,10 +143,19 @@ async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
 // Remote Mode Implementation
 // ============================================================================
 
-async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
-  const { WebSocket } = await import("ws");
+// Declare window for TypeScript (available in browser)
+declare const window: { WebSocket: typeof WebSocket } | undefined;
 
-  const ws = new WebSocket(serverUrl);
+// Detect browser environment
+const isBrowser = typeof window !== "undefined" && typeof window.WebSocket !== "undefined";
+
+async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
+  // Use native WebSocket in browser, ws library in Node.js
+  const WebSocketImpl = isBrowser
+    ? window.WebSocket
+    : (await import("ws")).WebSocket;
+
+  const ws = new WebSocketImpl(serverUrl);
   const handlers = new Map<string, Set<(event: SystemEvent) => void>>();
   const pendingRequests = new Map<
     string,
@@ -159,14 +168,25 @@ async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
 
   // Wait for connection
   await new Promise<void>((resolve, reject) => {
-    ws.on("open", () => resolve());
-    ws.on("error", (err: Error) => reject(err));
+    if (isBrowser) {
+      // Browser WebSocket uses event properties
+      ws.onopen = () => resolve();
+      ws.onerror = () => reject(new Error("WebSocket connection failed"));
+    } else {
+      // Node.js ws uses EventEmitter
+      (ws as any).on("open", () => resolve());
+      (ws as any).on("error", (err: Error) => reject(err));
+    }
   });
 
   // Handle incoming messages
-  ws.on("message", (data: Buffer) => {
+  const handleMessage = (data: unknown) => {
     try {
-      const event = JSON.parse(data.toString()) as SystemEvent;
+      // Browser: data is MessageEvent, Node.js: data is Buffer
+      const text = isBrowser
+        ? (data as MessageEvent).data
+        : (data as Buffer).toString();
+      const event = JSON.parse(text) as SystemEvent;
 
       // Check if it's a response to a pending request
       const requestId = (event.data as { requestId?: string })?.requestId;
@@ -196,7 +216,14 @@ async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
     } catch {
       // Ignore parse errors
     }
-  });
+  };
+
+  // Register message handler
+  if (isBrowser) {
+    ws.onmessage = handleMessage;
+  } else {
+    (ws as any).on("message", handleMessage);
+  }
 
   function subscribe(
     type: string,

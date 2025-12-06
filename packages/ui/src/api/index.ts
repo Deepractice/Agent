@@ -4,6 +4,12 @@
 // React Hooks
 export * from "~/hooks";
 
+// Studio Components (top-level workspace)
+export * from "~/components/studio";
+
+// Container Components (business logic layer)
+export * from "~/components/container";
+
 // Pane Components (pure UI layer)
 export * from "~/components/pane";
 
