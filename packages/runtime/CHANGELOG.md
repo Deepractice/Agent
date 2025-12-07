@@ -1,5 +1,13 @@
 # @agentxjs/runtime
 
+## 0.1.5
+
+### Patch Changes
+
+- 275f120: fix: correct Claude Agent SDK options configuration
+  - Remove incorrect `executable` option (was passing process.execPath instead of 'node'/'bun'/'deno')
+  - Add required `allowDangerouslySkipPermissions: true` when using `bypassPermissions` mode
+
 ## 0.1.4
 
 ### Patch Changes
