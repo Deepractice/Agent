@@ -1,5 +1,14 @@
 # @agentxjs/runtime
 
+## 0.1.4
+
+### Patch Changes
+
+- faa35d4: fix: remove private packages from npm dependencies
+  - Move internal packages to devDependencies
+  - Bundle via tsup noExternal config
+  - Fixes npm install errors for end users
+
 ## 0.1.3
 
 ### Patch Changes
