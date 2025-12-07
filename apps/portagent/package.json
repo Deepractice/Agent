@@ -33,7 +33,6 @@
   },
   "dependencies": {
     "@agentxjs/runtime": "workspace:*",
-    "@agentxjs/types": "workspace:*",
     "@agentxjs/ui": "workspace:*",
     "@hono/node-server": "^1.13.7",
     "agentxjs": "workspace:*",

@@ -6,4 +6,6 @@ export default defineConfig({
   dts: true,
   clean: true,
   sourcemap: true,
+  // Bundle internal packages (private packages that won't be published)
+  noExternal: ["@agentxjs/types", "@agentxjs/common", "@agentxjs/agent"],
 });

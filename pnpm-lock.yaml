@@ -59,9 +59,6 @@ importers:
       '@agentxjs/runtime':
         specifier: workspace:*
         version: link:../../packages/runtime
-      '@agentxjs/types':
-        specifier: workspace:*
-        version: link:../../packages/types
       '@agentxjs/ui':
         specifier: workspace:*
         version: link:../../packages/ui
