@@ -99,10 +99,11 @@ export class AgentInteractor {
       broadcastable: false, // Internal event for ClaudeEffector
     } as never);
 
-    logger.debug("user_message event emitted", {
+    logger.info("user_message event emitted to bus", {
       messageId: userMessage.id,
       requestId,
       agentId: this.context.agentId,
+      eventType: "user_message",
     });
 
     return userMessage;

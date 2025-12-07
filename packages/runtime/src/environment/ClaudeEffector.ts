@@ -81,6 +81,12 @@ export class ClaudeEffector implements Effector {
         context?: EventContext;
       };
 
+      logger.debug("user_message event received", {
+        eventAgentId: typedEvent.context?.agentId,
+        myAgentId: this.config.agentId,
+        matches: typedEvent.context?.agentId === this.config.agentId,
+      });
+
       // Filter by agentId - only process messages for this agent
       if (typedEvent.context?.agentId !== this.config.agentId) {
         return;
@@ -216,6 +222,14 @@ export class ClaudeEffector implements Effector {
     (async () => {
       try {
         for await (const sdkMsg of this.claudeQuery!) {
+          // Log all SDK messages for debugging
+          logger.debug("SDK message received", {
+            type: sdkMsg.type,
+            subtype: (sdkMsg as { subtype?: string }).subtype,
+            sessionId: sdkMsg.session_id,
+            hasCurrentMeta: !!this.currentMeta,
+          });
+
           // Forward stream_event to receptor for emission with current meta
           if (sdkMsg.type === "stream_event" && this.currentMeta) {
             this.receptor.feed(sdkMsg, this.currentMeta);
@@ -233,7 +247,14 @@ export class ClaudeEffector implements Effector {
 
           // Handle result
           if (sdkMsg.type === "result") {
-            if (sdkMsg.subtype === "error_during_execution" && this.wasInterrupted) {
+            const resultMsg = sdkMsg as { subtype: string; is_error?: boolean; errors?: string[] };
+            logger.info("SDK result received", {
+              subtype: resultMsg.subtype,
+              isError: resultMsg.is_error,
+              errors: resultMsg.errors,
+              wasInterrupted: this.wasInterrupted,
+            });
+            if (resultMsg.subtype === "error_during_execution" && this.wasInterrupted) {
               this.receptor.emitInterrupted("user_interrupt", this.currentMeta || undefined);
             }
           }

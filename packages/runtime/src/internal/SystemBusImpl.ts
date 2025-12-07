@@ -21,6 +21,9 @@ import type {
   CommandRequestResponseMap,
 } from "@agentxjs/types/event";
 import { Subject } from "rxjs";
+import { createLogger } from "@agentxjs/common";
+
+const logger = createLogger("runtime/SystemBusImpl");
 
 /**
  * Internal subscription record
@@ -181,8 +184,13 @@ export class SystemBusImpl implements SystemBus {
 
       try {
         sub.handler(event);
-      } catch {
-        // Ignore handler errors
+      } catch (err) {
+        logger.error("Event handler error", {
+          eventType: event.type,
+          subscriptionType: sub.type,
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined,
+        });
       }
 
       if (sub.once) {

@@ -155,7 +155,14 @@ export class StorageSessionRepository implements SessionRepository {
 
   async getMessages(sessionId: string): Promise<Message[]> {
     const messages = await this.storage.getItem<Message[]>(this.messagesKey(sessionId));
-    return messages ?? [];
+    // Ensure we always return an array (handle corrupted data)
+    if (!messages || !Array.isArray(messages)) {
+      if (messages) {
+        logger.warn("Messages data is not an array, resetting", { sessionId, type: typeof messages });
+      }
+      return [];
+    }
+    return messages;
   }
 
   async clearMessages(sessionId: string): Promise<void> {

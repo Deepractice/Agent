@@ -285,9 +285,12 @@ export class RuntimeAgent implements RuntimeAgentInterface {
     this.environment.receptor.connect(config.bus.asProducer());
     this.environment.effector.connect(config.bus.asConsumer());
 
-    logger.debug("ClaudeEnvironment created for agent", {
+    logger.info("ClaudeEnvironment created for agent", {
       agentId: this.agentId,
+      imageId: this.imageId,
       resumeSessionId: resumeSessionId ?? "none",
+      isResume: !!resumeSessionId,
+      imageMetadata: config.image.metadata,
     });
 
     // Create Presenter (forwards to bus + persists to session)

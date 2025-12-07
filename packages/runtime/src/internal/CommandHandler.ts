@@ -80,6 +80,31 @@ function createResponse<T extends string, D>(type: T, data: D): SystemEvent {
 }
 
 /**
+ * Helper to create a system_error event
+ */
+function createSystemError(
+  message: string,
+  requestId: string,
+  context: Record<string, unknown>,
+  stack?: string
+): SystemEvent {
+  return {
+    type: "system_error",
+    timestamp: Date.now(),
+    source: "command",
+    category: "error",
+    intent: "notification",
+    data: {
+      message,
+      requestId,
+      severity: "error",
+      details: stack,
+    },
+    context,
+  } as SystemEvent;
+}
+
+/**
  * CommandHandler - Event handler for command events
  */
 export class CommandHandler extends BaseEventHandler {
@@ -90,6 +115,28 @@ export class CommandHandler extends BaseEventHandler {
     this.ops = operations;
     this.bindHandlers();
     logger.debug("CommandHandler created");
+  }
+
+  /**
+   * Log error and emit system_error event
+   */
+  private emitError(
+    operation: string,
+    err: unknown,
+    requestId: string,
+    context: Record<string, unknown>
+  ): void {
+    const errorMessage = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error ? err.stack : undefined;
+
+    logger.error(operation, {
+      requestId,
+      ...context,
+      error: errorMessage,
+      stack,
+    });
+
+    this.bus.emit(createSystemError(errorMessage, requestId, context, stack));
   }
 
   /**
@@ -135,6 +182,7 @@ export class CommandHandler extends BaseEventHandler {
         containerId,
       }));
     } catch (err) {
+      this.emitError("Failed to create container", err, requestId, { containerId });
       this.bus.emit(createResponse("container_create_response", {
         requestId,
         containerId,
@@ -204,6 +252,7 @@ export class CommandHandler extends BaseEventHandler {
         success,
       }));
     } catch (err) {
+      this.emitError("Failed to destroy agent", err, requestId, { agentId });
       this.bus.emit(createResponse("agent_destroy_response", {
         requestId,
         agentId,
@@ -224,6 +273,7 @@ export class CommandHandler extends BaseEventHandler {
         containerId,
       }));
     } catch (err) {
+      this.emitError("Failed to destroy all agents", err, requestId, { containerId });
       this.bus.emit(createResponse("agent_destroy_all_response", {
         requestId,
         containerId,
@@ -245,6 +295,7 @@ export class CommandHandler extends BaseEventHandler {
         agentId: result.agentId,
       }));
     } catch (err) {
+      this.emitError("Failed to send message", err, requestId, { imageId, agentId });
       this.bus.emit(createResponse("message_send_response", {
         requestId,
         imageId,
@@ -267,6 +318,7 @@ export class CommandHandler extends BaseEventHandler {
         agentId: result.agentId,
       }));
     } catch (err) {
+      this.emitError("Failed to interrupt agent", err, requestId, { imageId, agentId });
       this.bus.emit(createResponse("agent_interrupt_response", {
         requestId,
         imageId,
@@ -289,6 +341,7 @@ export class CommandHandler extends BaseEventHandler {
         record,
       }));
     } catch (err) {
+      this.emitError("Failed to create image", err, requestId, { containerId });
       this.bus.emit(createResponse("image_create_response", {
         requestId,
         record: null as unknown as ImageListItemResult,
@@ -310,6 +363,7 @@ export class CommandHandler extends BaseEventHandler {
         reused: result.reused,
       }));
     } catch (err) {
+      this.emitError("Failed to run image", err, requestId, { imageId });
       this.bus.emit(createResponse("image_run_response", {
         requestId,
         imageId,
@@ -331,6 +385,7 @@ export class CommandHandler extends BaseEventHandler {
         imageId,
       }));
     } catch (err) {
+      this.emitError("Failed to stop image", err, requestId, { imageId });
       this.bus.emit(createResponse("image_stop_response", {
         requestId,
         imageId,
@@ -350,6 +405,7 @@ export class CommandHandler extends BaseEventHandler {
         record,
       }));
     } catch (err) {
+      this.emitError("Failed to update image", err, requestId, { imageId });
       this.bus.emit(createResponse("image_update_response", {
         requestId,
         record: null as unknown as ImageListItemResult,
@@ -369,6 +425,7 @@ export class CommandHandler extends BaseEventHandler {
         records: images,
       }));
     } catch (err) {
+      this.emitError("Failed to list images", err, requestId, { containerId });
       this.bus.emit(createResponse("image_list_response", {
         requestId,
         records: [],
@@ -388,6 +445,7 @@ export class CommandHandler extends BaseEventHandler {
         record: image,
       }));
     } catch (err) {
+      this.emitError("Failed to get image", err, requestId, { imageId });
       this.bus.emit(createResponse("image_get_response", {
         requestId,
         error: err instanceof Error ? err.message : String(err),
@@ -406,6 +464,7 @@ export class CommandHandler extends BaseEventHandler {
         imageId,
       }));
     } catch (err) {
+      this.emitError("Failed to delete image", err, requestId, { imageId });
       this.bus.emit(createResponse("image_delete_response", {
         requestId,
         imageId,
@@ -428,7 +487,7 @@ export class CommandHandler extends BaseEventHandler {
       }));
       logger.info("Emitted image_messages_response", { requestId, imageId });
     } catch (err) {
-      logger.error("Failed to get image messages", { imageId, error: err });
+      this.emitError("Failed to get image messages", err, requestId, { imageId });
       this.bus.emit(createResponse("image_messages_response", {
         requestId,
         imageId,
