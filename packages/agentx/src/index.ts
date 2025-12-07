@@ -178,3 +178,18 @@ export type {
   ToolResultPart,
   ToolResultOutput,
 } from "@agentxjs/types/agent";
+
+// ============================================================================
+// Logger - from @agentxjs/common
+// ============================================================================
+
+export { createLogger, ConsoleLogger, LoggerFactoryImpl, setLoggerFactory } from "@agentxjs/common";
+
+export type {
+  Logger,
+  LoggerFactory,
+  LogContext,
+  LogLevel,
+  ConsoleLoggerOptions,
+  LoggerFactoryConfig,
+} from "@agentxjs/common";

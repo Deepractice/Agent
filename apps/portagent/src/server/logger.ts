@@ -11,7 +11,7 @@
 import pino, { type Logger as PinoLogger } from "pino";
 import fs from "node:fs";
 import path from "node:path";
-import type { Logger, LoggerFactory, LogContext, LogLevel } from "@agentxjs/types";
+import type { Logger, LoggerFactory, LogContext, LogLevel } from "agentxjs";
 
 /**
  * Map AgentX log levels to pino log levels
