@@ -1,5 +1,13 @@
 # @agentxjs/ui
 
+## 0.1.1
+
+### Patch Changes
+
+- aa60143: test: verify CI publish workflow
+- Updated dependencies [aa60143]
+  - agentxjs@0.1.1
+
 ## 0.1.0
 
 ### Patch Changes
