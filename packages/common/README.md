@@ -58,7 +58,7 @@ setLoggerFactory(new LoggerFactoryImpl());
 logger.info("This is logged");
 ```
 
-####  2. Structured Logging
+#### 2. Structured Logging
 
 All loggers support structured context:
 
@@ -78,10 +78,10 @@ logger.info("User logged in", {
 Supported log levels (in order of severity):
 
 ```typescript
-logger.debug("Detailed debug info");  // Development only
-logger.info("Normal operation");       // General info
-logger.warn("Warning condition");      // Potential issues
-logger.error("Error occurred");        // Errors
+logger.debug("Detailed debug info"); // Development only
+logger.info("Normal operation"); // General info
+logger.warn("Warning condition"); // Potential issues
+logger.error("Error occurred"); // Errors
 ```
 
 ### API
@@ -95,6 +95,7 @@ const logger = createLogger("agent/MyAgent");
 ```
 
 **Parameters:**
+
 - `category` - Logger category (e.g., `"engine/AgentEngine"`, `"runtime/Container"`)
 
 **Returns:** `Logger` instance
@@ -106,10 +107,12 @@ Sets the global logger factory (called by Runtime).
 ```typescript
 import { LoggerFactoryImpl, setLoggerFactory } from "@agentxjs/common";
 
-setLoggerFactory(new LoggerFactoryImpl({
-  level: "debug",
-  enableTimestamp: true,
-}));
+setLoggerFactory(
+  new LoggerFactoryImpl({
+    level: "debug",
+    enableTimestamp: true,
+  })
+);
 ```
 
 ### Logger Interface
@@ -150,9 +153,9 @@ logger.info("Hello", { foo: "bar" });
 
 ```typescript
 interface ConsoleLoggerOptions {
-  level?: LogLevel;          // Minimum log level (default: "info")
-  enableTimestamp?: boolean;  // Show timestamps (default: false)
-  enableColor?: boolean;      // Colorize output (default: true in TTY)
+  level?: LogLevel; // Minimum log level (default: "info")
+  enableTimestamp?: boolean; // Show timestamps (default: false)
+  enableColor?: boolean; // Colorize output (default: true in TTY)
 }
 ```
 

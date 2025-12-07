@@ -70,7 +70,9 @@ export type ToEngineEvent<E> = E extends {
   type: infer T;
   timestamp: number;
   data: infer D;
-} ? EngineEvent<T extends string ? T : string, D> : never;
+}
+  ? EngineEvent<T extends string ? T : string, D>
+  : never;
 
 /**
  * ToEngineEventUnion - Convert a union of AgentEvents to EngineEvents

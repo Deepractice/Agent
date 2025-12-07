@@ -200,7 +200,16 @@ export interface LocalConfig {
    * server.listen(5200);
    * ```
    */
-  server?: unknown;
+  server?: {
+    on(
+      event: "upgrade",
+      listener: (
+        request: { url?: string; headers: { host?: string } },
+        socket: unknown,
+        head: unknown
+      ) => void
+    ): void;
+  };
 }
 
 // ============================================================================
@@ -294,10 +303,7 @@ export interface AgentX {
    * });
    * ```
    */
-  on<T extends string>(
-    type: T,
-    handler: (event: SystemEvent & { type: T }) => void
-  ): Unsubscribe;
+  on<T extends string>(type: T, handler: (event: SystemEvent & { type: T }) => void): Unsubscribe;
 
   /**
    * Subscribe to command events with full type safety.
@@ -319,10 +325,7 @@ export interface AgentX {
    *
    * For fine-grained control. Usually prefer `request()`.
    */
-  emitCommand<T extends keyof CommandEventMap>(
-    type: T,
-    data: CommandEventMap[T]["data"]
-  ): void;
+  emitCommand<T extends keyof CommandEventMap>(type: T, data: CommandEventMap[T]["data"]): void;
 
   // ==================== Server API (local mode only) ====================
 

@@ -125,11 +125,7 @@ export interface SystemBus {
    * @param options - Subscription options
    * @returns Unsubscribe function
    */
-  on(
-    types: string[],
-    handler: BusEventHandler,
-    options?: SubscribeOptions
-  ): Unsubscribe;
+  on(types: string[], handler: BusEventHandler, options?: SubscribeOptions): Unsubscribe;
 
   /**
    * Subscribe to all events.
@@ -147,10 +143,7 @@ export interface SystemBus {
    * @param handler - Callback function
    * @returns Unsubscribe function
    */
-  once<T extends string>(
-    type: T,
-    handler: BusEventHandler<SystemEvent & { type: T }>
-  ): Unsubscribe;
+  once<T extends string>(type: T, handler: BusEventHandler<SystemEvent & { type: T }>): Unsubscribe;
 
   /**
    * Subscribe to a CommandEvent with full type safety.
@@ -186,10 +179,7 @@ export interface SystemBus {
    * @param type - The command event type
    * @param data - Event data (type-checked)
    */
-  emitCommand<T extends keyof CommandEventMap>(
-    type: T,
-    data: CommandEventMap[T]["data"]
-  ): void;
+  emitCommand<T extends keyof CommandEventMap>(type: T, data: CommandEventMap[T]["data"]): void;
 
   /**
    * Send a command request and wait for response.

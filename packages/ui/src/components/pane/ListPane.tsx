@@ -185,8 +185,7 @@ export const ListPane = React.forwardRef<HTMLDivElement, ListPaneProps>(
       return items.filter(
         (item) =>
           item.title.toLowerCase().includes(query) ||
-          (typeof item.subtitle === "string" &&
-            item.subtitle.toLowerCase().includes(query))
+          (typeof item.subtitle === "string" && item.subtitle.toLowerCase().includes(query))
       );
     }, [items, searchQuery]);
 
@@ -267,7 +266,8 @@ export const ListPane = React.forwardRef<HTMLDivElement, ListPaneProps>(
                   leading={item.leading}
                   title={item.title}
                   subtitle={
-                    item.subtitle || (item.timestamp ? (
+                    item.subtitle ||
+                    (item.timestamp ? (
                       <span className="text-xs text-muted-foreground">
                         {formatRelativeTime(item.timestamp)}
                       </span>

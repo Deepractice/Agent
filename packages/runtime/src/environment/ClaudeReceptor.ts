@@ -94,7 +94,10 @@ export class ClaudeReceptor implements Receptor {
   /**
    * Emit interrupted event
    */
-  emitInterrupted(reason: "user_interrupt" | "timeout" | "error" | "system", meta?: ReceptorMeta): void {
+  emitInterrupted(
+    reason: "user_interrupt" | "timeout" | "error" | "system",
+    meta?: ReceptorMeta
+  ): void {
     const eventMeta = meta || this.currentMeta;
     this.emitToBus({
       type: "interrupted",
@@ -144,12 +147,7 @@ export class ClaudeReceptor implements Receptor {
     }
 
     for (const block of sdkMsg.message.content) {
-      if (
-        block &&
-        typeof block === "object" &&
-        "type" in block &&
-        block.type === "tool_result"
-      ) {
+      if (block && typeof block === "object" && "type" in block && block.type === "tool_result") {
         const toolResultBlock = block as unknown as {
           tool_use_id: string;
           content: unknown;
@@ -346,7 +344,12 @@ export class ClaudeReceptor implements Receptor {
           requestId,
           context,
           data: {
-            stopReason: (this.blockContext.lastStopReason as "end_turn" | "tool_use" | "max_tokens" | "stop_sequence") || "end_turn",
+            stopReason:
+              (this.blockContext.lastStopReason as
+                | "end_turn"
+                | "tool_use"
+                | "max_tokens"
+                | "stop_sequence") || "end_turn",
             stopSequence: this.blockContext.lastStopSequence || undefined,
           },
         } as MessageStopEvent);

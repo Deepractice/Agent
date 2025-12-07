@@ -3,6 +3,7 @@
 ## 目标
 
 将 SystemBus 改造成有向的 Producer/Consumer 架构，解决：
+
 1. 发送端收到自己消息的问题
 2. BusDriver 的竞态条件问题
 3. 代码职责不清晰的问题
@@ -23,6 +24,7 @@ Agent  Effector Receptor Container Session
 ```
 
 **问题：**
+
 - ❌ 组件会收到自己发的消息
 - ❌ emit 和 on 时序导致竞态条件
 - ❌ 职责不清（哪些是生产者？哪些是消费者？）
@@ -46,6 +48,7 @@ SystemBus (有向总线)
 ```
 
 **优势：**
+
 - ✅ Producer 只能 emit，不会收到消息
 - ✅ Consumer 只能 on，不会发送消息
 - ✅ 职责清晰，编译时检查
@@ -55,31 +58,31 @@ SystemBus (有向总线)
 
 ### 1. 纯生产者（只需要 SystemBusProducer）
 
-| 组件 | 当前 | 改为 | 发送事件 |
-|------|------|------|----------|
-| **ClaudeReceptor** | `SystemBus` | `SystemBusProducer` | message_start, text_delta, message_stop, interrupted |
-| **RuntimeContainer** | `SystemBus` | `SystemBusProducer` | container_created, container_destroyed, agent_registered, agent_unregistered |
-| **RuntimeSession** | `SystemBus` | `SystemBusProducer` | session_created, message_persisted |
-| **RuntimeAgent/BusPresenter** | `SystemBus` | `SystemBusProducer` | interrupted, session_resumed, session_destroyed |
-| **BaseEventHandler** | `SystemBus` | `SystemBusProducer` | system_error |
+| 组件                          | 当前        | 改为                | 发送事件                                                                     |
+| ----------------------------- | ----------- | ------------------- | ---------------------------------------------------------------------------- |
+| **ClaudeReceptor**            | `SystemBus` | `SystemBusProducer` | message_start, text_delta, message_stop, interrupted                         |
+| **RuntimeContainer**          | `SystemBus` | `SystemBusProducer` | container_created, container_destroyed, agent_registered, agent_unregistered |
+| **RuntimeSession**            | `SystemBus` | `SystemBusProducer` | session_created, message_persisted                                           |
+| **RuntimeAgent/BusPresenter** | `SystemBus` | `SystemBusProducer` | interrupted, session_resumed, session_destroyed                              |
+| **BaseEventHandler**          | `SystemBus` | `SystemBusProducer` | system_error                                                                 |
 
 ### 2. 纯消费者（只需要 SystemBusConsumer）
 
-| 组件 | 当前 | 改为 | 订阅事件 |
-|------|------|------|----------|
+| 组件               | 当前        | 改为                | 订阅事件                |
+| ------------------ | ----------- | ------------------- | ----------------------- |
 | **ClaudeEffector** | `SystemBus` | `SystemBusConsumer` | user_message, interrupt |
 
 ### 3. 双向组件（需要两个参数）
 
-| 组件 | 当前 | 改为 | 原因 |
-|------|------|------|------|
-| **BusDriver** | `SystemBus` | `producer: SystemBusProducer`<br>`consumer: SystemBusConsumer` | 需要 emit user_message，也需要 on DriveableEvents |
-| **CommandHandler** | `SystemBus` | `producer: SystemBusProducer`<br>`consumer: SystemBusConsumer` | 需要 on *_request，也需要 emit *_response |
+| 组件               | 当前        | 改为                                                           | 原因                                              |
+| ------------------ | ----------- | -------------------------------------------------------------- | ------------------------------------------------- |
+| **BusDriver**      | `SystemBus` | `producer: SystemBusProducer`<br>`consumer: SystemBusConsumer` | 需要 emit user_message，也需要 on DriveableEvents |
+| **CommandHandler** | `SystemBus` | `producer: SystemBusProducer`<br>`consumer: SystemBusConsumer` | 需要 on _\_request，也需要 emit _\_response       |
 
 ### 4. 创建组件（保持完整 SystemBus）
 
-| 组件 | 当前 | 改为 | 原因 |
-|------|------|------|------|
+| 组件            | 当前        | 改为        | 原因                                  |
+| --------------- | ----------- | ----------- | ------------------------------------- |
 | **RuntimeImpl** | `SystemBus` | `SystemBus` | 需要创建 producer/consumer 传给子组件 |
 
 ## 实施步骤
@@ -299,7 +302,7 @@ export class AsyncQueue<T> {
       } else if (this.closed) {
         break;
       } else {
-        const result = await new Promise<IteratorResult<T>>(resolve => {
+        const result = await new Promise<IteratorResult<T>>((resolve) => {
           this.waiting.push(resolve);
         });
         if (result.done) break;
@@ -424,23 +427,23 @@ describe('SystemBus Producer/Consumer', () => {
 
 ### 修改文件列表（共 9 个）
 
-| 文件 | 类型 | 工作量 |
-|------|------|--------|
-| `SystemBus.ts` | ✅ 已完成 | 添加接口 |
-| `SystemBusProducer.ts` | ✅ 已完成 | 新增接口 |
-| `SystemBusConsumer.ts` | ✅ 已完成 | 新增接口 |
-| `SystemBusImpl.ts` | ✅ 已完成 | 实现方法 |
-| `BusDriver.ts` | 🔄 待修改 | 大（需要 AsyncQueue） |
-| `ClaudeReceptor.ts` | 🔄 待修改 | 小 |
-| `ClaudeEffector.ts` | 🔄 待修改 | 小 |
-| `ClaudeEnvironment.ts` | 🔄 待修改 | 小（调用处） |
-| `RuntimeAgent.ts` | 🔄 待修改 | 小 |
-| `RuntimeContainer.ts` | 🔄 待修改 | 小 |
-| `RuntimeSession.ts` | 🔄 待修改 | 小 |
-| `CommandHandler.ts` | 🔄 待修改 | 中 |
-| `BaseEventHandler.ts` | 🔄 待修改 | 小 |
-| `RuntimeImpl.ts` | 🔄 待修改 | 小（调用处） |
-| `AsyncQueue.ts` | ✅ 待创建 | 中（新增工具类） |
+| 文件                   | 类型      | 工作量                |
+| ---------------------- | --------- | --------------------- |
+| `SystemBus.ts`         | ✅ 已完成 | 添加接口              |
+| `SystemBusProducer.ts` | ✅ 已完成 | 新增接口              |
+| `SystemBusConsumer.ts` | ✅ 已完成 | 新增接口              |
+| `SystemBusImpl.ts`     | ✅ 已完成 | 实现方法              |
+| `BusDriver.ts`         | 🔄 待修改 | 大（需要 AsyncQueue） |
+| `ClaudeReceptor.ts`    | 🔄 待修改 | 小                    |
+| `ClaudeEffector.ts`    | 🔄 待修改 | 小                    |
+| `ClaudeEnvironment.ts` | 🔄 待修改 | 小（调用处）          |
+| `RuntimeAgent.ts`      | 🔄 待修改 | 小                    |
+| `RuntimeContainer.ts`  | 🔄 待修改 | 小                    |
+| `RuntimeSession.ts`    | 🔄 待修改 | 小                    |
+| `CommandHandler.ts`    | 🔄 待修改 | 中                    |
+| `BaseEventHandler.ts`  | 🔄 待修改 | 小                    |
+| `RuntimeImpl.ts`       | 🔄 待修改 | 小（调用处）          |
+| `AsyncQueue.ts`        | ✅ 待创建 | 中（新增工具类）      |
 
 ### 外部 API 影响
 
@@ -476,23 +479,23 @@ await runtime.request('agent_run_request', { ... });
 
 ## 风险评估
 
-| 风险 | 等级 | 缓解措施 |
-|------|------|----------|
-| 组件修改量大 | 低 | 每个组件改动都很小，模式统一 |
-| 引入新 bug | 低 | AsyncQueue 有完整测试 |
-| 破坏外部 API | 无 | 纯内部重构 |
-| 性能影响 | 无 | asProducer/asConsumer 是缓存的 |
+| 风险         | 等级 | 缓解措施                       |
+| ------------ | ---- | ------------------------------ |
+| 组件修改量大 | 低   | 每个组件改动都很小，模式统一   |
+| 引入新 bug   | 低   | AsyncQueue 有完整测试          |
+| 破坏外部 API | 无   | 纯内部重构                     |
+| 性能影响     | 无   | asProducer/asConsumer 是缓存的 |
 
 ## 执行时间表
 
-| 阶段 | 时间 | 负责人 |
-|------|------|--------|
-| Phase 1: 接口定义 | ✅ 已完成 | Claude |
-| Phase 2: 纯生产者重构 | 2小时 | 待定 |
-| Phase 3: 纯消费者重构 | 1小时 | 待定 |
-| Phase 4: 双向组件重构 | 3小时 | 待定 |
-| Phase 5: 测试验证 | 2小时 | 待定 |
-| **总计** | **8小时** | |
+| 阶段                  | 时间      | 负责人 |
+| --------------------- | --------- | ------ |
+| Phase 1: 接口定义     | ✅ 已完成 | Claude |
+| Phase 2: 纯生产者重构 | 2小时     | 待定   |
+| Phase 3: 纯消费者重构 | 1小时     | 待定   |
+| Phase 4: 双向组件重构 | 3小时     | 待定   |
+| Phase 5: 测试验证     | 2小时     | 待定   |
+| **总计**              | **8小时** |        |
 
 ## 结论
 

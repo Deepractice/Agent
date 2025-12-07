@@ -24,7 +24,13 @@ import type {
   SubscribeOptions,
   Unsubscribe,
 } from "@agentxjs/types/runtime/internal";
-import type { SystemEvent, CommandEventMap, CommandRequestType, ResponseEventFor, RequestDataFor } from "@agentxjs/types/event";
+import type {
+  SystemEvent,
+  CommandEventMap,
+  CommandRequestType,
+  ResponseEventFor,
+  RequestDataFor,
+} from "@agentxjs/types/event";
 import type { RuntimeConfig } from "./createRuntime";
 import type { RuntimeImageContext, RuntimeContainerContext } from "./internal";
 import type { ImageListItemResult } from "./internal/CommandHandler";
@@ -117,10 +123,7 @@ export class RuntimeImpl implements Runtime {
     return this.bus.onCommand(type, handler);
   }
 
-  emitCommand<T extends keyof CommandEventMap>(
-    type: T,
-    data: CommandEventMap[T]["data"]
-  ): void {
+  emitCommand<T extends keyof CommandEventMap>(type: T, data: CommandEventMap[T]["data"]): void {
     this.bus.emitCommand(type, data);
   }
 
@@ -158,7 +161,9 @@ export class RuntimeImpl implements Runtime {
         return container ? { containerId: container.containerId } : undefined;
       },
       listContainers: () => {
-        return Array.from(this.containerRegistry.values()).map(c => ({ containerId: c.containerId }));
+        return Array.from(this.containerRegistry.values()).map((c) => ({
+          containerId: c.containerId,
+        }));
       },
 
       // Agent operations (by agentId)
@@ -172,7 +177,7 @@ export class RuntimeImpl implements Runtime {
       listAgents: (containerId: string) => {
         const container = this.containerRegistry.get(containerId);
         if (!container) return [];
-        return container.listAgents().map(a => {
+        return container.listAgents().map((a) => {
           const imageId = this.findImageIdForAgent(a.agentId);
           return { agentId: a.agentId, containerId: a.containerId, imageId: imageId ?? "" };
         });
@@ -191,16 +196,30 @@ export class RuntimeImpl implements Runtime {
       },
 
       // Agent operations (by imageId - with auto-activation)
-      receiveMessage: async (imageId: string | undefined, agentId: string | undefined, content: string, requestId: string) => {
+      receiveMessage: async (
+        imageId: string | undefined,
+        agentId: string | undefined,
+        content: string,
+        requestId: string
+      ) => {
         // If imageId provided, auto-activate the image
         if (imageId) {
-          logger.debug("Receiving message by imageId", { imageId, contentLength: content.length, requestId });
+          logger.debug("Receiving message by imageId", {
+            imageId,
+            contentLength: content.length,
+            requestId,
+          });
           const record = await this.persistence.images.findImageById(imageId);
           if (!record) throw new Error(`Image not found: ${imageId}`);
 
           const container = await this.getOrCreateContainer(record.containerId);
           const { agent, reused } = await container.runImage(record);
-          logger.info("Message routed to agent", { imageId, agentId: agent.agentId, reused, requestId });
+          logger.info("Message routed to agent", {
+            imageId,
+            agentId: agent.agentId,
+            reused,
+            requestId,
+          });
           // Pass requestId for event correlation
           await agent.receive(content, requestId);
           return { agentId: agent.agentId, imageId };
@@ -208,7 +227,11 @@ export class RuntimeImpl implements Runtime {
 
         // Fallback to agentId (legacy)
         if (agentId) {
-          logger.debug("Receiving message by agentId (legacy)", { agentId, contentLength: content.length, requestId });
+          logger.debug("Receiving message by agentId (legacy)", {
+            agentId,
+            contentLength: content.length,
+            requestId,
+          });
           const agent = this.findAgent(agentId);
           if (!agent) throw new Error(`Agent not found: ${agentId}`);
           // Pass requestId for event correlation
@@ -219,7 +242,11 @@ export class RuntimeImpl implements Runtime {
 
         throw new Error("Either imageId or agentId must be provided");
       },
-      interruptAgent: (imageId: string | undefined, agentId: string | undefined, requestId?: string) => {
+      interruptAgent: (
+        imageId: string | undefined,
+        agentId: string | undefined,
+        requestId?: string
+      ) => {
         // If imageId provided, find agent for that image
         if (imageId) {
           const foundAgentId = this.findAgentIdForImage(imageId);
@@ -229,7 +256,11 @@ export class RuntimeImpl implements Runtime {
           }
           const agent = this.findAgent(foundAgentId);
           if (agent) {
-            logger.info("Interrupting agent by imageId", { imageId, agentId: foundAgentId, requestId });
+            logger.info("Interrupting agent by imageId", {
+              imageId,
+              agentId: foundAgentId,
+              requestId,
+            });
             // Pass requestId for event correlation
             agent.interrupt(requestId);
           }
@@ -251,7 +282,10 @@ export class RuntimeImpl implements Runtime {
       },
 
       // Image operations (new model)
-      createImage: async (containerId: string, config: { name?: string; description?: string; systemPrompt?: string }) => {
+      createImage: async (
+        containerId: string,
+        config: { name?: string; description?: string; systemPrompt?: string }
+      ) => {
         logger.debug("Creating image", { containerId, name: config.name });
         // Ensure container exists
         await this.getOrCreateContainer(containerId);
@@ -299,7 +333,7 @@ export class RuntimeImpl implements Runtime {
           ? await RuntimeImage.listByContainer(containerId, this.createImageContext())
           : await RuntimeImage.listAll(this.createImageContext());
 
-        return records.map(r => {
+        return records.map((r) => {
           const online = this.isImageOnline(r.imageId);
           return this.toImageListItemResult(r, online);
         });
@@ -341,7 +375,7 @@ export class RuntimeImpl implements Runtime {
 
         const messages = await image.getMessages();
         logger.debug("Got messages from storage", { imageId, count: messages.length });
-        return messages.map(m => {
+        return messages.map((m) => {
           // Extract content based on message subtype
           let content: unknown;
           let role: string = m.role;
@@ -438,7 +472,10 @@ export class RuntimeImpl implements Runtime {
   /**
    * Convert ImageRecord to ImageListItemResult
    */
-  private toImageListItemResult(record: import("@agentxjs/types").ImageRecord, online: boolean): ImageListItemResult {
+  private toImageListItemResult(
+    record: import("@agentxjs/types").ImageRecord,
+    online: boolean
+  ): ImageListItemResult {
     const agentId = online ? this.findAgentIdForImage(record.imageId) : undefined;
     return {
       imageId: record.imageId,

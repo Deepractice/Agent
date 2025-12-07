@@ -57,8 +57,5 @@ export interface SystemBusProducer {
    * @param type - The command event type
    * @param data - Event data (type-checked)
    */
-  emitCommand<T extends keyof CommandEventMap>(
-    type: T,
-    data: CommandEventMap[T]["data"]
-  ): void;
+  emitCommand<T extends keyof CommandEventMap>(type: T, data: CommandEventMap[T]["data"]): void;
 }

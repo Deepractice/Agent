@@ -84,14 +84,9 @@ export function AgentList({
   searchable = true,
   className,
 }: AgentListProps) {
-  const {
-    images,
-    isLoading,
-    createImage,
-    runImage,
-    deleteImage,
-    refresh,
-  } = useImages(agentx, { containerId });
+  const { images, isLoading, createImage, runImage, deleteImage, refresh } = useImages(agentx, {
+    containerId,
+  });
 
   // Map images to ListPaneItem[]
   const items: ListPaneItem[] = React.useMemo(() => {
@@ -101,10 +96,7 @@ export function AgentList({
       leading: <Bot className="w-4 h-4 text-muted-foreground" />,
       trailing: (
         <span
-          className={cn(
-            "w-2 h-2 rounded-full",
-            img.online ? "bg-green-500" : "bg-gray-400"
-          )}
+          className={cn("w-2 h-2 rounded-full", img.online ? "bg-green-500" : "bg-gray-400")}
           title={img.online ? "Online" : "Offline"}
         />
       ),

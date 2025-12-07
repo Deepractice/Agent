@@ -19,13 +19,10 @@ Given("an AgentX instance in local mode", async function (this: AgentXWorld) {
   this.agentx = await createAgentX();
 });
 
-Given(
-  "an AgentX instance in remote mode",
-  async function (this: AgentXWorld) {
-    // This would need a server running - mark as pending for now
-    throw new Error("Remote mode test requires running server");
-  }
-);
+Given("an AgentX instance in remote mode", async function (this: AgentXWorld) {
+  // This would need a server running - mark as pending for now
+  throw new Error("Remote mode test requires running server");
+});
 
 // ============================================================================
 // When - createAgentX()
@@ -112,14 +109,11 @@ Then("I should receive an AgentX instance", function (this: AgentXWorld) {
   assert(typeof this.agentx === "object", "AgentX should be an object");
 });
 
-Then(
-  "AgentX should have method {string}",
-  function (this: AgentXWorld, methodName: string) {
-    assert(this.agentx, "AgentX not initialized");
-    const method = (this.agentx as Record<string, unknown>)[methodName];
-    assert(typeof method === "function", `AgentX should have method ${methodName}`);
-  }
-);
+Then("AgentX should have method {string}", function (this: AgentXWorld, methodName: string) {
+  assert(this.agentx, "AgentX not initialized");
+  const method = (this.agentx as Record<string, unknown>)[methodName];
+  assert(typeof method === "function", `AgentX should have method ${methodName}`);
+});
 
 Then("the promise should resolve", function (this: AgentXWorld) {
   // If we get here, the promise resolved

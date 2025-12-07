@@ -73,7 +73,11 @@ export interface UseImagesResult {
    * Create a new image (conversation)
    * @returns The new image record
    */
-  createImage: (config?: { name?: string; description?: string; systemPrompt?: string }) => Promise<ImageListItem>;
+  createImage: (config?: {
+    name?: string;
+    description?: string;
+    systemPrompt?: string;
+  }) => Promise<ImageListItem>;
 
   /**
    * Run an image - create or reuse an Agent
@@ -89,7 +93,10 @@ export interface UseImagesResult {
   /**
    * Update image metadata
    */
-  updateImage: (imageId: string, updates: { name?: string; description?: string }) => Promise<ImageListItem>;
+  updateImage: (
+    imageId: string,
+    updates: { name?: string; description?: string }
+  ) => Promise<ImageListItem>;
 
   /**
    * Delete an image
@@ -130,10 +137,7 @@ export interface UseImagesOptions {
  * @param options - Optional configuration
  * @returns Image state and operations
  */
-export function useImages(
-  agentx: AgentX | null,
-  options: UseImagesOptions = {}
-): UseImagesResult {
+export function useImages(agentx: AgentX | null, options: UseImagesOptions = {}): UseImagesResult {
   const { containerId, autoLoad = true, onRun, onImagesChange } = options;
 
   // State
@@ -175,7 +179,9 @@ export function useImages(
 
   // Create a new image
   const createImage = useCallback(
-    async (config: { name?: string; description?: string; systemPrompt?: string } = {}): Promise<ImageListItem> => {
+    async (
+      config: { name?: string; description?: string; systemPrompt?: string } = {}
+    ): Promise<ImageListItem> => {
       if (!agentx) {
         throw new Error("AgentX not available");
       }
@@ -240,9 +246,7 @@ export function useImages(
 
         // Update image in list to show online
         setImages((prev) =>
-          prev.map((img) =>
-            img.imageId === imageId ? { ...img, online: true, agentId } : img
-          )
+          prev.map((img) => (img.imageId === imageId ? { ...img, online: true, agentId } : img))
         );
 
         logger.info("Image running", { imageId, agentId, reused });
@@ -299,7 +303,10 @@ export function useImages(
 
   // Update image metadata
   const updateImage = useCallback(
-    async (imageId: string, updates: { name?: string; description?: string }): Promise<ImageListItem> => {
+    async (
+      imageId: string,
+      updates: { name?: string; description?: string }
+    ): Promise<ImageListItem> => {
       if (!agentx) {
         throw new Error("AgentX not available");
       }
@@ -319,9 +326,7 @@ export function useImages(
         }
 
         // Update in list
-        setImages((prev) =>
-          prev.map((img) => (img.imageId === imageId ? record : img))
-        );
+        setImages((prev) => prev.map((img) => (img.imageId === imageId ? record : img)));
 
         logger.info("Image updated", { imageId, updates });
         return record;

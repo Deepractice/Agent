@@ -26,7 +26,4 @@ import type { SessionRepository } from "./SessionRepository";
  *
  * Combines all domain repositories for convenient single-point configuration.
  */
-export interface Repository
-  extends ContainerRepository,
-    ImageRepository,
-    SessionRepository {}
+export interface Repository extends ContainerRepository, ImageRepository, SessionRepository {}

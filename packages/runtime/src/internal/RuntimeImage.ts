@@ -10,7 +10,11 @@
  * - stop() / server restart → Agent destroyed, Image remains
  */
 
-import type { ImageRecord, ImageRepository, SessionRepository } from "@agentxjs/types/runtime/internal";
+import type {
+  ImageRecord,
+  ImageRepository,
+  SessionRepository,
+} from "@agentxjs/types/runtime/internal";
 import type { Message } from "@agentxjs/types/agent";
 import { createLogger } from "@agentxjs/common";
 
@@ -114,17 +118,19 @@ export class RuntimeImage {
       updatedAt: now,
     });
 
-    logger.info("Image created", { imageId, sessionId, containerId: config.containerId, name: record.name });
+    logger.info("Image created", {
+      imageId,
+      sessionId,
+      containerId: config.containerId,
+      name: record.name,
+    });
     return new RuntimeImage(record, context);
   }
 
   /**
    * Load an existing image from storage
    */
-  static async load(
-    imageId: string,
-    context: RuntimeImageContext
-  ): Promise<RuntimeImage | null> {
+  static async load(imageId: string, context: RuntimeImageContext): Promise<RuntimeImage | null> {
     const record = await context.imageRepository.findImageById(imageId);
     if (!record) {
       logger.debug("Image not found", { imageId });

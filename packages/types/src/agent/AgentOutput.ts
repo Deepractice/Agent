@@ -16,8 +16,4 @@ import type { AgentTurnEvent } from "./event/turn";
 /**
  * All possible output types from Agent
  */
-export type AgentOutput =
-  | StreamEvent
-  | AgentStateEvent
-  | AgentMessageEvent
-  | AgentTurnEvent;
+export type AgentOutput = StreamEvent | AgentStateEvent | AgentMessageEvent | AgentTurnEvent;

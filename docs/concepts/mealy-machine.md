@@ -25,8 +25,8 @@ class Agent {
     this.state = "thinking";
     const response = await llm.generate(message);
     this.state = "responding";
-    this.saveToDatabase(response);  // Side effect!
-    this.sendToUI(response);        // Side effect!
+    this.saveToDatabase(response); // Side effect!
+    this.sendToUI(response); // Side effect!
     this.state = "idle";
   }
 }
@@ -105,14 +105,14 @@ const result = machine.process(stateBefore, input);
 
 // State after
 result.state = {
-  currentMessage: { text: "Hello" },  // Updated
+  currentMessage: { text: "Hello" }, // Updated
   agentState: "responding",
 };
 
 // Outputs
 result.outputs = [
-  { type: "text_delta", data: { text: "Hello" } },           // Stream layer
-  { type: "conversation_responding", data: {} },             // State layer
+  { type: "text_delta", data: { text: "Hello" } }, // Stream layer
+  { type: "conversation_responding", data: {} }, // State layer
 ];
 ```
 
@@ -210,11 +210,7 @@ Output: turn_request, turn_response (with duration, tokens, cost)
 You can build custom processors for advanced use cases:
 
 ```typescript
-import {
-  type Processor,
-  type ProcessorResult,
-  combineProcessors,
-} from "@agentxjs/agent";
+import { type Processor, type ProcessorResult, combineProcessors } from "@agentxjs/agent";
 
 // Define processor type
 type MyState = { count: number };
@@ -246,18 +242,13 @@ const counterProcessor: Processor<MyState, MyInput, MyOutput> = (state, input) =
 // Use it
 const result = counterProcessor({ count: 0 }, { type: "increment" });
 console.log(result.state.count); // 1
-console.log(result.outputs);     // [{ type: "count_changed", data: { count: 1 } }]
+console.log(result.outputs); // [{ type: "count_changed", data: { count: 1 } }]
 ```
 
 ### Processor Combinators
 
 ```typescript
-import {
-  combineProcessors,
-  filterProcessor,
-  mapOutput,
-  withLogging,
-} from "@agentxjs/agent";
+import { combineProcessors, filterProcessor, mapOutput, withLogging } from "@agentxjs/agent";
 
 // Combine multiple processors
 const combined = combineProcessors(
@@ -267,16 +258,10 @@ const combined = combineProcessors(
 );
 
 // Filter inputs
-const filtered = filterProcessor(
-  myProcessor,
-  (input) => input.type === "text_delta"
-);
+const filtered = filterProcessor(myProcessor, (input) => input.type === "text_delta");
 
 // Transform outputs
-const mapped = mapOutput(
-  myProcessor,
-  (output) => ({ ...output, timestamp: Date.now() })
-);
+const mapped = mapOutput(myProcessor, (output) => ({ ...output, timestamp: Date.now() }));
 
 // Add logging
 const logged = withLogging(myProcessor, "MyProcessor");
@@ -296,7 +281,9 @@ describe("MealyMachine", () => {
   it("processes text_delta events", () => {
     const machine = createMealyMachine();
 
-    const state = { /* initial state */ };
+    const state = {
+      /* initial state */
+    };
     const input = {
       type: "text_delta",
       timestamp: Date.now(),
@@ -333,16 +320,19 @@ describe("MealyMachine", () => {
 ### Why Separate State and Output?
 
 **State** is internal (means):
+
 - Current message being assembled
 - Current agent state
 - Pending turn tracking
 
 **Output** is external (goal):
+
 - Events to emit
 - Messages to save
 - Metrics to track
 
 This separation allows:
+
 - State to evolve independently
 - Outputs to be consumed flexibly
 - Testing to focus on observable behavior

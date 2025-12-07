@@ -27,14 +27,11 @@ function getServerState(world: AgentXWorld): ServerTestState {
 // Given
 // ============================================================================
 
-Given(
-  /^agentx is listening on port (\d+)$/,
-  async function (this: AgentXWorld, port: number) {
-    assert(this.agentx, "AgentX not initialized");
-    await this.agentx.listen(port);
-    this.usedPorts.push(port);
-  }
-);
+Given(/^agentx is listening on port (\d+)$/, async function (this: AgentXWorld, port: number) {
+  assert(this.agentx, "AgentX not initialized");
+  await this.agentx.listen(port);
+  this.usedPorts.push(port);
+});
 
 Given(
   /^agentx is already listening on port (\d+)$/,
@@ -49,21 +46,18 @@ Given(
 // When - listen()
 // ============================================================================
 
-When(
-  /^I call agentx\.listen\((\d+)\)$/,
-  async function (this: AgentXWorld, port: number) {
-    assert(this.agentx, "AgentX not initialized");
+When(/^I call agentx\.listen\((\d+)\)$/, async function (this: AgentXWorld, port: number) {
+  assert(this.agentx, "AgentX not initialized");
 
-    const state = getServerState(this);
+  const state = getServerState(this);
 
-    try {
-      await this.agentx.listen(port);
-      this.usedPorts.push(port);
-    } catch (err) {
-      state.listenError = err as Error;
-    }
+  try {
+    await this.agentx.listen(port);
+    this.usedPorts.push(port);
+  } catch (err) {
+    state.listenError = err as Error;
   }
-);
+});
 
 When(
   /^I call agentx\.listen\((\d+), "([^"]*)"\)$/,
@@ -85,20 +79,17 @@ When(
 // When - close()
 // ============================================================================
 
-When(
-  "I call agentx.close\\()",
-  async function (this: AgentXWorld) {
-    assert(this.agentx, "AgentX not initialized");
+When("I call agentx.close\\()", async function (this: AgentXWorld) {
+  assert(this.agentx, "AgentX not initialized");
 
-    const state = getServerState(this);
+  const state = getServerState(this);
 
-    try {
-      await this.agentx.close();
-    } catch (err) {
-      state.closeError = err as Error;
-    }
+  try {
+    await this.agentx.close();
+  } catch (err) {
+    state.closeError = err as Error;
   }
-);
+});
 
 // ============================================================================
 // Then - Assertions
@@ -121,30 +112,24 @@ Then(
   }
 );
 
-Then(
-  "WebSocket server should be stopped",
-  async function (this: AgentXWorld) {
-    // All used ports should be closed
-    for (const port of this.usedPorts) {
-      const connected = await tryConnect(`ws://localhost:${port}`, 500);
-      assert(!connected, `WebSocket server on port ${port} should be stopped`);
-    }
+Then("WebSocket server should be stopped", async function (this: AgentXWorld) {
+  // All used ports should be closed
+  for (const port of this.usedPorts) {
+    const connected = await tryConnect(`ws://localhost:${port}`, 500);
+    assert(!connected, `WebSocket server on port ${port} should be stopped`);
   }
-);
+});
 
-Then(
-  /^it should throw "([^"]*)"$/,
-  function (this: AgentXWorld, expectedMessage: string) {
-    const state = getServerState(this);
-    const error = state.listenError || state.closeError;
+Then(/^it should throw "([^"]*)"$/, function (this: AgentXWorld, expectedMessage: string) {
+  const state = getServerState(this);
+  const error = state.listenError || state.closeError;
 
-    assert(error, "Expected an error to be thrown");
-    assert(
-      error.message.includes(expectedMessage),
-      `Expected error message to include "${expectedMessage}", got "${error.message}"`
-    );
-  }
-);
+  assert(error, "Expected an error to be thrown");
+  assert(
+    error.message.includes(expectedMessage),
+    `Expected error message to include "${expectedMessage}", got "${error.message}"`
+  );
+});
 
 // ============================================================================
 // Helper

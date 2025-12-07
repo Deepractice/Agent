@@ -21,7 +21,13 @@
 import * as React from "react";
 import type { AgentX } from "agentxjs";
 import { Save, Smile, Paperclip, FolderOpen } from "lucide-react";
-import { MessagePane, InputPane, type MessagePaneItem, type ToolBarItem, type ToolMetadata } from "~/components/pane";
+import {
+  MessagePane,
+  InputPane,
+  type MessagePaneItem,
+  type ToolBarItem,
+  type ToolMetadata,
+} from "~/components/pane";
 import { useAgent, type UIMessage } from "~/hooks";
 import { cn } from "~/utils";
 import { ChatHeader } from "./ChatHeader";
@@ -95,7 +101,10 @@ interface ToolResultContent {
 /**
  * Pending tool calls for matching with results
  */
-const pendingToolCalls = new Map<string, { name: string; input: Record<string, unknown>; timestamp: number }>();
+const pendingToolCalls = new Map<
+  string,
+  { name: string; input: Record<string, unknown>; timestamp: number }
+>();
 
 /**
  * Convert UIMessage to MessagePaneItem
@@ -209,13 +218,7 @@ export function Chat({
 }: ChatProps) {
   // Use imageId (Image-First model)
   // legacyAgentId is deprecated and ignored
-  const {
-    messages,
-    streaming,
-    status,
-    send,
-    interrupt,
-  } = useAgent(agentx, imageId ?? null);
+  const { messages, streaming, status, send, interrupt } = useAgent(agentx, imageId ?? null);
 
   // Map UIMessage[] to MessagePaneItem[]
   // Filter out tool_result messages that have been merged into tool_call
@@ -244,9 +247,7 @@ export function Chat({
 
   const toolbarRightItems: ToolBarItem[] = React.useMemo(() => {
     if (!showSaveButton || !onSave) return [];
-    return [
-      { id: "save", icon: <Save className="w-4 h-4" />, label: "Save conversation" },
-    ];
+    return [{ id: "save", icon: <Save className="w-4 h-4" />, label: "Save conversation" }];
   }, [showSaveButton, onSave]);
 
   const handleToolbarClick = React.useCallback(
@@ -280,19 +281,11 @@ export function Chat({
   return (
     <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Header */}
-      <ChatHeader
-        agentName={agentName}
-        status={status}
-        messageCount={messages.length}
-      />
+      <ChatHeader agentName={agentName} status={status} messageCount={messages.length} />
 
       {/* Message area */}
       <div style={{ height: messageHeight }} className="min-h-0">
-        <MessagePane
-          items={items}
-          streamingText={streaming}
-          isLoading={isLoading && !streaming}
-        />
+        <MessagePane items={items} streamingText={streaming} isLoading={isLoading && !streaming} />
       </div>
 
       {/* Input area */}

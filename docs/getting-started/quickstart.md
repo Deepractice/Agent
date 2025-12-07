@@ -299,14 +299,17 @@ main().catch(console.error);
 ## Troubleshooting
 
 **Agent not responding?**
+
 - Check your `ANTHROPIC_API_KEY` is valid
 - Ensure you have internet connection
 - Check console for error messages
 
 **TypeScript errors?**
+
 - Run `pnpm add -D @types/node`
 - Make sure `tsconfig.json` has `"moduleResolution": "bundler"`
 
 **Import errors?**
+
 - Add `"type": "module"` to `package.json`
 - Or use `.mts` file extension

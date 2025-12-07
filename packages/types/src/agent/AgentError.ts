@@ -8,10 +8,10 @@
  * Error category
  */
 export type AgentErrorCategory =
-  | "network"      // Network/API errors
-  | "validation"   // Input validation errors
-  | "system"       // Internal system errors
-  | "business";    // Business logic errors
+  | "network" // Network/API errors
+  | "validation" // Input validation errors
+  | "system" // Internal system errors
+  | "business"; // Business logic errors
 
 /**
  * AgentError - Standardized error structure

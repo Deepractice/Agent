@@ -133,4 +133,11 @@ export default [
       "react-hooks/exhaustive-deps": "warn",
     },
   },
+  // Storybook stories - allow hooks in render functions
+  {
+    files: ["**/*.stories.tsx"],
+    rules: {
+      "react-hooks/rules-of-hooks": "off",
+    },
+  },
 ];

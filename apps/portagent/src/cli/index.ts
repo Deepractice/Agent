@@ -55,7 +55,8 @@ program
     }
 
     // Set data directory (CLI > env > default)
-    const dataDir = options.dataDir || process.env.PORTAGENT_DATA_DIR || resolve(homedir(), ".agentx");
+    const dataDir =
+      options.dataDir || process.env.PORTAGENT_DATA_DIR || resolve(homedir(), ".agentx");
     process.env.PORTAGENT_DATA_DIR = dataDir;
 
     // Ensure directories exist

@@ -129,12 +129,8 @@ export class StorageSessionRepository implements SessionRepository {
 
     // Delete indexes
     if (record) {
-      await this.storage.removeItem(
-        this.imageIndexKey(record.imageId, sessionId)
-      );
-      await this.storage.removeItem(
-        this.containerIndexKey(record.containerId, sessionId)
-      );
+      await this.storage.removeItem(this.imageIndexKey(record.imageId, sessionId));
+      await this.storage.removeItem(this.containerIndexKey(record.containerId, sessionId));
     }
 
     logger.debug("Session deleted", { sessionId });
@@ -158,7 +154,10 @@ export class StorageSessionRepository implements SessionRepository {
     // Ensure we always return an array (handle corrupted data)
     if (!messages || !Array.isArray(messages)) {
       if (messages) {
-        logger.warn("Messages data is not an array, resetting", { sessionId, type: typeof messages });
+        logger.warn("Messages data is not an array, resetting", {
+          sessionId,
+          type: typeof messages,
+        });
       }
       return [];
     }

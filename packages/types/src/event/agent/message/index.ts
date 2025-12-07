@@ -23,40 +23,56 @@ export interface AgentMessageEventBase<T extends string, D>
 /**
  * UserMessageEvent - User sent a message
  */
-export interface UserMessageEvent extends AgentMessageEventBase<"user_message", {
-  messageId: string;
-  content: string;
-  timestamp: number;
-}> {}
+export interface UserMessageEvent
+  extends AgentMessageEventBase<
+    "user_message",
+    {
+      messageId: string;
+      content: string;
+      timestamp: number;
+    }
+  > {}
 
 /**
  * AssistantMessageEvent - Assistant response message
  */
-export interface AssistantMessageEvent extends AgentMessageEventBase<"assistant_message", {
-  messageId: string;
-  content: ContentPart[];
-  model?: string;
-  stopReason?: string;
-  timestamp: number;
-}> {}
+export interface AssistantMessageEvent
+  extends AgentMessageEventBase<
+    "assistant_message",
+    {
+      messageId: string;
+      content: ContentPart[];
+      model?: string;
+      stopReason?: string;
+      timestamp: number;
+    }
+  > {}
 
 /**
  * ToolCallMessageEvent - Tool call message (part of assistant turn)
  */
-export interface ToolCallMessageEvent extends AgentMessageEventBase<"tool_call_message", {
-  messageId: string;
-  toolCalls: ToolCallPart[];
-  timestamp: number;
-}> {}
+export interface ToolCallMessageEvent
+  extends AgentMessageEventBase<
+    "tool_call_message",
+    {
+      messageId: string;
+      toolCalls: ToolCallPart[];
+      timestamp: number;
+    }
+  > {}
 
 /**
  * ToolResultMessageEvent - Tool result message
  */
-export interface ToolResultMessageEvent extends AgentMessageEventBase<"tool_result_message", {
-  messageId: string;
-  results: ToolResultPart[];
-  timestamp: number;
-}> {}
+export interface ToolResultMessageEvent
+  extends AgentMessageEventBase<
+    "tool_result_message",
+    {
+      messageId: string;
+      results: ToolResultPart[];
+      timestamp: number;
+    }
+  > {}
 
 /**
  * ErrorMessageEvent - Error message displayed in chat
@@ -64,14 +80,18 @@ export interface ToolResultMessageEvent extends AgentMessageEventBase<"tool_resu
  * Generated when error_received StreamEvent is processed by MealyMachine.
  * Displayed in the chat history so users can see what went wrong.
  */
-export interface ErrorMessageEvent extends AgentMessageEventBase<"error_message", {
-  messageId: string;
-  /** Error message (human-readable) */
-  content: string;
-  /** Error code (e.g., "rate_limit_error", "api_error") */
-  errorCode?: string;
-  timestamp: number;
-}> {}
+export interface ErrorMessageEvent
+  extends AgentMessageEventBase<
+    "error_message",
+    {
+      messageId: string;
+      /** Error message (human-readable) */
+      content: string;
+      /** Error code (e.g., "rate_limit_error", "api_error") */
+      errorCode?: string;
+      timestamp: number;
+    }
+  > {}
 
 // ============================================================================
 // Union Type
@@ -95,6 +115,9 @@ export type AgentMessageEventType = AgentMessageEvent["type"];
 /**
  * Type guard: is this a message event?
  */
-export function isAgentMessageEvent(event: { source?: string; category?: string }): event is AgentMessageEvent {
+export function isAgentMessageEvent(event: {
+  source?: string;
+  category?: string;
+}): event is AgentMessageEvent {
   return event.source === "agent" && event.category === "message";
 }

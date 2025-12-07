@@ -3,6 +3,7 @@
 ## Summary
 
 Fixed critical issues in `BusPresenter` where:
+
 1. Stream layer events were being duplicated (sent both via DriveableEvent and SystemEvent)
 2. Message layer events were not converted to proper `Message` type format for persistence
 3. Event context (imageId) was missing, causing frontend event filtering to fail
@@ -39,6 +40,7 @@ SystemEvent (full context)
 #### 2. Message Data Format Mismatch
 
 Event data format (`AssistantMessageEvent.data`):
+
 ```typescript
 {
   messageId: string;      // <-- "messageId"
@@ -50,6 +52,7 @@ Event data format (`AssistantMessageEvent.data`):
 ```
 
 Expected Message type format:
+
 ```typescript
 {
   id: string;             // <-- "id" (not "messageId")
@@ -61,6 +64,7 @@ Expected Message type format:
 ```
 
 The mismatch caused:
+
 - Messages saved with wrong structure
 - Frontend couldn't load history (all fields `undefined`)
 - React key warnings (missing `id`)
@@ -125,6 +129,7 @@ class BusPresenter implements AgentPresenter {
 ### Frontend Changes
 
 Updated `useAgent` hook to expect new Message format:
+
 ```typescript
 // Before
 const data = event.data as { messageId: string; ... };
@@ -134,12 +139,12 @@ const data = event.data as { id: string; role: string; subtype: string; ... };
 
 ## Event Layer Responsibilities
 
-| Layer | BusPresenter Action | Reason |
-|-------|---------------------|--------|
-| Stream | SKIP | Already sent via DriveableEvent from ClaudeReceptor |
-| State | Emit as SystemEvent | State transitions need context for UI |
-| Message | Convert + Emit + Persist | Data format transformation + storage |
-| Turn | Emit as SystemEvent | Analytics/billing events |
+| Layer   | BusPresenter Action      | Reason                                              |
+| ------- | ------------------------ | --------------------------------------------------- |
+| Stream  | SKIP                     | Already sent via DriveableEvent from ClaudeReceptor |
+| State   | Emit as SystemEvent      | State transitions need context for UI               |
+| Message | Convert + Emit + Persist | Data format transformation + storage                |
+| Turn    | Emit as SystemEvent      | Analytics/billing events                            |
 
 ## Files Changed
 

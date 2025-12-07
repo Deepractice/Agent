@@ -157,10 +157,10 @@ Agent state machine:
 
 ```typescript
 type AgentState =
-  | "idle"                  // Waiting for user input
-  | "thinking"              // LLM is thinking
-  | "responding"            // LLM is generating response
-  | "planning_tool"         // Generating tool call parameters
+  | "idle" // Waiting for user input
+  | "thinking" // LLM is thinking
+  | "responding" // LLM is generating response
+  | "planning_tool" // Generating tool call parameters
   | "awaiting_tool_result"; // Waiting for tool execution
 
 // State transitions
@@ -227,29 +227,53 @@ agent.intercept((output, next) => {
 
 ```typescript
 // Text streaming
-agent.on("message_start", (e) => { /* ... */ });
+agent.on("message_start", (e) => {
+  /* ... */
+});
 agent.on("text_delta", (e) => process.stdout.write(e.data.text));
-agent.on("message_stop", (e) => { /* ... */ });
+agent.on("message_stop", (e) => {
+  /* ... */
+});
 
 // Tool use
-agent.on("tool_use_start", (e) => { /* ... */ });
-agent.on("input_json_delta", (e) => { /* ... */ });
-agent.on("tool_use_stop", (e) => { /* ... */ });
+agent.on("tool_use_start", (e) => {
+  /* ... */
+});
+agent.on("input_json_delta", (e) => {
+  /* ... */
+});
+agent.on("tool_use_stop", (e) => {
+  /* ... */
+});
 ```
 
 ### Layer 2: State Events
 
 ```typescript
 // Conversation lifecycle
-agent.on("conversation_start", (e) => { /* ... */ });
-agent.on("conversation_thinking", (e) => { /* ... */ });
-agent.on("conversation_responding", (e) => { /* ... */ });
-agent.on("conversation_end", (e) => { /* ... */ });
+agent.on("conversation_start", (e) => {
+  /* ... */
+});
+agent.on("conversation_thinking", (e) => {
+  /* ... */
+});
+agent.on("conversation_responding", (e) => {
+  /* ... */
+});
+agent.on("conversation_end", (e) => {
+  /* ... */
+});
 
 // Tool lifecycle
-agent.on("tool_planned", (e) => { /* ... */ });
-agent.on("tool_executing", (e) => { /* ... */ });
-agent.on("tool_completed", (e) => { /* ... */ });
+agent.on("tool_planned", (e) => {
+  /* ... */
+});
+agent.on("tool_executing", (e) => {
+  /* ... */
+});
+agent.on("tool_completed", (e) => {
+  /* ... */
+});
 ```
 
 ### Layer 3: Message Events
@@ -303,7 +327,9 @@ const machine = createMealyMachine();
 
 // Process event
 const result = machine.process(
-  { /* state */ },
+  {
+    /* state */
+  },
   { type: "text_delta", timestamp: Date.now(), data: { text: "Hi" } }
 );
 
@@ -367,22 +393,13 @@ const myProcessor: Processor<MyState, MyInput, MyOutput> = (state, input) => {
 };
 
 // Combine with built-in processors
-const combined = combineProcessors(
-  messageAssemblerProcessor,
-  myProcessor
-);
+const combined = combineProcessors(messageAssemblerProcessor, myProcessor);
 
 // Add filters
-const filtered = filterProcessor(
-  myProcessor,
-  (input) => input.type === "text_delta"
-);
+const filtered = filterProcessor(myProcessor, (input) => input.type === "text_delta");
 
 // Transform outputs
-const mapped = mapOutput(
-  myProcessor,
-  (output) => ({ ...output, extra: true })
-);
+const mapped = mapOutput(myProcessor, (output) => ({ ...output, extra: true }));
 ```
 
 ### Processor Combinators

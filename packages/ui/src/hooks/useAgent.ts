@@ -464,11 +464,9 @@ export function useAgent(
   const interrupt = useCallback(() => {
     if (!agentx || !imageId) return;
 
-    agentx
-      .request("agent_interrupt_request", { imageId })
-      .catch((error) => {
-        logger.error("Failed to interrupt agent", { imageId, error });
-      });
+    agentx.request("agent_interrupt_request", { imageId }).catch((error) => {
+      logger.error("Failed to interrupt agent", { imageId, error });
+    });
   }, [agentx, imageId]);
 
   // Clear messages

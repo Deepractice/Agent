@@ -56,9 +56,7 @@ const ConnectedWrapper = () => {
         <div className="text-center text-muted-foreground text-sm">
           <p>Connecting to server...</p>
           <p className="text-xs mt-2">Make sure dev-server is running:</p>
-          <code className="text-xs bg-muted px-2 py-1 rounded mt-1 block">
-            pnpm dev:server
-          </code>
+          <code className="text-xs bg-muted px-2 py-1 rounded mt-1 block">pnpm dev:server</code>
         </div>
       </div>
     );
@@ -70,10 +68,7 @@ const ConnectedWrapper = () => {
         Status: {status} | Image: {imageId || "none"}
       </div>
       <div className="h-[500px] w-full max-w-2xl border border-border rounded-lg overflow-hidden">
-        <Chat
-          agentx={agentx}
-          imageId={imageId}
-        />
+        <Chat agentx={agentx} imageId={imageId} />
       </div>
     </div>
   );
@@ -97,10 +92,7 @@ export const Connected: Story = {
 export const NoConversationSelected: Story = {
   render: () => (
     <div className="h-[500px] w-full max-w-2xl border border-border rounded-lg overflow-hidden">
-      <Chat
-        agentx={null}
-        imageId={null}
-      />
+      <Chat agentx={null} imageId={null} />
     </div>
   ),
   parameters: {
@@ -171,11 +163,7 @@ const NoSaveWrapper = () => {
 
   return (
     <div className="h-[500px] w-full max-w-2xl border border-border rounded-lg overflow-hidden">
-      <Chat
-        agentx={agentx}
-        imageId={imageId}
-        showSaveButton={false}
-      />
+      <Chat agentx={agentx} imageId={imageId} showSaveButton={false} />
     </div>
   );
 };
@@ -185,7 +173,8 @@ export const WithoutSaveButton: Story = {
   parameters: {
     docs: {
       description: {
-        story: "Chat without the save button in toolbar (messages are auto-saved in Image-First model)",
+        story:
+          "Chat without the save button in toolbar (messages are auto-saved in Image-First model)",
       },
     },
   },

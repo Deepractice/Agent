@@ -14,8 +14,7 @@ import type { BaseAgentEvent } from "../BaseAgentEvent";
 /**
  * Base type for state events
  */
-export interface AgentStateEventBase<T extends string, D>
-  extends BaseAgentEvent<T, D, "state"> {}
+export interface AgentStateEventBase<T extends string, D> extends BaseAgentEvent<T, D, "state"> {}
 
 // ============================================================================
 // Conversation Events
@@ -24,40 +23,58 @@ export interface AgentStateEventBase<T extends string, D>
 /**
  * ConversationQueuedEvent - Message queued for processing
  */
-export interface ConversationQueuedEvent extends AgentStateEventBase<"conversation_queued", {
-  messageId: string;
-}> {}
+export interface ConversationQueuedEvent
+  extends AgentStateEventBase<
+    "conversation_queued",
+    {
+      messageId: string;
+    }
+  > {}
 
 /**
  * ConversationStartEvent - Conversation started
  */
-export interface ConversationStartEvent extends AgentStateEventBase<"conversation_start", {
-  messageId: string;
-}> {}
+export interface ConversationStartEvent
+  extends AgentStateEventBase<
+    "conversation_start",
+    {
+      messageId: string;
+    }
+  > {}
 
 /**
  * ConversationThinkingEvent - Agent is thinking
  */
-export interface ConversationThinkingEvent extends AgentStateEventBase<"conversation_thinking", Record<string, never>> {}
+export interface ConversationThinkingEvent
+  extends AgentStateEventBase<"conversation_thinking", Record<string, never>> {}
 
 /**
  * ConversationRespondingEvent - Agent is responding
  */
-export interface ConversationRespondingEvent extends AgentStateEventBase<"conversation_responding", Record<string, never>> {}
+export interface ConversationRespondingEvent
+  extends AgentStateEventBase<"conversation_responding", Record<string, never>> {}
 
 /**
  * ConversationEndEvent - Conversation ended
  */
-export interface ConversationEndEvent extends AgentStateEventBase<"conversation_end", {
-  reason: "completed" | "interrupted" | "error";
-}> {}
+export interface ConversationEndEvent
+  extends AgentStateEventBase<
+    "conversation_end",
+    {
+      reason: "completed" | "interrupted" | "error";
+    }
+  > {}
 
 /**
  * ConversationInterruptedEvent - Conversation interrupted
  */
-export interface ConversationInterruptedEvent extends AgentStateEventBase<"conversation_interrupted", {
-  reason: string;
-}> {}
+export interface ConversationInterruptedEvent
+  extends AgentStateEventBase<
+    "conversation_interrupted",
+    {
+      reason: string;
+    }
+  > {}
 
 // ============================================================================
 // Tool Events
@@ -66,37 +83,53 @@ export interface ConversationInterruptedEvent extends AgentStateEventBase<"conve
 /**
  * ToolPlannedEvent - Tool use planned
  */
-export interface ToolPlannedEvent extends AgentStateEventBase<"tool_planned", {
-  toolId: string;
-  toolName: string;
-}> {}
+export interface ToolPlannedEvent
+  extends AgentStateEventBase<
+    "tool_planned",
+    {
+      toolId: string;
+      toolName: string;
+    }
+  > {}
 
 /**
  * ToolExecutingEvent - Tool is executing
  */
-export interface ToolExecutingEvent extends AgentStateEventBase<"tool_executing", {
-  toolId: string;
-  toolName: string;
-  input: Record<string, unknown>;
-}> {}
+export interface ToolExecutingEvent
+  extends AgentStateEventBase<
+    "tool_executing",
+    {
+      toolId: string;
+      toolName: string;
+      input: Record<string, unknown>;
+    }
+  > {}
 
 /**
  * ToolCompletedEvent - Tool execution completed
  */
-export interface ToolCompletedEvent extends AgentStateEventBase<"tool_completed", {
-  toolId: string;
-  toolName: string;
-  result: unknown;
-}> {}
+export interface ToolCompletedEvent
+  extends AgentStateEventBase<
+    "tool_completed",
+    {
+      toolId: string;
+      toolName: string;
+      result: unknown;
+    }
+  > {}
 
 /**
  * ToolFailedEvent - Tool execution failed
  */
-export interface ToolFailedEvent extends AgentStateEventBase<"tool_failed", {
-  toolId: string;
-  toolName: string;
-  error: string;
-}> {}
+export interface ToolFailedEvent
+  extends AgentStateEventBase<
+    "tool_failed",
+    {
+      toolId: string;
+      toolName: string;
+      error: string;
+    }
+  > {}
 
 // ============================================================================
 // Error Events
@@ -105,12 +138,16 @@ export interface ToolFailedEvent extends AgentStateEventBase<"tool_failed", {
 /**
  * ErrorOccurredEvent - Error occurred during processing
  */
-export interface ErrorOccurredEvent extends AgentStateEventBase<"error_occurred", {
-  code: string;
-  message: string;
-  recoverable: boolean;
-  category?: string;
-}> {}
+export interface ErrorOccurredEvent
+  extends AgentStateEventBase<
+    "error_occurred",
+    {
+      code: string;
+      message: string;
+      recoverable: boolean;
+      category?: string;
+    }
+  > {}
 
 // ============================================================================
 // Union Type
@@ -143,6 +180,9 @@ export type AgentStateEventType = AgentStateEvent["type"];
 /**
  * Type guard: is this a state event?
  */
-export function isAgentStateEvent(event: { source?: string; category?: string }): event is AgentStateEvent {
+export function isAgentStateEvent(event: {
+  source?: string;
+  category?: string;
+}): event is AgentStateEvent {
   return event.source === "agent" && event.category === "state";
 }

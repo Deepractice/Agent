@@ -7,6 +7,7 @@ This document describes the complete Ecosystem architecture based on Systems The
 ## Core Concept
 
 **Ecosystem** is a self-contained system that:
+
 1. Receives external stimuli via **Environment**
 2. Processes events through **SystemBus**
 3. Drives **Agent** via **Driver**
@@ -170,12 +171,12 @@ This document describes the complete Ecosystem architecture based on Systems The
 ```typescript
 // Raw events from external world
 type EnvironmentEventType =
-  | "text_chunk"      // Text fragment from LLM
-  | "stream_start"    // Stream begins
-  | "stream_end"      // Stream ends
-  | "interrupted"     // Stream interrupted
-  | "connected"       // Connection established
-  | "disconnected";   // Connection lost
+  | "text_chunk" // Text fragment from LLM
+  | "stream_start" // Stream begins
+  | "stream_end" // Stream ends
+  | "interrupted" // Stream interrupted
+  | "connected" // Connection established
+  | "disconnected"; // Connection lost
 ```
 
 ### Data Flow
@@ -205,22 +206,26 @@ Ecosystem A                    Network                    Ecosystem B
 ## Key Principles
 
 ### 1. Isomorphic Architecture
+
 - Server and Browser use identical Ecosystem structure
 - Only Environment implementation differs (Claude vs Remote)
 - "Define Once, Run Anywhere"
 
 ### 2. Separation of Concerns
+
 - **Environment**: External world interface (input)
 - **Driver**: Event filtering for Agent (processing)
 - **Receptor**: Event exposure to consumers (output)
 - **SystemBus**: Event distribution hub (infrastructure)
 
 ### 3. EnvironmentEvent as Universal Protocol
+
 - Single event type for all external communication
 - Network-transportable
 - Cross-ecosystem compatible
 
 ### 4. Receptor as API Gateway
+
 - Listens to Runtime internals (Agent, Session, Container)
 - Also subscribes to SystemBus for EnvironmentEvent
 - Provides clean API for external consumption
@@ -228,13 +233,13 @@ Ecosystem A                    Network                    Ecosystem B
 
 ## Component Responsibilities
 
-| Component | Input | Output | Responsibility |
-|-----------|-------|--------|----------------|
-| Environment | External world (LLM, Network) | EnvironmentEvent | Produce raw events |
-| SystemBus | EnvironmentEvent | EnvironmentEvent | Distribute events |
-| Driver | EnvironmentEvent | Filtered events | Select events for Agent |
-| Agent | Filtered events | AgentEvent | Mealy Machine processing |
-| Receptor | Runtime events + EnvironmentEvent | API | Expose to external |
+| Component   | Input                             | Output           | Responsibility           |
+| ----------- | --------------------------------- | ---------------- | ------------------------ |
+| Environment | External world (LLM, Network)     | EnvironmentEvent | Produce raw events       |
+| SystemBus   | EnvironmentEvent                  | EnvironmentEvent | Distribute events        |
+| Driver      | EnvironmentEvent                  | Filtered events  | Select events for Agent  |
+| Agent       | Filtered events                   | AgentEvent       | Mealy Machine processing |
+| Receptor    | Runtime events + EnvironmentEvent | API              | Expose to external       |
 
 ## Implementation Packages
 

@@ -75,17 +75,7 @@ export interface NavBarProps {
  * NavBar component
  */
 export const NavBar = React.forwardRef<HTMLDivElement, NavBarProps>(
-  (
-    {
-      items,
-      bottomItems,
-      activeId,
-      onSelect,
-      position = "left",
-      className,
-    },
-    ref
-  ) => {
+  ({ items, bottomItems, activeId, onSelect, position = "left", className }, ref) => {
     // Convert NavBarItem to ActivityBarItem (they're compatible)
     const activityItems: ActivityBarItem[] = items;
     const activityBottomItems: ActivityBarItem[] | undefined = bottomItems;

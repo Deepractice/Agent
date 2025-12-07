@@ -30,10 +30,7 @@ export const Default: Story = {
 export const LightTheme: Story = {
   render: () => (
     <div className="p-4 bg-white">
-      <EmojiPicker
-        onEmojiSelect={(emoji) => console.log("Selected:", emoji)}
-        theme="light"
-      />
+      <EmojiPicker onEmojiSelect={(emoji) => console.log("Selected:", emoji)} theme="light" />
     </div>
   ),
 };
@@ -41,10 +38,7 @@ export const LightTheme: Story = {
 export const DarkTheme: Story = {
   render: () => (
     <div className="p-4 bg-gray-900">
-      <EmojiPicker
-        onEmojiSelect={(emoji) => console.log("Selected:", emoji)}
-        theme="dark"
-      />
+      <EmojiPicker onEmojiSelect={(emoji) => console.log("Selected:", emoji)} theme="dark" />
     </div>
   ),
 };
@@ -80,9 +74,7 @@ export const WithSelection: Story = {
               Selected: {selected.native} ({selected.name})
             </span>
           ) : (
-            <span className="text-muted-foreground">
-              Click an emoji to select
-            </span>
+            <span className="text-muted-foreground">Click an emoji to select</span>
           )}
         </div>
         <EmojiPicker onEmojiSelect={setSelected} />

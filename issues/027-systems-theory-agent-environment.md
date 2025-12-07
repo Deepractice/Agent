@@ -9,6 +9,7 @@
 ### 系统论基础
 
 在系统论中：
+
 - **系统 (System)**：有边界、有内部状态、有行为的实体
 - **环境 (Environment)**：系统边界之外的一切
 - **感受器 (Receptor)**：感知环境刺激，将外部信号转换为系统可处理的输入
@@ -66,12 +67,12 @@
 
 这是两套**独立**的事件体系：
 
-| 维度 | Agent Events | Environment Events |
-|------|-------------|-------------------|
-| 归属 | Agent 内部 | Ecosystem 层 |
-| 作用 | 驱动 Agent 状态机 | 供外部订阅者感知 |
-| 来源 | Agent 内部产生 | Environment 产生 |
-| 消费者 | Agent 自己 | UI、日志、监控、其他系统 |
+| 维度   | Agent Events      | Environment Events       |
+| ------ | ----------------- | ------------------------ |
+| 归属   | Agent 内部        | Ecosystem 层             |
+| 作用   | 驱动 Agent 状态机 | 供外部订阅者感知         |
+| 来源   | Agent 内部产生    | Environment 产生         |
+| 消费者 | Agent 自己        | UI、日志、监控、其他系统 |
 
 ```
 Agent 内部事件 (私有)              Environment 事件 (公开)
@@ -102,6 +103,7 @@ Agent ◀──感知── Receptor ◀──转换── Environment ◀──
 ```
 
 关键变化：
+
 1. **方向反转**：不是 Agent 主动调用，而是 Agent 被动感知
 2. **职责分离**：感知和作用是分开的（Receptor vs Effector）
 3. **事件驱动**：Environment 产生事件，Agent 响应事件
@@ -278,7 +280,7 @@ class Agent {
 class StreamReceptor implements Receptor<RuntimeStreamEvent> {
   start(emit) {
     // 从 Environment 感知事件，转换后 emit
-    this.environment.on(event => {
+    this.environment.on((event) => {
       emit(this.toRuntimeStreamEvent(event));
     });
   }

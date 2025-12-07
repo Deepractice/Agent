@@ -60,12 +60,12 @@ Run AgentX with an embedded runtime, connecting directly to the LLM API.
 ```typescript
 const agentx = await createAgentX({
   llm: {
-    apiKey: "sk-ant-...",           // Default: process.env.ANTHROPIC_API_KEY
+    apiKey: "sk-ant-...", // Default: process.env.ANTHROPIC_API_KEY
     baseUrl: "https://api.anthropic.com",
     model: "claude-sonnet-4-20250514",
   },
   storage: {
-    driver: "sqlite",               // memory | fs | sqlite | postgresql | ...
+    driver: "sqlite", // memory | fs | sqlite | postgresql | ...
     path: "./data.db",
   },
 });
@@ -98,13 +98,13 @@ console.log(res.data.containerId);
 
 Available request types:
 
-| Request Type | Description |
-|--------------|-------------|
-| `container_create_request` | Create a new container |
-| `agent_run_request` | Run an agent in a container |
-| `agent_receive_request` | Send a message to an agent |
-| `agent_stop_request` | Stop an agent |
-| `agent_destroy_request` | Destroy an agent |
+| Request Type               | Description                 |
+| -------------------------- | --------------------------- |
+| `container_create_request` | Create a new container      |
+| `agent_run_request`        | Run an agent in a container |
+| `agent_receive_request`    | Send a message to an agent  |
+| `agent_stop_request`       | Stop an agent               |
+| `agent_destroy_request`    | Destroy an agent            |
 
 #### `on(type, handler)`
 
@@ -121,15 +121,15 @@ unsubscribe();
 
 Common event types:
 
-| Event Type | Description |
-|------------|-------------|
-| `text_delta` | Incremental text output |
-| `message_start` | Streaming message begins |
-| `message_stop` | Streaming message ends |
-| `assistant_message` | Complete assistant message |
-| `tool_call_message` | Tool call message |
-| `conversation_start` | Conversation started |
-| `conversation_end` | Conversation ended |
+| Event Type           | Description                |
+| -------------------- | -------------------------- |
+| `text_delta`         | Incremental text output    |
+| `message_start`      | Streaming message begins   |
+| `message_stop`       | Streaming message ends     |
+| `assistant_message`  | Complete assistant message |
+| `tool_call_message`  | Tool call message          |
+| `conversation_start` | Conversation started       |
+| `conversation_end`   | Conversation ended         |
 
 #### `onCommand(type, handler)`
 
@@ -184,15 +184,15 @@ await agentx.dispose();
 
 ## Storage Drivers
 
-| Driver | Description | Config |
-|--------|-------------|--------|
-| `memory` | In-memory (default, non-persistent) | - |
-| `fs` | File system | `path: "./data"` |
-| `sqlite` | SQLite database | `path: "./data.db"` |
-| `postgresql` | PostgreSQL | `url: "postgres://..."` |
-| `mysql` | MySQL | `url: "mysql://..."` |
-| `mongodb` | MongoDB | `url: "mongodb://..."` |
-| `redis` | Redis | `url: "redis://..."` |
+| Driver       | Description                         | Config                  |
+| ------------ | ----------------------------------- | ----------------------- |
+| `memory`     | In-memory (default, non-persistent) | -                       |
+| `fs`         | File system                         | `path: "./data"`        |
+| `sqlite`     | SQLite database                     | `path: "./data.db"`     |
+| `postgresql` | PostgreSQL                          | `url: "postgres://..."` |
+| `mysql`      | MySQL                               | `url: "mysql://..."`    |
+| `mongodb`    | MongoDB                             | `url: "mongodb://..."`  |
+| `redis`      | Redis                               | `url: "redis://..."`    |
 
 ## Complete Example
 

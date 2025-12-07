@@ -50,16 +50,10 @@ describe("AgentX Types Contract", () => {
     // These are declared functions (type-only at runtime)
     // The actual implementations are in the agentxjs package
     // Here we just verify the declarations are exported
-    const expectedDeclaredFunctions = [
-      "createAgentX",
-      "defineAgent",
-    ];
+    const expectedDeclaredFunctions = ["createAgentX", "defineAgent"];
 
     for (const exportName of expectedDeclaredFunctions) {
-      expect(
-        AgentXExports,
-        `Missing expected export: ${exportName}`
-      ).toHaveProperty(exportName);
+      expect(AgentXExports, `Missing expected export: ${exportName}`).toHaveProperty(exportName);
     }
   });
 });

@@ -44,7 +44,10 @@ export interface ChatHeaderProps {
 /**
  * Get status display info
  */
-function getStatusInfo(status?: string): { text: string; variant: "default" | "secondary" | "outline" } {
+function getStatusInfo(status?: string): {
+  text: string;
+  variant: "default" | "secondary" | "outline";
+} {
   switch (status) {
     case "thinking":
       return { text: "Thinking", variant: "default" };
@@ -71,12 +74,7 @@ export function ChatHeader({
   const isActive = status !== "idle";
 
   return (
-    <div
-      className={cn(
-        "px-4 py-3 border-b border-border bg-background",
-        className
-      )}
-    >
+    <div className={cn("px-4 py-3 border-b border-border bg-background", className)}>
       <div className="flex items-center justify-between">
         {/* Left: Agent info */}
         <div className="flex items-center gap-3 min-w-0 flex-1">
@@ -88,9 +86,7 @@ export function ChatHeader({
           {/* Name and status */}
           <div className="min-w-0 flex-1">
             <div className="flex items-center gap-2">
-              <h2 className="font-semibold text-sm text-foreground truncate">
-                {agentName}
-              </h2>
+              <h2 className="font-semibold text-sm text-foreground truncate">{agentName}</h2>
               {isActive && (
                 <Loader2 className="w-3 h-3 text-muted-foreground animate-spin flex-shrink-0" />
               )}
@@ -109,11 +105,7 @@ export function ChatHeader({
         </div>
 
         {/* Right: Actions */}
-        {actions && (
-          <div className="flex items-center gap-2 ml-4">
-            {actions}
-          </div>
-        )}
+        {actions && <div className="flex items-center gap-2 ml-4">{actions}</div>}
       </div>
     </div>
   );

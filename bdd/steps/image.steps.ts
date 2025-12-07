@@ -68,13 +68,10 @@ When(
 // When - image_list_request
 // ============================================================================
 
-When(
-  /^I call agentx\.request\("image_list_request", \{\}\)$/,
-  async function (this: AgentXWorld) {
-    assert(this.agentx, "AgentX not initialized");
-    this.lastResponse = await this.agentx.request("image_list_request", {});
-  }
-);
+When(/^I call agentx\.request\("image_list_request", \{\}\)$/, async function (this: AgentXWorld) {
+  assert(this.agentx, "AgentX not initialized");
+  this.lastResponse = await this.agentx.request("image_list_request", {});
+});
 
 // ============================================================================
 // When - image_get_request
@@ -131,32 +128,23 @@ When(
 // Then - Response assertions
 // ============================================================================
 
-Then(
-  "response.data.record should be defined",
-  function (this: AgentXWorld) {
-    assert(this.lastResponse, "No response received");
-    const data = this.lastResponse.data as { record?: unknown };
-    assert(data.record !== undefined, "record should be defined");
-  }
-);
+Then("response.data.record should be defined", function (this: AgentXWorld) {
+  assert(this.lastResponse, "No response received");
+  const data = this.lastResponse.data as { record?: unknown };
+  assert(data.record !== undefined, "record should be defined");
+});
 
-Then(
-  "response.data.record should be null",
-  function (this: AgentXWorld) {
-    assert(this.lastResponse, "No response received");
-    const data = this.lastResponse.data as { record?: unknown };
-    assert(data.record === null, "record should be null");
-  }
-);
+Then("response.data.record should be null", function (this: AgentXWorld) {
+  assert(this.lastResponse, "No response received");
+  const data = this.lastResponse.data as { record?: unknown };
+  assert(data.record === null, "record should be null");
+});
 
-Then(
-  /^response\.data\.record\.imageId should be defined$/,
-  function (this: AgentXWorld) {
-    assert(this.lastResponse, "No response received");
-    const data = this.lastResponse.data as { record?: { imageId?: string } };
-    assert(data.record?.imageId !== undefined, "record.imageId should be defined");
-  }
-);
+Then(/^response\.data\.record\.imageId should be defined$/, function (this: AgentXWorld) {
+  assert(this.lastResponse, "No response received");
+  const data = this.lastResponse.data as { record?: { imageId?: string } };
+  assert(data.record?.imageId !== undefined, "record.imageId should be defined");
+});
 
 Then(
   /^response\.data\.record\.imageId should be "([^"]*)"$/,
@@ -180,15 +168,12 @@ Then(
   }
 );
 
-Then(
-  "response.data.records should be an empty array",
-  function (this: AgentXWorld) {
-    assert(this.lastResponse, "No response received");
-    const data = this.lastResponse.data as { records?: unknown[] };
-    assert(Array.isArray(data.records), "records should be an array");
-    assert.strictEqual(data.records.length, 0, "records should be empty");
-  }
-);
+Then("response.data.records should be an empty array", function (this: AgentXWorld) {
+  assert(this.lastResponse, "No response received");
+  const data = this.lastResponse.data as { records?: unknown[] };
+  assert(Array.isArray(data.records), "records should be an array");
+  assert.strictEqual(data.records.length, 0, "records should be empty");
+});
 
 Then(
   /^response\.data\.records should have length (\d+)$/,
@@ -211,16 +196,13 @@ Then(
   }
 );
 
-Then(
-  /^image "([^"]*)" should not exist$/,
-  async function (this: AgentXWorld, imageAlias: string) {
-    assert(this.agentx, "AgentX not initialized");
+Then(/^image "([^"]*)" should not exist$/, async function (this: AgentXWorld, imageAlias: string) {
+  assert(this.agentx, "AgentX not initialized");
 
-    const imageId = this.createdImages.get(imageAlias) ?? imageAlias;
+  const imageId = this.createdImages.get(imageAlias) ?? imageAlias;
 
-    const response = await this.agentx.request("image_get_request", { imageId });
-    const data = response.data as { record?: unknown };
+  const response = await this.agentx.request("image_get_request", { imageId });
+  const data = response.data as { record?: unknown };
 
-    assert(data.record === null, `Image ${imageAlias} should not exist`);
-  }
-);
+  assert(data.record === null, `Image ${imageAlias} should not exist`);
+});

@@ -62,16 +62,16 @@ agentx.on("tool_result", (e) => {
 
 ### Stream Event Types
 
-| Event Type | Data | Description |
-|------------|------|-------------|
-| `message_start` | `{}` | LLM response begins |
-| `text_delta` | `{ text: string }` | Incremental text chunk |
-| `tool_use_start` | `{ id, name }` | Tool call begins |
-| `input_json_delta` | `{ delta: string }` | Tool input chunk |
-| `tool_use_stop` | `{ id }` | Tool call parameters complete |
-| `tool_result` | `{ id, name, output }` | Tool execution result |
-| `message_delta` | `{ usage }` | Message metadata update |
-| `message_stop` | `{ stopReason }` | LLM response complete |
+| Event Type         | Data                   | Description                   |
+| ------------------ | ---------------------- | ----------------------------- |
+| `message_start`    | `{}`                   | LLM response begins           |
+| `text_delta`       | `{ text: string }`     | Incremental text chunk        |
+| `tool_use_start`   | `{ id, name }`         | Tool call begins              |
+| `input_json_delta` | `{ delta: string }`    | Tool input chunk              |
+| `tool_use_stop`    | `{ id }`               | Tool call parameters complete |
+| `tool_result`      | `{ id, name, output }` | Tool execution result         |
+| `message_delta`    | `{ usage }`            | Message metadata update       |
+| `message_stop`     | `{ stopReason }`       | LLM response complete         |
 
 ---
 
@@ -151,19 +151,19 @@ agentx.on("tool_failed", (e) => {
 
 ### State Event Types
 
-| Event Type | Data | Description |
-|------------|------|-------------|
-| `conversation_queued` | `{ queuePosition }` | Message queued |
-| `conversation_start` | `{}` | Conversation begins |
-| `conversation_thinking` | `{}` | LLM thinking |
-| `conversation_responding` | `{}` | LLM generating response |
-| `conversation_end` | `{}` | Conversation complete |
-| `conversation_interrupted` | `{}` | User interrupted |
-| `tool_planned` | `{ toolCall }` | Tool call ready |
-| `tool_executing` | `{ toolCall }` | Tool executing |
-| `tool_completed` | `{ toolResult }` | Tool succeeded |
-| `tool_failed` | `{ error }` | Tool failed |
-| `error_occurred` | `{ error }` | Error occurred |
+| Event Type                 | Data                | Description             |
+| -------------------------- | ------------------- | ----------------------- |
+| `conversation_queued`      | `{ queuePosition }` | Message queued          |
+| `conversation_start`       | `{}`                | Conversation begins     |
+| `conversation_thinking`    | `{}`                | LLM thinking            |
+| `conversation_responding`  | `{}`                | LLM generating response |
+| `conversation_end`         | `{}`                | Conversation complete   |
+| `conversation_interrupted` | `{}`                | User interrupted        |
+| `tool_planned`             | `{ toolCall }`      | Tool call ready         |
+| `tool_executing`           | `{ toolCall }`      | Tool executing          |
+| `tool_completed`           | `{ toolResult }`    | Tool succeeded          |
+| `tool_failed`              | `{ error }`         | Tool failed             |
+| `error_occurred`           | `{ error }`         | Error occurred          |
 
 ---
 
@@ -261,11 +261,11 @@ agentx.on("tool_result_message", (e) => {
 
 ### Message Event Types
 
-| Event Type | Data | Description |
-|------------|------|-------------|
-| `user_message` | `UserMessage` | User sent message |
-| `assistant_message` | `AssistantMessage` | AI completed response |
-| `tool_call_message` | `ToolCallMessage` | AI requested tool |
+| Event Type            | Data                | Description           |
+| --------------------- | ------------------- | --------------------- |
+| `user_message`        | `UserMessage`       | User sent message     |
+| `assistant_message`   | `AssistantMessage`  | AI completed response |
+| `tool_call_message`   | `ToolCallMessage`   | AI requested tool     |
 | `tool_result_message` | `ToolResultMessage` | Tool execution result |
 
 ---
@@ -335,9 +335,9 @@ agentx.on("turn_response", (e) => {
 
 ### Turn Event Types
 
-| Event Type | Data | Description |
-|------------|------|-------------|
-| `turn_request` | `{ turnId, userMessage, startedAt }` | Turn started |
+| Event Type      | Data                                          | Description    |
+| --------------- | --------------------------------------------- | -------------- |
+| `turn_request`  | `{ turnId, userMessage, startedAt }`          | Turn started   |
 | `turn_response` | `{ turnId, ..., durationMs, usage, costUsd }` | Turn completed |
 
 ---
@@ -374,19 +374,23 @@ agentx.onAny((e) => {
 ### 4. Subscribe with Filters
 
 ```typescript
-agentx.on("text_delta", (e) => {
-  console.log(e.data.text);
-}, {
-  filter: (e) => e.context?.agentId === "agent_123",
-});
+agentx.on(
+  "text_delta",
+  (e) => {
+    console.log(e.data.text);
+  },
+  {
+    filter: (e) => e.context?.agentId === "agent_123",
+  }
+);
 ```
 
 ### 5. Subscribe with Priority
 
 ```typescript
 agentx.on("message_start", handler1, { priority: 10 }); // Runs first
-agentx.on("message_start", handler2, { priority: 5 });  // Runs second
-agentx.on("message_start", handler3);                   // Runs last (priority: 0)
+agentx.on("message_start", handler2, { priority: 5 }); // Runs second
+agentx.on("message_start", handler3); // Runs last (priority: 0)
 ```
 
 ### 6. One-time Subscription

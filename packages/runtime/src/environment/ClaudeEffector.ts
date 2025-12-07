@@ -7,11 +7,7 @@
 import type { Effector, SystemBusConsumer } from "@agentxjs/types/runtime/internal";
 import type { UserMessage } from "@agentxjs/types/agent";
 import type { EventContext } from "@agentxjs/types/runtime";
-import {
-  query,
-  type SDKUserMessage,
-  type Query,
-} from "@anthropic-ai/claude-agent-sdk";
+import { query, type SDKUserMessage, type Query } from "@anthropic-ai/claude-agent-sdk";
 import { Subject } from "rxjs";
 import { createLogger } from "@agentxjs/common";
 import { buildOptions, type EnvironmentContext } from "./buildOptions";
@@ -128,7 +124,7 @@ export class ClaudeEffector implements Effector {
   private async send(message: UserMessage, meta: ReceptorMeta): Promise<void> {
     this.wasInterrupted = false;
     this.currentAbortController = new AbortController();
-    this.currentMeta = meta;  // Store for background listener
+    this.currentMeta = meta; // Store for background listener
 
     const timeout = this.config.timeout ?? DEFAULT_TIMEOUT;
     const timeoutId = setTimeout(() => {
@@ -144,9 +140,7 @@ export class ClaudeEffector implements Effector {
 
       logger.debug("Sending message to Claude", {
         content:
-          typeof message.content === "string"
-            ? message.content.substring(0, 80)
-            : "[structured]",
+          typeof message.content === "string" ? message.content.substring(0, 80) : "[structured]",
         timeout,
         requestId: meta.requestId,
       });
@@ -247,7 +241,12 @@ export class ClaudeEffector implements Effector {
 
           // Handle result
           if (sdkMsg.type === "result") {
-            const resultMsg = sdkMsg as { subtype: string; is_error?: boolean; errors?: string[]; error?: { message?: string; type?: string } };
+            const resultMsg = sdkMsg as {
+              subtype: string;
+              is_error?: boolean;
+              errors?: string[];
+              error?: { message?: string; type?: string };
+            };
             // Log full result object for debugging
             logger.info("SDK result received (full)", {
               fullResult: JSON.stringify(sdkMsg, null, 2),
@@ -265,11 +264,16 @@ export class ClaudeEffector implements Effector {
             }
             // Handle SDK errors (API errors, rate limits, etc.)
             else if (resultMsg.is_error && this.currentMeta) {
-              const fullResult = sdkMsg as { result?: string; error?: { message?: string; type?: string }; errors?: string[] };
-              const errorMessage = fullResult.error?.message
-                || fullResult.errors?.join(", ")
-                || (typeof fullResult.result === "string" ? fullResult.result : null)
-                || "An error occurred";
+              const fullResult = sdkMsg as {
+                result?: string;
+                error?: { message?: string; type?: string };
+                errors?: string[];
+              };
+              const errorMessage =
+                fullResult.error?.message ||
+                fullResult.errors?.join(", ") ||
+                (typeof fullResult.result === "string" ? fullResult.result : null) ||
+                "An error occurred";
               const errorCode = fullResult.error?.type || resultMsg.subtype || "api_error";
               this.receptor.emitError(errorMessage, errorCode, this.currentMeta);
             }

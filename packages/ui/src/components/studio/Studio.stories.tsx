@@ -32,9 +32,7 @@ const ConnectedWrapper = () => {
         <div className="text-center text-muted-foreground text-sm">
           <p className="text-lg font-medium mb-2">Connecting to server...</p>
           <p className="text-xs mt-2">Make sure dev-server is running:</p>
-          <code className="text-xs bg-muted px-2 py-1 rounded mt-1 block">
-            pnpm dev:server
-          </code>
+          <code className="text-xs bg-muted px-2 py-1 rounded mt-1 block">pnpm dev:server</code>
         </div>
       </div>
     );
@@ -52,8 +50,7 @@ export const FullWorkspace: Story = {
   parameters: {
     docs: {
       description: {
-        story:
-          "Complete Studio workspace. Start the server with `pnpm dev:server` before viewing.",
+        story: "Complete Studio workspace. Start the server with `pnpm dev:server` before viewing.",
       },
     },
   },
@@ -111,11 +108,7 @@ const NarrowSidebarWrapper = () => {
 
   return (
     <div className="h-screen">
-      <Studio
-        agentx={agentx}
-        sidebarWidth={220}
-        searchable={false}
-      />
+      <Studio agentx={agentx} sidebarWidth={220} searchable={false} />
     </div>
   );
 };
@@ -149,10 +142,7 @@ const LargeInputWrapper = () => {
 
   return (
     <div className="h-screen">
-      <Studio
-        agentx={agentx}
-        inputHeightRatio={0.35}
-      />
+      <Studio agentx={agentx} inputHeightRatio={0.35} />
     </div>
   );
 };

@@ -50,8 +50,4 @@ export {
 
 export { useAgentX } from "./useAgentX";
 
-export {
-  useImages,
-  type UseImagesResult,
-  type UseImagesOptions,
-} from "./useImages";
+export { useImages, type UseImagesResult, type UseImagesOptions } from "./useImages";

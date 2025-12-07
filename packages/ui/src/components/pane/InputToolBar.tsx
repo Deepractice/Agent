@@ -135,24 +135,9 @@ const ToolBarButton = ({
  * InputToolBar component
  */
 export const InputToolBar = React.forwardRef<HTMLDivElement, InputToolBarProps>(
-  (
-    {
-      items,
-      rightItems,
-      onItemClick,
-      size = "sm",
-      className,
-    },
-    ref
-  ) => {
+  ({ items, rightItems, onItemClick, size = "sm", className }, ref) => {
     return (
-      <div
-        ref={ref}
-        className={cn(
-          "flex items-center justify-between px-2 py-1",
-          className
-        )}
-      >
+      <div ref={ref} className={cn("flex items-center justify-between px-2 py-1", className)}>
         {/* Left items */}
         <div className="flex items-center gap-0.5">
           {items.map((item) => (

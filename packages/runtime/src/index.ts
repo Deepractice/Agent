@@ -23,4 +23,8 @@
  */
 
 export { createRuntime, type RuntimeConfig } from "./createRuntime";
-export { createPersistence, type PersistenceConfig, type StorageDriver } from "./internal/persistence";
+export {
+  createPersistence,
+  type PersistenceConfig,
+  type StorageDriver,
+} from "./internal/persistence";

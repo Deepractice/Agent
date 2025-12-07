@@ -50,30 +50,42 @@ interface BaseStreamEvent<T extends string, D = unknown>
 /**
  * MessageStartEvent - Emitted when streaming message begins
  */
-export interface MessageStartEvent extends BaseStreamEvent<"message_start", {
-  message: {
-    id: string;
-    model: string;
-  };
-}> {}
+export interface MessageStartEvent
+  extends BaseStreamEvent<
+    "message_start",
+    {
+      message: {
+        id: string;
+        model: string;
+      };
+    }
+  > {}
 
 /**
  * MessageDeltaEvent - Emitted with message-level updates
  */
-export interface MessageDeltaEvent extends BaseStreamEvent<"message_delta", {
-  usage?: {
-    inputTokens: number;
-    outputTokens: number;
-  };
-}> {}
+export interface MessageDeltaEvent
+  extends BaseStreamEvent<
+    "message_delta",
+    {
+      usage?: {
+        inputTokens: number;
+        outputTokens: number;
+      };
+    }
+  > {}
 
 /**
  * MessageStopEvent - Emitted when streaming message completes
  */
-export interface MessageStopEvent extends BaseStreamEvent<"message_stop", {
-  stopReason?: StopReason;
-  stopSequence?: string;
-}> {}
+export interface MessageStopEvent
+  extends BaseStreamEvent<
+    "message_stop",
+    {
+      stopReason?: StopReason;
+      stopSequence?: string;
+    }
+  > {}
 
 // ============================================================================
 // Text Content Block Events
@@ -82,21 +94,27 @@ export interface MessageStopEvent extends BaseStreamEvent<"message_stop", {
 /**
  * TextContentBlockStartEvent - Text block started
  */
-export interface TextContentBlockStartEvent extends BaseStreamEvent<"text_content_block_start", Record<string, never>> {
+export interface TextContentBlockStartEvent
+  extends BaseStreamEvent<"text_content_block_start", Record<string, never>> {
   index: number;
 }
 
 /**
  * TextDeltaEvent - Incremental text output
  */
-export interface TextDeltaEvent extends BaseStreamEvent<"text_delta", {
-  text: string;
-}> {}
+export interface TextDeltaEvent
+  extends BaseStreamEvent<
+    "text_delta",
+    {
+      text: string;
+    }
+  > {}
 
 /**
  * TextContentBlockStopEvent - Text block completed
  */
-export interface TextContentBlockStopEvent extends BaseStreamEvent<"text_content_block_stop", Record<string, never>> {
+export interface TextContentBlockStopEvent
+  extends BaseStreamEvent<"text_content_block_stop", Record<string, never>> {
   index: number;
 }
 
@@ -107,26 +125,35 @@ export interface TextContentBlockStopEvent extends BaseStreamEvent<"text_content
 /**
  * ToolUseContentBlockStartEvent - Tool use block started
  */
-export interface ToolUseContentBlockStartEvent extends BaseStreamEvent<"tool_use_content_block_start", {
-  id: string;
-  name: string;
-}> {
+export interface ToolUseContentBlockStartEvent
+  extends BaseStreamEvent<
+    "tool_use_content_block_start",
+    {
+      id: string;
+      name: string;
+    }
+  > {
   index: number;
 }
 
 /**
  * InputJsonDeltaEvent - Incremental tool input JSON
  */
-export interface InputJsonDeltaEvent extends BaseStreamEvent<"input_json_delta", {
-  partialJson: string;
-}> {
+export interface InputJsonDeltaEvent
+  extends BaseStreamEvent<
+    "input_json_delta",
+    {
+      partialJson: string;
+    }
+  > {
   index: number;
 }
 
 /**
  * ToolUseContentBlockStopEvent - Tool use block completed
  */
-export interface ToolUseContentBlockStopEvent extends BaseStreamEvent<"tool_use_content_block_stop", Record<string, never>> {
+export interface ToolUseContentBlockStopEvent
+  extends BaseStreamEvent<"tool_use_content_block_stop", Record<string, never>> {
   index: number;
 }
 
@@ -137,20 +164,28 @@ export interface ToolUseContentBlockStopEvent extends BaseStreamEvent<"tool_use_
 /**
  * ToolCallEvent - Tool call ready for execution
  */
-export interface ToolCallEvent extends BaseStreamEvent<"tool_call", {
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-}> {}
+export interface ToolCallEvent
+  extends BaseStreamEvent<
+    "tool_call",
+    {
+      id: string;
+      name: string;
+      input: Record<string, unknown>;
+    }
+  > {}
 
 /**
  * ToolResultEvent - Tool execution result
  */
-export interface ToolResultEvent extends BaseStreamEvent<"tool_result", {
-  toolUseId: string;
-  result: unknown;
-  isError?: boolean;
-}> {}
+export interface ToolResultEvent
+  extends BaseStreamEvent<
+    "tool_result",
+    {
+      toolUseId: string;
+      result: unknown;
+      isError?: boolean;
+    }
+  > {}
 
 // ============================================================================
 // Interrupt Event
@@ -159,9 +194,13 @@ export interface ToolResultEvent extends BaseStreamEvent<"tool_result", {
 /**
  * InterruptedEvent - Stream interrupted
  */
-export interface InterruptedEvent extends BaseStreamEvent<"interrupted", {
-  reason: "user_interrupt" | "timeout" | "error" | "system";
-}> {}
+export interface InterruptedEvent
+  extends BaseStreamEvent<
+    "interrupted",
+    {
+      reason: "user_interrupt" | "timeout" | "error" | "system";
+    }
+  > {}
 
 // ============================================================================
 // Error Event
@@ -174,12 +213,16 @@ export interface InterruptedEvent extends BaseStreamEvent<"interrupted", {
  * - error_occurred (StateEvent) → state transitions to "error"
  * - error_message (MessageEvent) → displayed in chat
  */
-export interface ErrorReceivedEvent extends BaseStreamEvent<"error_received", {
-  /** Error message (human-readable) */
-  message: string;
-  /** Error code (e.g., "rate_limit_error", "api_error", "overloaded_error") */
-  errorCode?: string;
-}> {}
+export interface ErrorReceivedEvent
+  extends BaseStreamEvent<
+    "error_received",
+    {
+      /** Error message (human-readable) */
+      message: string;
+      /** Error code (e.g., "rate_limit_error", "api_error", "overloaded_error") */
+      errorCode?: string;
+    }
+  > {}
 
 // ============================================================================
 // Union Type

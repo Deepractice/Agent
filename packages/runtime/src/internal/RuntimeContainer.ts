@@ -44,11 +44,7 @@ export class RuntimeContainer implements Container {
   private readonly imageToAgent = new Map<string, string>();
   private readonly context: RuntimeContainerContext;
 
-  private constructor(
-    containerId: string,
-    createdAt: number,
-    context: RuntimeContainerContext
-  ) {
+  private constructor(containerId: string, createdAt: number, context: RuntimeContainerContext) {
     this.containerId = containerId;
     this.createdAt = createdAt;
     this.context = context;
@@ -206,7 +202,10 @@ export class RuntimeContainer implements Container {
   async stopImage(imageId: string): Promise<boolean> {
     const agentId = this.imageToAgent.get(imageId);
     if (!agentId) {
-      logger.debug("Image not running, nothing to stop", { imageId, containerId: this.containerId });
+      logger.debug("Image not running, nothing to stop", {
+        imageId,
+        containerId: this.containerId,
+      });
       return false;
     }
 

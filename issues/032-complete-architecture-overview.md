@@ -186,11 +186,11 @@ This document provides a comprehensive view of the AgentX architecture, includin
 
 ## Three-Layer Architecture
 
-| Layer       | Ontology  | Protocol    | Content                                |
-|-------------|-----------|-------------|----------------------------------------|
-| Application | Structure | HTTP        | Definition, Image, User                |
-| Network     | Relation  | HTTP + WS   | Server, Client, Channel, Endpoint      |
-| Ecosystem   | Process   | WS Events   | Runtime, Container, Session, Agent     |
+| Layer       | Ontology  | Protocol  | Content                            |
+| ----------- | --------- | --------- | ---------------------------------- |
+| Application | Structure | HTTP      | Definition, Image, User            |
+| Network     | Relation  | HTTP + WS | Server, Client, Channel, Endpoint  |
+| Ecosystem   | Process   | WS Events | Runtime, Container, Session, Agent |
 
 ## Component Responsibilities
 
@@ -198,12 +198,13 @@ This document provides a comprehensive view of the AgentX architecture, includin
 
 #### Environment (External World Interface)
 
-| Component | Direction | Responsibility |
-|-----------|-----------|----------------|
+| Component    | Direction           | Responsibility                                                          |
+| ------------ | ------------------- | ----------------------------------------------------------------------- |
 | **Receptor** | External → Internal | Perceive external world, convert to EnvironmentEvent, pipe to SystemBus |
-| **Effector** | Internal → External | Subscribe to SystemBus, act upon external world |
+| **Effector** | Internal → External | Subscribe to SystemBus, act upon external world                         |
 
 Implementations:
+
 - `ClaudeReceptor` / `ClaudeEffector` - Claude API interaction
 - `NetworkReceptor` / `NetworkEffector` - WebSocket/SSE interaction
 
@@ -212,6 +213,7 @@ Implementations:
 Central event bus for all ecosystem communication.
 
 Event Types:
+
 - **EnvironmentEvent**: `text_chunk`, `stream_start`, `stream_end`, `interrupted`, `connected`, `disconnected`
 - **AgentEvent**: state events, message events, turn events, error events
 - **SessionEvent**: `session_created`, `session_resumed` (TODO)
@@ -219,31 +221,31 @@ Event Types:
 
 #### Runtime
 
-| Component | Responsibility |
-|-----------|----------------|
-| **Container** | Manages multiple Agents |
-| **Agent** | Single agent instance with Engine + Sandbox |
+| Component       | Responsibility                                                  |
+| --------------- | --------------------------------------------------------------- |
+| **Container**   | Manages multiple Agents                                         |
+| **Agent**       | Single agent instance with Engine + Sandbox                     |
 | **AgentEngine** | Mealy Machine event processor, `connect(bus)` to receive events |
-| **Sandbox** | Resource isolation (Workspace, LLM, MCP Tools, Browser) |
-| **Session** | Conversation persistence and resume |
-| **Repository** | Data storage (SQLite / Remote) |
+| **Sandbox**     | Resource isolation (Workspace, LLM, MCP Tools, Browser)         |
+| **Session**     | Conversation persistence and resume                             |
+| **Repository**  | Data storage (SQLite / Remote)                                  |
 
 ### Application Layer
 
 Static resources managed via HTTP CRUD:
 
-| Resource | Description |
-|----------|-------------|
-| **Definition** | Agent template (like Dockerfile) |
-| **Image** | Built artifact (like Docker Image) |
-| **User** | User identity |
+| Resource       | Description                        |
+| -------------- | ---------------------------------- |
+| **Definition** | Agent template (like Dockerfile)   |
+| **Image**      | Built artifact (like Docker Image) |
+| **User**       | User identity                      |
 
 ### Network Layer
 
-| Sub-layer | Protocol | Purpose |
-|-----------|----------|---------|
-| Application | HTTP | REST API for static resources |
-| Ecosystem | WebSocket | Real-time event streaming |
+| Sub-layer   | Protocol  | Purpose                       |
+| ----------- | --------- | ----------------------------- |
+| Application | HTTP      | REST API for static resources |
+| Ecosystem   | WebSocket | Real-time event streaming     |
 
 ## Data Flow
 
@@ -286,6 +288,7 @@ Static resources managed via HTTP CRUD:
 ### 2. Driver Built into Engine
 
 Driver logic is fixed and built into `AgentEngine.connect(bus)`:
+
 - Subscribes to EnvironmentEvents from SystemBus
 - Filters events needed by Mealy Machine
 - No separate Driver class needed
@@ -294,7 +297,7 @@ Driver logic is fixed and built into `AgentEngine.connect(bus)`:
 
 ```typescript
 interface Receptor {
-  pipe(bus: SystemBus): void;  // Renamed from emit() for clarity
+  pipe(bus: SystemBus): void; // Renamed from emit() for clarity
 }
 
 interface Effector {
@@ -314,8 +317,8 @@ class SessionManager {
 
     // Direct emit to bus
     this.bus.emit({
-      type: 'session_created',
-      data: { sessionId: session.id }
+      type: "session_created",
+      data: { sessionId: session.id },
     });
 
     return session;

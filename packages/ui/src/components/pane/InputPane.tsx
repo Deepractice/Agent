@@ -152,21 +152,18 @@ export const InputPane = React.forwardRef<HTMLDivElement, InputPaneProps>(
     };
 
     // Check if toolbar has emoji item
-    const hasEmojiItem = toolbarItems?.some((item) => item.id === "emoji") ||
+    const hasEmojiItem =
+      toolbarItems?.some((item) => item.id === "emoji") ||
       toolbarRightItems?.some((item) => item.id === "emoji");
 
-    const shouldShowToolbar =
-      showToolbar ?? (toolbarItems && toolbarItems.length > 0);
+    const shouldShowToolbar = showToolbar ?? (toolbarItems && toolbarItems.length > 0);
 
     const canSend = text.trim().length > 0 && !disabled && !isLoading;
 
     return (
       <div
         ref={ref}
-        className={cn(
-          "flex flex-col h-full border-t border-border bg-muted/30",
-          className
-        )}
+        className={cn("flex flex-col h-full border-t border-border bg-muted/30", className)}
       >
         {/* Toolbar at top */}
         {shouldShowToolbar && (
@@ -178,19 +175,12 @@ export const InputPane = React.forwardRef<HTMLDivElement, InputPaneProps>(
             />
             {/* Emoji Picker Popover */}
             {enableEmojiPicker && hasEmojiItem && showEmojiPicker && (
-              <div
-                ref={emojiPickerRef}
-                className="absolute left-0 bottom-full z-50 mb-1"
-              >
+              <div ref={emojiPickerRef} className="absolute left-0 bottom-full z-50 mb-1">
                 <div
                   className="bg-popover rounded-lg shadow-lg border border-border"
                   onClick={(e) => e.stopPropagation()}
                 >
-                  <EmojiPicker
-                    onEmojiSelect={handleEmojiSelect}
-                    theme="auto"
-                    perLine={8}
-                  />
+                  <EmojiPicker onEmojiSelect={handleEmojiSelect} theme="auto" perLine={8} />
                 </div>
               </div>
             )}

@@ -122,10 +122,7 @@ export class SystemBusImpl implements SystemBus {
     return this.on(type as string, handler as BusEventHandler);
   }
 
-  emitCommand<T extends keyof CommandEventMap>(
-    type: T,
-    data: CommandEventMap[T]["data"]
-  ): void {
+  emitCommand<T extends keyof CommandEventMap>(type: T, data: CommandEventMap[T]["data"]): void {
     this.emit({
       type,
       timestamp: Date.now(),
@@ -203,10 +200,7 @@ export class SystemBusImpl implements SystemBus {
     }
   }
 
-  private matchesType(
-    subscriptionType: string | string[] | "*",
-    eventType: string
-  ): boolean {
+  private matchesType(subscriptionType: string | string[] | "*", eventType: string): boolean {
     if (subscriptionType === "*") return true;
     if (Array.isArray(subscriptionType)) return subscriptionType.includes(eventType);
     return subscriptionType === eventType;

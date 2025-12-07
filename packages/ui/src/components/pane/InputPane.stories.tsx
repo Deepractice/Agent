@@ -2,14 +2,7 @@ import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { InputPane } from "./InputPane";
 import { InputToolBar } from "./InputToolBar";
-import {
-  Paperclip,
-  Image,
-  Smile,
-  AtSign,
-  Scissors,
-  FolderOpen,
-} from "lucide-react";
+import { Paperclip, Image, Smile, AtSign, Scissors, FolderOpen } from "lucide-react";
 
 const meta: Meta<typeof InputPane> = {
   title: "Pane/InputPane",
@@ -60,17 +53,12 @@ const commonToolbarItems = [
   { id: "emoji", icon: <Smile className="w-4 h-4" />, label: "Add emoji" },
 ];
 
-const mentionItems = [
-  { id: "mention", icon: <AtSign className="w-4 h-4" />, label: "Mention" },
-];
+const mentionItems = [{ id: "mention", icon: <AtSign className="w-4 h-4" />, label: "Mention" }];
 
 export const Default: Story = {
   render: () => (
     <div className="w-full max-w-2xl h-40 border border-border rounded-lg overflow-hidden">
-      <InputPane
-        onSend={(text) => console.log("Send:", text)}
-        placeholder="Type a message..."
-      />
+      <InputPane onSend={(text) => console.log("Send:", text)} placeholder="Type a message..." />
     </div>
   ),
 };

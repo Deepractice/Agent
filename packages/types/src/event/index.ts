@@ -46,20 +46,8 @@
 // Base Types
 // ============================================================================
 
-export type {
-  SystemEvent,
-  EventSource,
-  EventIntent,
-  EventCategory,
-  EventContext,
-} from "./base";
-export {
-  isFromSource,
-  hasIntent,
-  isRequest,
-  isResult,
-  isNotification,
-} from "./base";
+export type { SystemEvent, EventSource, EventIntent, EventCategory, EventContext } from "./base";
+export { isFromSource, hasIntent, isRequest, isResult, isNotification } from "./base";
 
 // ============================================================================
 // Environment Events (External World)

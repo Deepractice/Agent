@@ -8,7 +8,6 @@
 import type { AgentX, LocalConfig } from "@agentxjs/types/agentx";
 import type { SystemEvent } from "@agentxjs/types/event";
 import type { WebSocket as WS, WebSocketServer as WSS } from "ws";
-import type { Server as HttpServer } from "http";
 import { createLogger } from "@agentxjs/common";
 
 const logger = createLogger("agentx/createAgentX");
@@ -28,7 +27,10 @@ function setupConnectionHandler(
   ws.on("message", (data: Buffer) => {
     try {
       const event = JSON.parse(data.toString()) as SystemEvent;
-      logger.info("Received from client", { type: event.type, requestId: (event.data as { requestId?: string })?.requestId });
+      logger.info("Received from client", {
+        type: event.type,
+        requestId: (event.data as { requestId?: string })?.requestId,
+      });
       runtime.emit(event);
     } catch {
       // Ignore parse errors
@@ -54,7 +56,11 @@ function setupBroadcasting(
       return;
     }
 
-    logger.info("Broadcasting to clients", { type: event.type, category: event.category, requestId: (event.data as { requestId?: string })?.requestId });
+    logger.info("Broadcasting to clients", {
+      type: event.type,
+      category: event.category,
+      requestId: (event.data as { requestId?: string })?.requestId,
+    });
     const message = JSON.stringify(event);
     for (const ws of connections) {
       if (ws.readyState === 1) {
@@ -85,7 +91,9 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
 
   // Create persistence from storage config (async)
   const storageConfig = config.storage ?? {};
-  const persistence = await createPersistence(storageConfig as Parameters<typeof createPersistence>[0]);
+  const persistence = await createPersistence(
+    storageConfig as Parameters<typeof createPersistence>[0]
+  );
 
   const runtime = createRuntime({
     persistence,
@@ -114,11 +122,11 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
       // Only handle /ws path for WebSocket upgrade
       const url = new URL(request.url || "", `http://${request.headers.host}`);
       if (url.pathname === "/ws") {
-        peer!.handleUpgrade(request, socket, head, (ws) => {
+        peer!.handleUpgrade(request as any, socket as any, head as any, (ws) => {
           peer!.emit("connection", ws, request);
         });
       } else {
-        socket.destroy();
+        (socket as any).destroy();
       }
     });
 
@@ -144,7 +152,9 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
     // Server API
     async listen(port: number, host?: string) {
       if (attachedToServer) {
-        throw new Error("Cannot listen when attached to existing server. The server should call listen() instead.");
+        throw new Error(
+          "Cannot listen when attached to existing server. The server should call listen() instead."
+        );
       }
 
       if (peer) {

@@ -256,7 +256,7 @@ export class BusDriver {
         return {
           type: "message_stop",
           timestamp,
-          data: { stopReason: "end_turn" },  // Use valid StopReason
+          data: { stopReason: "end_turn" }, // Use valid StopReason
         };
       }
       case "error_received": {

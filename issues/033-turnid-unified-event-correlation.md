@@ -26,6 +26,7 @@ const requestId = ""; // TODO: Implement requestId tracking
 > A turn = one user message + assistant response cycle.
 
 这正是我们需要关联的单元：
+
 - 一条用户消息
 - 触发的所有 AI 响应事件（stream）
 - 包含的 tool_call / tool_result 循环
@@ -34,6 +35,7 @@ const requestId = ""; // TODO: Implement requestId tracking
 ### 类比理解
 
 这个 ID 本质是 **Agent 主体视角的时序标识**：
+
 - **人类**：一个一个感知外界刺激，顺序处理
 - **CPU**：一条一条执行指令，顺序处理
 - **Agent**：一个一个接收输入（turn），顺序处理

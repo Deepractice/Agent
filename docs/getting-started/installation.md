@@ -24,6 +24,7 @@ yarn add agentxjs @agentxjs/runtime
 ```
 
 **Why both packages?**
+
 - `agentxjs` - Unified API
 - `@agentxjs/runtime` - Runtime with Claude SDK (peer dependency)
 
@@ -66,14 +67,14 @@ agentxjs               Unified API (local/remote)
 
 ### Package Overview
 
-| Package | Description | Install when |
-|---------|-------------|--------------|
-| `agentxjs` | Unified API entry point | **Always install** |
+| Package             | Description             | Install when                      |
+| ------------------- | ----------------------- | --------------------------------- |
+| `agentxjs`          | Unified API entry point | **Always install**                |
 | `@agentxjs/runtime` | Runtime with Claude SDK | Backend/Node.js (peer dependency) |
-| `@agentxjs/agent` | AgentEngine only | Advanced use (custom drivers) |
-| `@agentxjs/types` | Type definitions | Type-only imports |
-| `@agentxjs/common` | Logger facade | Internal use only |
-| `@agentxjs/ui` | React components | Frontend UI |
+| `@agentxjs/agent`   | AgentEngine only        | Advanced use (custom drivers)     |
+| `@agentxjs/types`   | Type definitions        | Type-only imports                 |
+| `@agentxjs/common`  | Logger facade           | Internal use only                 |
+| `@agentxjs/ui`      | React components        | Frontend UI                       |
 
 ### Why Peer Dependency?
 
@@ -86,22 +87,26 @@ agentxjs               Unified API (local/remote)
 ### Installation Examples
 
 **Backend (Node.js) - Recommended:**
+
 ```bash
 pnpm add agentxjs @agentxjs/runtime
 ```
 
 **Frontend (Browser):**
+
 ```bash
 pnpm add agentxjs
 # No need for @agentxjs/runtime
 ```
 
 **With React UI:**
+
 ```bash
 pnpm add agentxjs @agentxjs/ui react react-dom
 ```
 
 **Advanced (Custom Driver):**
+
 ```bash
 pnpm add @agentxjs/agent @agentxjs/types
 ```

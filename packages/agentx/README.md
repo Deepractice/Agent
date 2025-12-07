@@ -78,16 +78,16 @@ await agent.receive("Hello!");
 ```typescript
 // Server-side configuration (Source mode)
 interface SourceConfig {
-  apiKey?: string;        // Default: process.env.ANTHROPIC_API_KEY
-  model?: string;         // Default: "claude-sonnet-4-20250514"
-  baseUrl?: string;       // Default: "https://api.anthropic.com"
+  apiKey?: string; // Default: process.env.ANTHROPIC_API_KEY
+  model?: string; // Default: "claude-sonnet-4-20250514"
+  baseUrl?: string; // Default: "https://api.anthropic.com"
   persistence?: Persistence;
 }
 
 // Browser-side configuration (Mirror mode)
 interface MirrorConfig {
-  serverUrl: string;      // WebSocket URL, e.g., "ws://localhost:5200"
-  token?: string;         // Authentication token
+  serverUrl: string; // WebSocket URL, e.g., "ws://localhost:5200"
+  token?: string; // Authentication token
   headers?: Record<string, string>;
 }
 
@@ -207,13 +207,13 @@ interface AgentRunConfig {
 
 ### Source vs Mirror
 
-| Aspect | Source (Server) | Mirror (Browser) |
-|--------|-----------------|------------------|
-| Runtime | Runtime | MirrorRuntime |
-| LLM Access | Direct API calls | Via server |
-| Persistence | Local (SQLite, etc.) | Server-side |
-| Communication | N/A | WebSocket events |
-| Use Case | Backend services | Frontend apps |
+| Aspect        | Source (Server)      | Mirror (Browser) |
+| ------------- | -------------------- | ---------------- |
+| Runtime       | Runtime              | MirrorRuntime    |
+| LLM Access    | Direct API calls     | Via server       |
+| Persistence   | Local (SQLite, etc.) | Server-side      |
+| Communication | N/A                  | WebSocket events |
+| Use Case      | Backend services     | Frontend apps    |
 
 ---
 
@@ -261,11 +261,19 @@ const resumedAgent = await image.resume();
 ### Stream Events (Real-time)
 
 ```typescript
-agent.on("message_start", (e) => { /* Response started */ });
+agent.on("message_start", (e) => {
+  /* Response started */
+});
 agent.on("text_delta", (e) => console.log(e.data.text));
-agent.on("tool_call", (e) => { /* Tool being called */ });
-agent.on("tool_result", (e) => { /* Tool result received */ });
-agent.on("message_stop", (e) => { /* Response complete */ });
+agent.on("tool_call", (e) => {
+  /* Tool being called */
+});
+agent.on("tool_result", (e) => {
+  /* Tool result received */
+});
+agent.on("message_stop", (e) => {
+  /* Response complete */
+});
 ```
 
 ### Subscribe to All Events
@@ -324,12 +332,13 @@ Instead of separate `createSource()` and `createMirror()` functions, we use a si
 
 ```typescript
 // Type system determines mode automatically
-createAgentX();                          // Source (no serverUrl)
-createAgentX({ apiKey: "..." });         // Source (no serverUrl)
+createAgentX(); // Source (no serverUrl)
+createAgentX({ apiKey: "..." }); // Source (no serverUrl)
 createAgentX({ serverUrl: "ws://..." }); // Mirror (has serverUrl)
 ```
 
 **Benefits:**
+
 - Single import, single function to learn
 - TypeScript enforces correct configuration
 - Easy refactoring between modes
@@ -345,6 +354,7 @@ Mirror mode uses WebSocket (not HTTP/SSE) for bidirectional communication:
 ### Why No `defineAgent`?
 
 Previous versions required:
+
 ```typescript
 const MyAgent = defineAgent({ name: "Assistant", ... });
 agentx.definitions.register(MyAgent);
@@ -353,6 +363,7 @@ const agent = await image.run();
 ```
 
 New API is simpler:
+
 ```typescript
 const agent = await agentx.run({ name: "Assistant", ... });
 ```

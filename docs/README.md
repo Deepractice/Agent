@@ -69,12 +69,14 @@ agentxjs               Unified API (local/remote)
 ## Learning Paths
 
 ### Beginner Path (15 minutes)
+
 1. `getting-started/installation.md` - Install AgentX
 2. `getting-started/quickstart.md` - 5-minute quick start
 3. `getting-started/first-agent.md` - Build your first agent
 4. `concepts/overview.md` - Understand the architecture
 
 ### Developer Path (1-2 hours)
+
 1. `concepts/event-system.md` - Understand the 4-layer event system
 2. `guides/events.md` - Event subscription patterns
 3. `guides/sessions.md` - Session and conversation management
@@ -82,12 +84,14 @@ agentxjs               Unified API (local/remote)
 5. `api/agentx.md` - Complete API reference
 
 ### Advanced Path (Deep Dive)
+
 1. `concepts/mealy-machine.md` - Core processing pattern
 2. `packages/agent.md` - AgentEngine internals
 3. `packages/runtime.md` - Runtime architecture
 4. Custom processor development
 
 ### Contributor Path
+
 1. All of the above
 2. `packages/types.md` - Type system design
 3. `packages/common.md` - Shared infrastructure

@@ -117,7 +117,7 @@ export class PersistenceImpl implements Persistence {
    */
   static async create(config: PersistenceConfig = {}): Promise<PersistenceImpl> {
     const driverName = config.driver ?? "memory";
-    const storage = config.storage ?? await createStorageFromConfig(config);
+    const storage = config.storage ?? (await createStorageFromConfig(config));
     return new PersistenceImpl(storage, driverName);
   }
 
@@ -188,7 +188,9 @@ async function createStorageFromConfig(config: PersistenceConfig): Promise<Stora
       const { createDatabase } = await import("db0");
       // @ts-expect-error - db0 connectors use .mts exports, not compatible with moduleResolution: node
       const { default: mysqlConnector } = await import("db0/connectors/mysql2");
-      const database = createDatabase(mysqlConnector({ uri: config.url ?? "mysql://localhost:3306/agentx" }));
+      const database = createDatabase(
+        mysqlConnector({ uri: config.url ?? "mysql://localhost:3306/agentx" })
+      );
       return createStorage({
         driver: db0Driver({ database }),
       });
@@ -199,7 +201,9 @@ async function createStorageFromConfig(config: PersistenceConfig): Promise<Stora
       const { createDatabase } = await import("db0");
       // @ts-expect-error - db0 connectors use .mts exports, not compatible with moduleResolution: node
       const { default: pgConnector } = await import("db0/connectors/postgresql");
-      const database = createDatabase(pgConnector({ connectionString: config.url ?? "postgres://localhost:5432/agentx" }));
+      const database = createDatabase(
+        pgConnector({ connectionString: config.url ?? "postgres://localhost:5432/agentx" })
+      );
       return createStorage({
         driver: db0Driver({ database }),
       });

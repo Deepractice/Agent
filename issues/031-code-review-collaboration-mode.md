@@ -78,6 +78,7 @@ constructor(
 ```
 
 **问题**：
+
 1. 谁创建 AgentInstance？是 AgentX 层还是 Ecosystem 层？
 2. 如果是 AgentX 层创建，它怎么拿到 Ecosystem 的 SystemBus？
 3. 如果多个 Agent，它们共享一个 SystemBus 吗？

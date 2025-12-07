@@ -12,10 +12,4 @@ export type {
   EventContext,
 } from "./SystemEvent";
 
-export {
-  isFromSource,
-  hasIntent,
-  isRequest,
-  isResult,
-  isNotification,
-} from "./SystemEvent";
+export { isFromSource, hasIntent, isRequest, isResult, isNotification } from "./SystemEvent";

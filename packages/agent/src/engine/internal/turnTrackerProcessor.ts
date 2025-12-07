@@ -92,7 +92,6 @@ export type TurnTrackerOutput = TurnRequestEvent | TurnResponseEvent;
  */
 export type TurnTrackerInput = StreamEvent | AgentMessageEvent;
 
-
 /**
  * turnTrackerProcessor
  *

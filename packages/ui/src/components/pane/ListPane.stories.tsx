@@ -1,14 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { ListPane } from "./ListPane";
-import {
-  MessageSquare,
-  File,
-  Folder,
-  User,
-  Clock,
-  Star,
-} from "lucide-react";
+import { MessageSquare, File, Folder, User, Clock, Star } from "lucide-react";
 import { Badge } from "~/components/element/Badge";
 import { AgentLogo } from "~/components/element/AgentLogo";
 
@@ -165,10 +158,7 @@ const userItems = [
 ];
 
 // Interactive wrapper for stateful stories
-const InteractiveWrapper = ({
-  items,
-  ...props
-}: React.ComponentProps<typeof ListPane>) => {
+const InteractiveWrapper = ({ items, ...props }: React.ComponentProps<typeof ListPane>) => {
   const [selectedId, setSelectedId] = React.useState<string | null>("1");
   const [listItems, setListItems] = React.useState(items);
 
@@ -289,11 +279,7 @@ export const UserList: Story = {
 export const Loading: Story = {
   render: () => (
     <div className="h-96 w-72 border border-border rounded-md overflow-hidden">
-      <ListPane
-        title="Conversations"
-        items={[]}
-        isLoading
-      />
+      <ListPane title="Conversations" items={[]} isLoading />
     </div>
   ),
 };

@@ -41,7 +41,7 @@ export function useAgentX(serverUrl: string): AgentX | null {
     let instance: AgentX | null = null;
     let mounted = true;
 
-    createAgentX({ server: serverUrl })
+    createAgentX({ serverUrl })
       .then((agentx) => {
         if (!mounted) {
           agentx.dispose();

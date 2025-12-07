@@ -168,34 +168,16 @@ const defaultRenderAvatar = (role: MessagePaneItem["role"]): React.ReactNode => 
 
   switch (role) {
     case "user":
-      return (
-        <div className={cn(avatarClasses, "bg-primary text-primary-foreground")}>
-          U
-        </div>
-      );
+      return <div className={cn(avatarClasses, "bg-primary text-primary-foreground")}>U</div>;
     case "assistant":
-      return (
-        <div className={cn(avatarClasses, "bg-secondary text-secondary-foreground")}>
-          A
-        </div>
-      );
+      return <div className={cn(avatarClasses, "bg-secondary text-secondary-foreground")}>A</div>;
     case "system":
-      return (
-        <div className={cn(avatarClasses, "bg-muted text-muted-foreground")}>
-          S
-        </div>
-      );
+      return <div className={cn(avatarClasses, "bg-muted text-muted-foreground")}>S</div>;
     case "tool":
-      return (
-        <div className={cn(avatarClasses, "bg-accent text-accent-foreground")}>
-          T
-        </div>
-      );
+      return <div className={cn(avatarClasses, "bg-accent text-accent-foreground")}>T</div>;
     case "error":
       return (
-        <div className={cn(avatarClasses, "bg-destructive text-destructive-foreground")}>
-          !
-        </div>
+        <div className={cn(avatarClasses, "bg-destructive text-destructive-foreground")}>!</div>
       );
     default:
       return null;
@@ -282,24 +264,15 @@ const MessageBubble = ({
   }
 
   return (
-    <div
-      className={cn(
-        "flex gap-3 py-2",
-        isUser && "flex-row-reverse"
-      )}
-    >
+    <div className={cn("flex gap-3 py-2", isUser && "flex-row-reverse")}>
       {renderAvatar(item.role)}
       <div
         className={cn(
           "max-w-[80%] rounded-lg px-4 py-2",
-          isUser
-            ? "bg-primary text-primary-foreground"
-            : "bg-muted"
+          isUser ? "bg-primary text-primary-foreground" : "bg-muted"
         )}
       >
-        <div className="text-sm">
-          {renderContent(item.content, item)}
-        </div>
+        <div className="text-sm">{renderContent(item.content, item)}</div>
       </div>
     </div>
   );
@@ -341,9 +314,18 @@ const ThinkingIndicator = ({
       {renderAvatar("assistant")}
       <div className="rounded-lg px-4 py-2 bg-muted">
         <div className="flex gap-1">
-          <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "0ms" }} />
-          <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "150ms" }} />
-          <span className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce" style={{ animationDelay: "300ms" }} />
+          <span
+            className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce"
+            style={{ animationDelay: "0ms" }}
+          />
+          <span
+            className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce"
+            style={{ animationDelay: "150ms" }}
+          />
+          <span
+            className="w-2 h-2 bg-foreground/50 rounded-full animate-bounce"
+            style={{ animationDelay: "300ms" }}
+          />
         </div>
       </div>
     </div>
@@ -382,14 +364,8 @@ export const MessagePane = React.forwardRef<HTMLDivElement, MessagePaneProps>(
     const isEmpty = items.length === 0 && !streamingText && !isLoading;
 
     return (
-      <div
-        ref={ref}
-        className={cn("flex flex-col h-full bg-background", className)}
-      >
-        <div
-          ref={scrollRef}
-          className="flex-1 overflow-y-auto px-4 py-2"
-        >
+      <div ref={ref} className={cn("flex flex-col h-full bg-background", className)}>
+        <div ref={scrollRef} className="flex-1 overflow-y-auto px-4 py-2">
           {isEmpty ? (
             <div className="h-full flex items-center justify-center">
               <EmptyState
@@ -409,14 +385,9 @@ export const MessagePane = React.forwardRef<HTMLDivElement, MessagePaneProps>(
                 />
               ))}
               {streamingText && (
-                <StreamingIndicator
-                  text={streamingText}
-                  renderAvatar={renderAvatar}
-                />
+                <StreamingIndicator text={streamingText} renderAvatar={renderAvatar} />
               )}
-              {isLoading && !streamingText && (
-                <ThinkingIndicator renderAvatar={renderAvatar} />
-              )}
+              {isLoading && !streamingText && <ThinkingIndicator renderAvatar={renderAvatar} />}
             </>
           )}
         </div>

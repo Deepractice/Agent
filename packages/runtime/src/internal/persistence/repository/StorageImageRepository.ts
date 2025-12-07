@@ -42,10 +42,7 @@ export class StorageImageRepository implements ImageRepository {
     await this.storage.setItem(this.key(record.imageId), record);
 
     // Save index for name lookup
-    await this.storage.setItem(
-      this.nameIndexKey(record.name, record.imageId),
-      record.imageId
-    );
+    await this.storage.setItem(this.nameIndexKey(record.name, record.imageId), record.imageId);
 
     // Save index for container lookup
     await this.storage.setItem(
@@ -123,12 +120,8 @@ export class StorageImageRepository implements ImageRepository {
 
     // Delete indexes
     if (record) {
-      await this.storage.removeItem(
-        this.nameIndexKey(record.name, imageId)
-      );
-      await this.storage.removeItem(
-        this.containerIndexKey(record.containerId, imageId)
-      );
+      await this.storage.removeItem(this.nameIndexKey(record.name, imageId));
+      await this.storage.removeItem(this.containerIndexKey(record.containerId, imageId));
     }
 
     logger.debug("Image deleted", { imageId });

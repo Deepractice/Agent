@@ -37,37 +37,38 @@ import type { SystemEvent } from "../base";
  * };
  * ```
  */
-export interface SystemError extends SystemEvent<
-  "system_error",
-  {
-    /**
-     * Error message (human-readable)
-     */
-    message: string;
+export interface SystemError
+  extends SystemEvent<
+    "system_error",
+    {
+      /**
+       * Error message (human-readable)
+       */
+      message: string;
 
-    /**
-     * Associated request ID (if error is related to a request)
-     */
-    requestId?: string;
+      /**
+       * Associated request ID (if error is related to a request)
+       */
+      requestId?: string;
 
-    /**
-     * Error severity
-     * - info: Informational, no action needed
-     * - warn: Warning, operation succeeded but with issues
-     * - error: Error, operation failed
-     * - fatal: Fatal error, system unstable
-     */
-    severity?: "info" | "warn" | "error" | "fatal";
+      /**
+       * Error severity
+       * - info: Informational, no action needed
+       * - warn: Warning, operation succeeded but with issues
+       * - error: Error, operation failed
+       * - fatal: Fatal error, system unstable
+       */
+      severity?: "info" | "warn" | "error" | "fatal";
 
-    /**
-     * Additional error details (stack trace, error code, etc.)
-     */
-    details?: unknown;
-  },
-  "agent" | "container" | "environment" | "session" | "sandbox" | "command",
-  "error",
-  "notification"
-> {}
+      /**
+       * Additional error details (stack trace, error code, etc.)
+       */
+      details?: unknown;
+    },
+    "agent" | "container" | "environment" | "session" | "sandbox" | "command",
+    "error",
+    "notification"
+  > {}
 
 /**
  * Error event map - will grow as we add specific error types

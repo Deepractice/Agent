@@ -1,15 +1,7 @@
 import * as React from "react";
 import type { Meta, StoryObj } from "@storybook/react";
 import { NavBar, type NavBarItem } from "./NavBar";
-import {
-  MessageSquare,
-  Search,
-  Settings,
-  User,
-  Bell,
-  History,
-  Bookmark,
-} from "lucide-react";
+import { MessageSquare, Search, Settings, User, Bell, History, Bookmark } from "lucide-react";
 
 const meta: Meta<typeof NavBar> = {
   title: "Pane/NavBar",
@@ -95,9 +87,7 @@ export const Default: Story = {
 };
 
 export const WithBottomItems: Story = {
-  render: () => (
-    <InteractiveWrapper items={defaultItems} bottomItems={bottomItems} />
-  ),
+  render: () => <InteractiveWrapper items={defaultItems} bottomItems={bottomItems} />,
   parameters: {
     docs: {
       description: {
@@ -119,11 +109,7 @@ export const WithBadges: Story = {
 
     return (
       <div className="h-96 border border-border rounded-md overflow-hidden">
-        <NavBar
-          items={itemsWithBadges}
-          activeId={activeId}
-          onSelect={setActiveId}
-        />
+        <NavBar items={itemsWithBadges} activeId={activeId} onSelect={setActiveId} />
       </div>
     );
   },
@@ -157,11 +143,7 @@ export const MinimalItems: Story = {
 
     return (
       <div className="h-96 border border-border rounded-md overflow-hidden">
-        <NavBar
-          items={minimalItems}
-          activeId={activeId}
-          onSelect={setActiveId}
-        />
+        <NavBar items={minimalItems} activeId={activeId} onSelect={setActiveId} />
       </div>
     );
   },
@@ -189,9 +171,7 @@ export const FullLayout: Story = {
         <div className="flex-1 flex items-center justify-center bg-muted/20">
           <div className="text-center">
             <h3 className="text-lg font-semibold mb-2 capitalize">{activeId} View</h3>
-            <p className="text-sm text-muted-foreground">
-              Click navigation icons to switch views
-            </p>
+            <p className="text-sm text-muted-foreground">Click navigation icons to switch views</p>
           </div>
         </div>
       </div>

@@ -59,8 +59,4 @@ export type {
   RequestDataFor,
 } from "./CommandEvent";
 
-export {
-  isCommandEvent,
-  isCommandRequest,
-  isCommandResponse,
-} from "./CommandEvent";
+export { isCommandEvent, isCommandRequest, isCommandResponse } from "./CommandEvent";

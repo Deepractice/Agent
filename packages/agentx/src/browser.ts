@@ -157,7 +157,7 @@ export async function createAgentX(config: AgentXConfig): Promise<AgentX> {
   if (!config || !isRemoteConfig(config)) {
     throw new Error(
       "Browser environment only supports remote mode. " +
-      "Please provide { serverUrl: \"ws://...\" } configuration."
+        'Please provide { serverUrl: "ws://..." } configuration.'
     );
   }
   return createRemoteAgentX(config.serverUrl);

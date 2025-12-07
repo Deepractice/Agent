@@ -27,6 +27,7 @@ pnpm add @agentxjs/runtime
 ```
 
 **Dependencies:**
+
 - `@anthropic-ai/claude-agent-sdk` - Claude API client
 - `better-sqlite3` - SQLite database (optional, for persistence)
 - `unstorage` - Unified storage layer
@@ -132,13 +133,13 @@ const runtime = createRuntime({
 
 ### Component Responsibilities
 
-| Component | Role | Examples |
-|-----------|------|----------|
-| **SystemBus** | Event distribution | Emit, subscribe, request/response |
-| **Environment** | External world interface | Claude API calls, streaming |
-| **Container** | Agent lifecycle | Create, destroy, manage agents |
-| **Session** | Message persistence | Save/load conversation history |
-| **Persistence** | Storage backend | SQLite, Memory, custom |
+| Component       | Role                     | Examples                          |
+| --------------- | ------------------------ | --------------------------------- |
+| **SystemBus**   | Event distribution       | Emit, subscribe, request/response |
+| **Environment** | External world interface | Claude API calls, streaming       |
+| **Container**   | Agent lifecycle          | Create, destroy, manage agents    |
+| **Session**     | Message persistence      | Save/load conversation history    |
+| **Persistence** | Storage backend          | SQLite, Memory, custom            |
 
 ---
 
@@ -437,11 +438,15 @@ const runtime = createRuntime({
 
 ```typescript
 // Filter events by agent
-runtime.on("text_delta", (event) => {
-  console.log(event.data.text);
-}, {
-  filter: (event) => event.context?.agentId === "agent_123",
-});
+runtime.on(
+  "text_delta",
+  (event) => {
+    console.log(event.data.text);
+  },
+  {
+    filter: (event) => event.context?.agentId === "agent_123",
+  }
+);
 
 // Priority execution
 runtime.on("message_stop", handler, {
@@ -532,8 +537,8 @@ Environment abstraction allows:
 interface RuntimeConfig {
   // LLM configuration
   llm?: {
-    apiKey?: string;       // Default: process.env.ANTHROPIC_API_KEY
-    baseUrl?: string;      // Default: "https://api.anthropic.com"
+    apiKey?: string; // Default: process.env.ANTHROPIC_API_KEY
+    baseUrl?: string; // Default: "https://api.anthropic.com"
   };
 
   // Persistence

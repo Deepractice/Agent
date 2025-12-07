@@ -47,6 +47,12 @@ export type AgentMessageEvent = ToEngineEventUnion<FullAgentMessageEvent>;
  * Type guard: is this a message event?
  */
 export function isMessageEvent(event: EngineEvent): event is AgentMessageEvent {
-  const messageTypes = ["user_message", "assistant_message", "tool_call_message", "tool_result_message", "error_message"];
+  const messageTypes = [
+    "user_message",
+    "assistant_message",
+    "tool_call_message",
+    "tool_result_message",
+    "error_message",
+  ];
   return messageTypes.includes(event.type);
 }

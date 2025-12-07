@@ -5,6 +5,7 @@ A detailed walkthrough of building a complete AI agent with AgentX.
 ## What You'll Build
 
 A CLI chat application with:
+
 - Real-time streaming responses
 - Conversation history
 - Persistent storage (SQLite)

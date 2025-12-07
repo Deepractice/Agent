@@ -23,10 +23,7 @@ import type {
   CreateAgentOptions,
   StreamEvent,
 } from "@agentxjs/types/agent";
-import type {
-  AgentMiddleware,
-  AgentInterceptor,
-} from "@agentxjs/types/agent/internal";
+import type { AgentMiddleware, AgentInterceptor } from "@agentxjs/types/agent/internal";
 import { MealyMachine } from "./engine/MealyMachine";
 import { AgentStateMachine } from "./AgentStateMachine";
 import { createLogger } from "@agentxjs/common";
@@ -105,9 +102,11 @@ class SimpleAgent implements AgentEngine {
     return this.stateMachine.state;
   }
 
-
   async receive(message: string | UserMessage): Promise<void> {
-    console.log("[SimpleAgent.receive] CALLED with message:", typeof message === "string" ? message : message.content);
+    console.log(
+      "[SimpleAgent.receive] CALLED with message:",
+      typeof message === "string" ? message : message.content
+    );
 
     const userMessage: UserMessage =
       typeof message === "string"
@@ -219,7 +218,10 @@ class SimpleAgent implements AgentEngine {
     // (stream + message + state + turn events)
     const outputs = this.machine.process(this.agentId, event);
 
-    logger.info("MealyMachine outputs", { count: outputs.length, types: outputs.map(o => o.type) });
+    logger.info("MealyMachine outputs", {
+      count: outputs.length,
+      types: outputs.map((o) => o.type),
+    });
 
     // Emit all outputs
     for (const output of outputs) {

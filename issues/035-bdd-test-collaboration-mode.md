@@ -378,7 +378,7 @@ interface SessionFacade {
   get(sessionId: string): Promise<SessionInfo | undefined>;
   listByContainer(containerId: string): Promise<SessionInfo[]>;
   delete(sessionId: string): Promise<boolean>;
-  run(sessionId: string): Promise<string>;  // returns agentId
+  run(sessionId: string): Promise<string>; // returns agentId
 }
 ```
 

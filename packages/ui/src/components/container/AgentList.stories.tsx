@@ -46,9 +46,7 @@ const ConnectedWrapper = () => {
         <div className="text-center text-muted-foreground text-sm">
           <p>Connecting to server...</p>
           <p className="text-xs mt-2">Make sure dev-server is running:</p>
-          <code className="text-xs bg-muted px-2 py-1 rounded mt-1 block">
-            pnpm dev:server
-          </code>
+          <code className="text-xs bg-muted px-2 py-1 rounded mt-1 block">pnpm dev:server</code>
         </div>
       </div>
     );
@@ -68,12 +66,10 @@ const ConnectedWrapper = () => {
         <h3 className="text-sm font-medium mb-2">State</h3>
         <div className="text-xs space-y-1">
           <p>
-            <span className="text-muted-foreground">Selected Image:</span>{" "}
-            {selectedId || "none"}
+            <span className="text-muted-foreground">Selected Image:</span> {selectedId || "none"}
           </p>
           <p>
-            <span className="text-muted-foreground">Current Agent:</span>{" "}
-            {currentAgentId || "none"}
+            <span className="text-muted-foreground">Current Agent:</span> {currentAgentId || "none"}
           </p>
         </div>
       </div>
@@ -99,10 +95,7 @@ export const Connected: Story = {
 export const MockedEmpty: Story = {
   render: () => (
     <div className="h-96 w-72 border border-border rounded-lg overflow-hidden">
-      <AgentList
-        agentx={null}
-        onNew={() => console.log("New clicked")}
-      />
+      <AgentList agentx={null} onNew={() => console.log("New clicked")} />
     </div>
   ),
   parameters: {
@@ -123,11 +116,7 @@ export const CustomTitle: Story = {
 
     return (
       <div className="h-96 w-72 border border-border rounded-lg overflow-hidden">
-        <AgentList
-          agentx={agentx}
-          title="Chat History"
-          searchable={false}
-        />
+        <AgentList agentx={agentx} title="Chat History" searchable={false} />
       </div>
     );
   },

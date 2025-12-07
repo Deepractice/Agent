@@ -33,22 +33,19 @@ function getEventState(world: AgentXWorld): EventTestState {
 // Given - Subscriptions
 // ============================================================================
 
-Given(
-  /^I am subscribed to "([^"]*)" events$/,
-  function (this: AgentXWorld, eventType: string) {
-    assert(this.agentx, "AgentX not initialized");
+Given(/^I am subscribed to "([^"]*)" events$/, function (this: AgentXWorld, eventType: string) {
+  assert(this.agentx, "AgentX not initialized");
 
-    const state = getEventState(this);
+  const state = getEventState(this);
 
-    const unsubscribe = this.agentx.on(eventType, (event) => {
-      state.handlerCalled = true;
-      state.receivedEvent = event;
-      state.receivedEvents.push(event);
-    });
+  const unsubscribe = this.agentx.on(eventType, (event) => {
+    state.handlerCalled = true;
+    state.receivedEvent = event;
+    state.receivedEvents.push(event);
+  });
 
-    this.eventHandlers.set(eventType, unsubscribe);
-  }
-);
+  this.eventHandlers.set(eventType, unsubscribe);
+});
 
 Given(
   /^I am subscribed via onCommand to "([^"]*)"$/,
@@ -57,14 +54,11 @@ Given(
 
     const state = getEventState(this);
 
-    const unsubscribe = this.agentx.onCommand(
-      eventType as "container_create_response",
-      (event) => {
-        state.handlerCalled = true;
-        state.receivedEvent = event;
-        state.receivedEvents.push(event);
-      }
-    );
+    const unsubscribe = this.agentx.onCommand(eventType as "container_create_response", (event) => {
+      state.handlerCalled = true;
+      state.receivedEvent = event;
+      state.receivedEvents.push(event);
+    });
 
     this.eventHandlers.set(eventType, unsubscribe);
   }
@@ -74,20 +68,17 @@ Given(
 // When - on() / onCommand()
 // ============================================================================
 
-When(
-  /^I call agentx\.on\("([^"]*)", handler\)$/,
-  function (this: AgentXWorld, eventType: string) {
-    assert(this.agentx, "AgentX not initialized");
+When(/^I call agentx\.on\("([^"]*)", handler\)$/, function (this: AgentXWorld, eventType: string) {
+  assert(this.agentx, "AgentX not initialized");
 
-    const state = getEventState(this);
+  const state = getEventState(this);
 
-    state.lastUnsubscribe = this.agentx.on(eventType, (event) => {
-      state.handlerCalled = true;
-      state.receivedEvent = event;
-      state.receivedEvents.push(event);
-    });
-  }
-);
+  state.lastUnsubscribe = this.agentx.on(eventType, (event) => {
+    state.handlerCalled = true;
+    state.receivedEvent = event;
+    state.receivedEvents.push(event);
+  });
+});
 
 When(
   /^I call agentx\.onCommand\("([^"]*)", handler\)$/,
@@ -107,40 +98,28 @@ When(
   }
 );
 
-When(
-  /^container "([^"]*)" is created$/,
-  async function (this: AgentXWorld, containerId: string) {
-    assert(this.agentx, "AgentX not initialized");
-    await this.agentx.request("container_create_request", { containerId });
-  }
-);
+When(/^container "([^"]*)" is created$/, async function (this: AgentXWorld, containerId: string) {
+  assert(this.agentx, "AgentX not initialized");
+  await this.agentx.request("container_create_request", { containerId });
+});
 
-When(
-  "I call the unsubscribe function",
-  function (this: AgentXWorld) {
-    const state = getEventState(this);
-    const unsubscribe = this.eventHandlers.values().next().value;
-    if (unsubscribe) {
-      unsubscribe();
-    }
-    state.handlerCalled = false; // Reset after unsubscribe
+When("I call the unsubscribe function", function (this: AgentXWorld) {
+  const state = getEventState(this);
+  const unsubscribe = this.eventHandlers.values().next().value;
+  if (unsubscribe) {
+    unsubscribe();
   }
-);
+  state.handlerCalled = false; // Reset after unsubscribe
+});
 
 // ============================================================================
 // Then - Assertions
 // ============================================================================
 
-Then(
-  "I should receive an Unsubscribe function",
-  function (this: AgentXWorld) {
-    const state = getEventState(this);
-    assert(
-      typeof state.lastUnsubscribe === "function",
-      "Should receive an unsubscribe function"
-    );
-  }
-);
+Then("I should receive an Unsubscribe function", function (this: AgentXWorld) {
+  const state = getEventState(this);
+  assert(typeof state.lastUnsubscribe === "function", "Should receive an unsubscribe function");
+});
 
 Then(
   /^my handler should be called with "([^"]*)" event$/,
@@ -152,30 +131,21 @@ Then(
   }
 );
 
-Then(
-  "my handler should be called",
-  function (this: AgentXWorld) {
-    const state = getEventState(this);
-    assert(state.handlerCalled, "Handler should have been called");
-  }
-);
+Then("my handler should be called", function (this: AgentXWorld) {
+  const state = getEventState(this);
+  assert(state.handlerCalled, "Handler should have been called");
+});
 
-Then(
-  "my handler should not be called",
-  function (this: AgentXWorld) {
-    const state = getEventState(this);
-    assert(!state.handlerCalled, "Handler should not have been called");
-  }
-);
+Then("my handler should not be called", function (this: AgentXWorld) {
+  const state = getEventState(this);
+  assert(!state.handlerCalled, "Handler should not have been called");
+});
 
-Then(
-  /^event\.type should be "([^"]*)"$/,
-  function (this: AgentXWorld, expected: string) {
-    const state = getEventState(this);
-    assert(state.receivedEvent, "Should have received an event");
-    assert.strictEqual(state.receivedEvent.type, expected);
-  }
-);
+Then(/^event\.type should be "([^"]*)"$/, function (this: AgentXWorld, expected: string) {
+  const state = getEventState(this);
+  assert(state.receivedEvent, "Should have received an event");
+  assert.strictEqual(state.receivedEvent.type, expected);
+});
 
 Then(
   /^event\.data\.containerId should be "([^"]*)"$/,

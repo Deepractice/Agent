@@ -33,7 +33,14 @@
  * ```
  */
 
-import type { Agent as RuntimeAgentInterface, AgentLifecycle, AgentConfig, SystemEvent, EventCategory, ClaudeLLMConfig } from "@agentxjs/types/runtime";
+import type {
+  Agent as RuntimeAgentInterface,
+  AgentLifecycle,
+  AgentConfig,
+  SystemEvent,
+  EventCategory,
+  ClaudeLLMConfig,
+} from "@agentxjs/types/runtime";
 import type {
   AgentEngine,
   AgentPresenter,
@@ -47,7 +54,14 @@ import type {
   ToolCallPart,
   ToolResultPart,
 } from "@agentxjs/types/agent";
-import type { SystemBus, SystemBusProducer, Sandbox, Session, ImageRepository, ImageRecord } from "@agentxjs/types/runtime/internal";
+import type {
+  SystemBus,
+  SystemBusProducer,
+  Sandbox,
+  Session,
+  ImageRepository,
+  ImageRecord,
+} from "@agentxjs/types/runtime/internal";
 import { createAgent } from "@agentxjs/agent";
 import { createLogger } from "@agentxjs/common";
 import { BusDriver } from "./BusDriver";
@@ -332,32 +346,25 @@ export class RuntimeAgent implements RuntimeAgentInterface {
     });
 
     // Create Interactor (handles user input - the "in" side)
-    this.interactor = new AgentInteractor(
-      this.producer,
-      config.session,
-      {
-        agentId: this.agentId,
-        imageId: this.imageId,
-        containerId: this.containerId,
-        sessionId: config.session.sessionId,
-      }
-    );
+    this.interactor = new AgentInteractor(this.producer, config.session, {
+      agentId: this.agentId,
+      imageId: this.imageId,
+      containerId: this.containerId,
+      sessionId: config.session.sessionId,
+    });
 
     // Create Driver (listens for DriveableEvents - the "out" side)
     // It pushes events to engine.handleStreamEvent
-    this.driver = new BusDriver(
-      config.bus.asConsumer(),
-      {
-        agentId: this.agentId,
-        onStreamEvent: (event) => {
-          logger.debug("BusDriver → Engine.handleStreamEvent", { type: event.type });
-          this.engine.handleStreamEvent(event);
-        },
-        onStreamComplete: (reason) => {
-          logger.debug("Stream completed", { reason, agentId: this.agentId });
-        },
-      }
-    );
+    this.driver = new BusDriver(config.bus.asConsumer(), {
+      agentId: this.agentId,
+      onStreamEvent: (event) => {
+        logger.debug("BusDriver → Engine.handleStreamEvent", { type: event.type });
+        this.engine.handleStreamEvent(event);
+      },
+      onStreamComplete: (reason) => {
+        logger.debug("Stream completed", { reason, agentId: this.agentId });
+      },
+    });
 
     logger.debug("RuntimeAgent created", {
       agentId: this.agentId,
@@ -374,7 +381,8 @@ export class RuntimeAgent implements RuntimeAgentInterface {
       imageId: this.imageId,
       sdkSessionId,
     });
-    this.imageRepository.updateMetadata(this.imageId, { claudeSdkSessionId: sdkSessionId })
+    this.imageRepository
+      .updateMetadata(this.imageId, { claudeSdkSessionId: sdkSessionId })
       .catch((err) => {
         logger.error("Failed to save SDK session ID", { error: err, imageId: this.imageId });
       });

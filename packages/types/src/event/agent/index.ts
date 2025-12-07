@@ -56,11 +56,7 @@ import type { AgentTurnEvent } from "./turn";
 /**
  * AgentEvent - All events from Agent domain
  */
-export type AgentEvent =
-  | AgentStreamEvent
-  | AgentStateEvent
-  | AgentMessageEvent
-  | AgentTurnEvent;
+export type AgentEvent = AgentStreamEvent | AgentStateEvent | AgentMessageEvent | AgentTurnEvent;
 
 /**
  * Type guard: is this an agent event?

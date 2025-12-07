@@ -93,11 +93,7 @@ export interface SystemBusConsumer {
    * @param options - Subscription options
    * @returns Unsubscribe function
    */
-  on(
-    types: string[],
-    handler: BusEventHandler,
-    options?: SubscribeOptions
-  ): Unsubscribe;
+  on(types: string[], handler: BusEventHandler, options?: SubscribeOptions): Unsubscribe;
 
   /**
    * Subscribe to all events
@@ -115,10 +111,7 @@ export interface SystemBusConsumer {
    * @param handler - Callback function
    * @returns Unsubscribe function
    */
-  once<T extends string>(
-    type: T,
-    handler: BusEventHandler<SystemEvent & { type: T }>
-  ): Unsubscribe;
+  once<T extends string>(type: T, handler: BusEventHandler<SystemEvent & { type: T }>): Unsubscribe;
 
   /**
    * Subscribe to a CommandEvent with full type safety

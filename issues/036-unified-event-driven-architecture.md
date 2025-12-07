@@ -29,6 +29,7 @@
 **Mirror = WebSocket 总线延伸**
 
 Mirror 本质上就是把系统总线通过 WebSocket 延伸到远程。它不需要自己的状态管理，只需要：
+
 - 把本地 Request 事件发到 Server
 - 把 Server 的 Response/Stream 事件转发到本地
 
@@ -117,6 +118,7 @@ AgentX
 ```
 
 Mirror 模式下，AgentX 直接：
+
 1. 建立 WebSocket 连接
 2. 发送 Request 事件
 3. 接收 Response/Stream 事件
@@ -130,21 +132,21 @@ Mirror 模式下，AgentX 直接：
 
 ```typescript
 // Container
-container_create_request / container_create_response
-container_get_request / container_get_response
-container_list_request / container_list_response
+container_create_request / container_create_response;
+container_get_request / container_get_response;
+container_list_request / container_list_response;
 
 // Agent
-agent_run_request / agent_run_response
-agent_receive_request / agent_receive_response
-agent_destroy_request / agent_destroy_response
+agent_run_request / agent_run_response;
+agent_receive_request / agent_receive_response;
+agent_destroy_request / agent_destroy_response;
 
 // Image
-image_snapshot_request / image_snapshot_response
-image_get_request / image_get_response
-image_list_request / image_list_response
-image_delete_request / image_delete_response
-image_resume_request / image_resume_response
+image_snapshot_request / image_snapshot_response;
+image_get_request / image_get_response;
+image_list_request / image_list_response;
+image_delete_request / image_delete_response;
+image_resume_request / image_resume_response;
 ```
 
 ### Phase 2: AgentX 重构
@@ -155,6 +157,7 @@ image_resume_request / image_resume_response
 ### Phase 3: 移除 Mirror 包
 
 删除：
+
 - `@agentxjs/mirror`
 - MirrorRuntime
 - MirrorContainer
@@ -164,6 +167,7 @@ image_resume_request / image_resume_response
 ### Phase 4: Server 端适配
 
 Server 端：
+
 1. 接收 WebSocket Request 事件
 2. 调用本地 Runtime
 3. 返回 Response/Stream 事件

@@ -42,7 +42,8 @@ const sampleMessages: MessagePaneItem[] = [
   {
     id: "2",
     role: "assistant",
-    content: "Of course! I'd be happy to help you with your coding question. What would you like to know?",
+    content:
+      "Of course! I'd be happy to help you with your coding question. What would you like to know?",
     timestamp: Date.now() - 55000,
   },
   {
@@ -97,7 +98,8 @@ const messagesWithTool: MessagePaneItem[] = [
   {
     id: "3",
     role: "assistant",
-    content: "Based on the weather data, it's a beautiful day! The temperature is 72°F with sunny conditions and 45% humidity. Perfect weather to be outside!",
+    content:
+      "Based on the weather data, it's a beautiful day! The temperature is 72°F with sunny conditions and 45% humidity. Perfect weather to be outside!",
     timestamp: Date.now() - 50000,
   },
 ];
@@ -163,10 +165,7 @@ export const WithStreaming: Story = {
 export const Loading: Story = {
   render: () => (
     <div className="h-96 w-full max-w-2xl border border-border rounded-lg overflow-hidden">
-      <MessagePane
-        items={sampleMessages.slice(0, 3)}
-        isLoading
-      />
+      <MessagePane items={sampleMessages.slice(0, 3)} isLoading />
     </div>
   ),
   parameters: {
@@ -239,10 +238,7 @@ export const CustomAvatars: Story = {
 
     return (
       <div className="h-96 w-full max-w-2xl border border-border rounded-lg overflow-hidden">
-        <MessagePane
-          items={messagesWithTool}
-          renderAvatar={customRenderAvatar}
-        />
+        <MessagePane items={messagesWithTool} renderAvatar={customRenderAvatar} />
       </div>
     );
   },
@@ -257,9 +253,7 @@ export const CustomAvatars: Story = {
 
 export const FullChatInterface: Story = {
   render: () => {
-    const [messages, setMessages] = React.useState<MessagePaneItem[]>(
-      sampleMessages.slice(0, 2)
-    );
+    const [messages, setMessages] = React.useState<MessagePaneItem[]>(sampleMessages.slice(0, 2));
     const [isLoading, setIsLoading] = React.useState(false);
     const [streamingText, setStreamingText] = React.useState("");
 
@@ -275,7 +269,8 @@ export const FullChatInterface: Story = {
       setIsLoading(true);
 
       // Simulate streaming response
-      const responseText = "This is a simulated response to demonstrate the streaming text feature. The text appears character by character to show real-time generation.";
+      const responseText =
+        "This is a simulated response to demonstrate the streaming text feature. The text appears character by character to show real-time generation.";
       let index = 0;
 
       setTimeout(() => {
@@ -308,11 +303,7 @@ export const FullChatInterface: Story = {
     return (
       <div className="h-[500px] w-full max-w-2xl border border-border rounded-lg overflow-hidden flex flex-col">
         <div className="flex-1 min-h-0">
-          <MessagePane
-            items={messages}
-            streamingText={streamingText}
-            isLoading={isLoading}
-          />
+          <MessagePane items={messages} streamingText={streamingText} isLoading={isLoading} />
         </div>
         <InputPane
           onSend={handleSend}
@@ -337,9 +328,10 @@ export const ManyMessages: Story = {
     const manyMessages: MessagePaneItem[] = Array.from({ length: 20 }, (_, i) => ({
       id: String(i + 1),
       role: i % 2 === 0 ? "user" : "assistant",
-      content: i % 2 === 0
-        ? `User message ${Math.floor(i / 2) + 1}: This is a sample user message.`
-        : `Assistant response ${Math.floor(i / 2) + 1}: This is a sample assistant response with some additional text to make it longer.`,
+      content:
+        i % 2 === 0
+          ? `User message ${Math.floor(i / 2) + 1}: This is a sample user message.`
+          : `Assistant response ${Math.floor(i / 2) + 1}: This is a sample assistant response with some additional text to make it longer.`,
       timestamp: Date.now() - (20 - i) * 60000,
     })) as MessagePaneItem[];
 

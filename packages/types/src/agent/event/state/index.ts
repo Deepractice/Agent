@@ -62,10 +62,17 @@ export type AgentStateEvent = ToEngineEventUnion<FullAgentStateEvent>;
  */
 export function isStateEvent(event: EngineEvent): event is AgentStateEvent {
   const stateTypes = [
-    "conversation_queued", "conversation_start", "conversation_thinking",
-    "conversation_responding", "conversation_end", "conversation_interrupted",
-    "tool_planned", "tool_executing", "tool_completed", "tool_failed",
-    "error_occurred"
+    "conversation_queued",
+    "conversation_start",
+    "conversation_thinking",
+    "conversation_responding",
+    "conversation_end",
+    "conversation_interrupted",
+    "tool_planned",
+    "tool_executing",
+    "tool_completed",
+    "tool_failed",
+    "error_occurred",
   ];
   return stateTypes.includes(event.type);
 }

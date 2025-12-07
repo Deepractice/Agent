@@ -115,13 +115,10 @@ export function Studio({
   );
 
   // Handle creating a new conversation
-  const handleNew = React.useCallback(
-    (imageId: string) => {
-      setCurrentImageId(imageId);
-      setCurrentImageName("New Conversation");
-    },
-    []
-  );
+  const handleNew = React.useCallback((imageId: string) => {
+    setCurrentImageId(imageId);
+    setCurrentImageName("New Conversation");
+  }, []);
 
   // Listen to agentx system_error events
   React.useEffect(() => {
@@ -144,10 +141,7 @@ export function Studio({
   return (
     <div className={cn("flex h-full bg-background", className)}>
       {/* Sidebar - AgentList */}
-      <div
-        style={{ width: sidebarWidth }}
-        className="flex-shrink-0 border-r border-border"
-      >
+      <div style={{ width: sidebarWidth }} className="flex-shrink-0 border-r border-border">
         <AgentList
           agentx={agentx}
           containerId={containerId}

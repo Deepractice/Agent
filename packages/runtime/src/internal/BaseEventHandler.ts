@@ -55,10 +55,7 @@ export abstract class BaseEventHandler {
    *
    * Automatically catches errors and emits ErrorEvent.
    */
-  protected safeHandle<T>(
-    handler: () => T,
-    context: ErrorContext
-  ): T | undefined {
+  protected safeHandle<T>(handler: () => T, context: ErrorContext): T | undefined {
     try {
       return handler();
     } catch (err) {

@@ -3,6 +3,7 @@
 ## Background
 
 When implementing `RuntimeAPI`, we need to clarify the relationship between Session and Agent:
+
 - Should Session be created before Agent?
 - Should Agent be created before Session?
 - How to handle the timing issue of event collection?
@@ -20,6 +21,7 @@ Run (execution within Thread)
 ```
 
 **Key Points**:
+
 - **Thread before Run** - Create Thread first, then execute Run within Thread
 - Thread is a persistent session container storing all messages
 - Run is a single execution with state machine pattern (queued → in_progress → completed)
@@ -36,6 +38,7 @@ Checkpointer (auto persistence)
 ```
 
 **Key Points**:
+
 - **State first** - Central state object, all nodes read/write
 - Built-in persistence with automatic checkpointing
 - No explicit Session concept, uses thread_id to distinguish sessions
@@ -52,18 +55,19 @@ Messages (UI/Model separation)
 ```
 
 **Key Points**:
+
 - **UIMessage vs ModelMessage** separation
 - State can be managed externally (Zustand/Redux)
 - Chat instance doesn't own state, state managed by external Store
 
 ## Options Analysis
 
-| Option | Pros | Cons |
-|--------|------|------|
-| **A: Session before Agent** | No timing issues; Follows OpenAI pattern; Session can be pre-configured | Slightly complex API; Requires two steps |
-| **B: Agent before Session** | Simple API; Agent is pure | Timing issues; May lose events |
-| **C: Create simultaneously, bind internally** | User only cares about Agent; Internal timing handling | Complex implementation; Agent and Session coupled |
-| **D: Externalize state (LangGraph style)** | Agent completely pure; State can be managed arbitrarily | Major architecture change; User needs to understand state management |
+| Option                                        | Pros                                                                    | Cons                                                                 |
+| --------------------------------------------- | ----------------------------------------------------------------------- | -------------------------------------------------------------------- |
+| **A: Session before Agent**                   | No timing issues; Follows OpenAI pattern; Session can be pre-configured | Slightly complex API; Requires two steps                             |
+| **B: Agent before Session**                   | Simple API; Agent is pure                                               | Timing issues; May lose events                                       |
+| **C: Create simultaneously, bind internally** | User only cares about Agent; Internal timing handling                   | Complex implementation; Agent and Session coupled                    |
+| **D: Externalize state (LangGraph style)**    | Agent completely pure; State can be managed arbitrarily                 | Major architecture change; User needs to understand state management |
 
 ## Decision: Option A (OpenAI Style)
 
@@ -112,7 +116,7 @@ Messages (UI/Model separation)
 ```typescript
 // Simple usage - one step
 const agent = await agentx.runtime.run(imageId);
-agent.on("text_delta", e => console.log(e.data.text));
+agent.on("text_delta", (e) => console.log(e.data.text));
 await agent.receive("Hello!");
 // Session auto-created, auto-recording, user doesn't need to care
 
@@ -143,6 +147,7 @@ async run(imageId) {
 ```
 
 **Session exists before Agent**, ensuring:
+
 - Session is ready to listen
 - Agent is immediately monitored after creation
 - No events are lost

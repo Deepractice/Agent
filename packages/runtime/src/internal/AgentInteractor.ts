@@ -37,11 +37,7 @@ export class AgentInteractor {
   private readonly session: Session;
   private readonly context: AgentInteractorContext;
 
-  constructor(
-    producer: SystemBusProducer,
-    session: Session,
-    context: AgentInteractorContext
-  ) {
+  constructor(producer: SystemBusProducer, session: Session, context: AgentInteractorContext) {
     this.producer = producer;
     this.session = session;
     this.context = context;

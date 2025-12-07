@@ -85,12 +85,7 @@ export type { Session } from "./session/Session";
 // Event Bus (Runtime internal)
 // ============================================================================
 
-export type {
-  SystemBus,
-  BusEventHandler,
-  SubscribeOptions,
-  Unsubscribe,
-} from "./event/SystemBus";
+export type { SystemBus, BusEventHandler, SubscribeOptions, Unsubscribe } from "./event/SystemBus";
 export type { SystemBusProducer } from "./event/SystemBusProducer";
 export type { SystemBusConsumer } from "./event/SystemBusConsumer";
 

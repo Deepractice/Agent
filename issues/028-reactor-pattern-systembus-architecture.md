@@ -9,6 +9,7 @@
 ### Reactor 模式
 
 所有组件都是 Reactor：
+
 - 监听总线上的某类事件
 - 加工/转换
 - 产生新事件丢回总线
@@ -54,15 +55,16 @@ interface Reactor {
 
 ### 为什么分开两层 Bus
 
-| 维度 | SystemBus | AgentEventBus |
-|------|-----------|---------------|
-| 作用域 | 整个 Ecosystem | 单个 Agent 内部 |
-| 事件类型 | EnvironmentEvent, RuntimeEvent | AgentOutput |
-| 订阅者 | Environment, Receptor, UI, 监控 | Agent 内部组件、状态机 |
-| 隔离性 | 全局可见 | Agent 边界内 |
-| 性能 | 低频，跨组件 | 高频，内部处理 |
+| 维度     | SystemBus                       | AgentEventBus          |
+| -------- | ------------------------------- | ---------------------- |
+| 作用域   | 整个 Ecosystem                  | 单个 Agent 内部        |
+| 事件类型 | EnvironmentEvent, RuntimeEvent  | AgentOutput            |
+| 订阅者   | Environment, Receptor, UI, 监控 | Agent 内部组件、状态机 |
+| 隔离性   | 全局可见                        | Agent 边界内           |
+| 性能     | 低频，跨组件                    | 高频，内部处理         |
 
 **分开的好处**：
+
 1. **隔离性**：Agent 内部事件不污染全局
 2. **封装性**：Agent 是一个独立系统，有自己的边界
 3. **性能**：Agent 内部高频事件不需要广播到全局
@@ -93,7 +95,7 @@ type EnvironmentEvent =
   | { type: "disconnected"; reason?: string }
 
   // 错误
-  | { type: "error"; error: Error }
+  | { type: "error"; error: Error };
 ```
 
 **关键原则**：我们定义什么 EnvironmentEvent，取决于**系统内部需要什么信息**，而不是外部有什么。
@@ -136,7 +138,7 @@ type RuntimeEvent =
   | ToolCompletedEnvEvent
   | ToolFailedEnvEvent
   // Error
-  | ErrorEnvEvent
+  | ErrorEnvEvent;
 ```
 
 ### AgentOutput（Agent 内部事件）
@@ -312,7 +314,7 @@ interface SystemBus {
 ```typescript
 interface Environment extends Reactor {
   /** 环境类型 */
-  readonly type: string;  // "claude" | "websocket" | "mock"
+  readonly type: string; // "claude" | "websocket" | "mock"
 
   /** 向环境发送消息（输入） */
   send(message: UserMessage): Promise<void>;
@@ -348,7 +350,7 @@ class NodeRuntime {
   start(): void {
     // 启动所有 Reactor
     this.environment.start(this.bus);
-    this.receptors.forEach(r => r.start(this.bus));
+    this.receptors.forEach((r) => r.start(this.bus));
   }
 }
 ```

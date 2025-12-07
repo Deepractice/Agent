@@ -53,12 +53,12 @@ AgentX is an event-driven AI Agent framework built on clean separation between t
 
 The Agent domain is **independent and testable without I/O**. It can be tested with mock drivers.
 
-| Component | Responsibility |
-|-----------|---------------|
-| **AgentDriver** | Message processor: `receive(message) → AsyncIterable<StreamEvent>` |
-| **AgentEngine** | Event processing coordinator, state management |
-| **MealyMachine** | Pure state machine for event assembly |
-| **Presenter** | Event consumer interface (side effects) |
+| Component        | Responsibility                                                     |
+| ---------------- | ------------------------------------------------------------------ |
+| **AgentDriver**  | Message processor: `receive(message) → AsyncIterable<StreamEvent>` |
+| **AgentEngine**  | Event processing coordinator, state management                     |
+| **MealyMachine** | Pure state machine for event assembly                              |
+| **Presenter**    | Event consumer interface (side effects)                            |
 
 **Key characteristic**: Uses **lightweight events** with only `{ type, timestamp, data }`.
 
@@ -68,15 +68,15 @@ The Agent domain is **independent and testable without I/O**. It can be tested w
 
 The Runtime domain manages the **complete system lifecycle** with persistence, isolation, and event routing.
 
-| Component | Responsibility |
-|-----------|---------------|
-| **Runtime** | Top-level API, owns SystemBus and Environment |
-| **SystemBus** | Event routing, subscription, request/response |
-| **Container** | Isolation boundary, agent registry |
-| **Agent** | Complete runtime entity (AgentEngine + Session + Sandbox) |
-| **Session** | Conversation history, message persistence |
-| **Sandbox** | Isolated environment (filesystem, MCP tools) |
-| **Environment** | External world interface (Receptor + Effector) |
+| Component       | Responsibility                                            |
+| --------------- | --------------------------------------------------------- |
+| **Runtime**     | Top-level API, owns SystemBus and Environment             |
+| **SystemBus**   | Event routing, subscription, request/response             |
+| **Container**   | Isolation boundary, agent registry                        |
+| **Agent**       | Complete runtime entity (AgentEngine + Session + Sandbox) |
+| **Session**     | Conversation history, message persistence                 |
+| **Sandbox**     | Isolated environment (filesystem, MCP tools)              |
+| **Environment** | External world interface (Receptor + Effector)            |
 
 **Key characteristic**: Uses **full events** with `{ type, timestamp, data, source, category, intent, context }`.
 
@@ -123,6 +123,7 @@ AgentX has two event structures for different purposes:
 ```
 
 **Why two structures?**
+
 - **Agent domain** needs minimal overhead for pure event processing
 - **Runtime domain** needs rich metadata for routing, filtering, and debugging
 
@@ -160,14 +161,14 @@ SystemEvent
     └── category: "mcp"         → MCP tool operations
 ```
 
-| Source | Categories | Description |
-|--------|-----------|-------------|
-| `agent` | stream, state, message, turn | Agent internal events (4-layer) |
-| `command` | request, response | API operations (request/response pattern) |
-| `environment` | stream, connection | External world (Claude SDK) |
-| `session` | lifecycle, persist, action | Session operations |
-| `container` | lifecycle | Container operations |
-| `sandbox` | workdir, mcp | Sandbox resources |
+| Source        | Categories                   | Description                               |
+| ------------- | ---------------------------- | ----------------------------------------- |
+| `agent`       | stream, state, message, turn | Agent internal events (4-layer)           |
+| `command`     | request, response            | API operations (request/response pattern) |
+| `environment` | stream, connection           | External world (Claude SDK)               |
+| `session`     | lifecycle, persist, action   | Session operations                        |
+| `container`   | lifecycle                    | Container operations                      |
+| `sandbox`     | workdir, mcp                 | Sandbox resources                         |
 
 ## Four-Layer Event System
 
@@ -223,12 +224,12 @@ Agent events follow a 4-layer hierarchy, each serving different consumers:
 └─────────────────────────────────────────────────────────────┘
 ```
 
-| Layer | Category | Purpose | Consumers |
-|-------|----------|---------|-----------|
-| **Stream** | stream | Real-time incremental updates | UI typewriter effect |
-| **State** | state | Agent state transitions | Loading indicators, state machines |
-| **Message** | message | Complete conversation records | Chat history, persistence |
-| **Turn** | turn | Usage metrics and analytics | Billing, monitoring |
+| Layer       | Category | Purpose                       | Consumers                          |
+| ----------- | -------- | ----------------------------- | ---------------------------------- |
+| **Stream**  | stream   | Real-time incremental updates | UI typewriter effect               |
+| **State**   | state    | Agent state transitions       | Loading indicators, state machines |
+| **Message** | message  | Complete conversation records | Chat history, persistence          |
+| **Turn**    | turn     | Usage metrics and analytics   | Billing, monitoring                |
 
 ## Command Event Pattern
 
@@ -259,15 +260,15 @@ All API operations use **request/response** events with correlation IDs:
 
 Request types and their responses:
 
-| Request | Response | Description |
-|---------|----------|-------------|
-| `container_create_request` | `container_create_response` | Create container |
-| `agent_run_request` | `agent_run_response` | Run agent |
-| `agent_receive_request` | `agent_receive_response` | Send message |
-| `agent_interrupt_request` | `agent_interrupt_response` | Interrupt agent |
-| `agent_destroy_request` | `agent_destroy_response` | Destroy agent |
-| `image_snapshot_request` | `image_snapshot_response` | Create snapshot |
-| `image_resume_request` | `image_resume_response` | Resume from snapshot |
+| Request                    | Response                    | Description          |
+| -------------------------- | --------------------------- | -------------------- |
+| `container_create_request` | `container_create_response` | Create container     |
+| `agent_run_request`        | `agent_run_response`        | Run agent            |
+| `agent_receive_request`    | `agent_receive_response`    | Send message         |
+| `agent_interrupt_request`  | `agent_interrupt_response`  | Interrupt agent      |
+| `agent_destroy_request`    | `agent_destroy_response`    | Destroy agent        |
+| `image_snapshot_request`   | `image_snapshot_response`   | Create snapshot      |
+| `image_resume_request`     | `image_resume_response`     | Resume from snapshot |
 
 ## Package Dependencies
 

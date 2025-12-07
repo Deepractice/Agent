@@ -17,6 +17,7 @@ RuntimeEvent (text_delta, message_start... 重复定义)
 ```
 
 这导致：
+
 1. **类型重复**：`TextChunkEvent` 和 `TextDeltaEnvEvent` 本质相同
 2. **事件类型变化**：`text_chunk` → `text_delta`，增加理解成本
 3. **维护成本高**：每增加一个 EnvironmentEvent 就要定义对应的 RuntimeEvent
@@ -43,15 +44,16 @@ interface RuntimeEvent<T, D> extends EnvironmentEvent<T, D> {
 
 ```typescript
 type EnvironmentEventType =
-  | "text_chunk"      // 文本片段
-  | "stream_start"    // 流开始
-  | "stream_end"      // 流结束
-  | "interrupted"     // 被中断
-  | "connected"       // 连接建立
-  | "disconnected";   // 连接断开
+  | "text_chunk" // 文本片段
+  | "stream_start" // 流开始
+  | "stream_end" // 流结束
+  | "interrupted" // 被中断
+  | "connected" // 连接建立
+  | "disconnected"; // 连接断开
 ```
 
 **关键原则**：
+
 - 只定义系统需要的，不是外部有什么定义什么
 - 是原始物料，不是组装后的结构
 
@@ -61,13 +63,14 @@ type EnvironmentEventType =
 
 ```typescript
 interface RuntimeEvent<T, D> extends EnvironmentEvent<T, D> {
-  agentId?: string;     // 哪个 Agent
-  sessionId?: string;   // 哪个 Session
+  agentId?: string; // 哪个 Agent
+  sessionId?: string; // 哪个 Session
   containerId?: string; // 哪个 Container
 }
 ```
 
 **Receptor 的职责**：
+
 - 监听 EnvironmentEvent
 - 加上 context 字段
 - emit 到 SystemBus
@@ -79,10 +82,10 @@ Agent 内部 Mealy Machine 组装产生的事件：
 
 ```typescript
 type AgentEvent =
-  | StreamEvent      // 流事件 (message_start, text_delta, tool_call...)
-  | StateEvent       // 状态事件 (thinking, responding, executing...)
-  | MessageEvent     // 消息事件 (user_message, assistant_message...)
-  | TurnEvent;       // 轮次事件 (turn_start, turn_end)
+  | StreamEvent // 流事件 (message_start, text_delta, tool_call...)
+  | StateEvent // 状态事件 (thinking, responding, executing...)
+  | MessageEvent // 消息事件 (user_message, assistant_message...)
+  | TurnEvent; // 轮次事件 (turn_start, turn_end)
 ```
 
 **关键**：AgentEvent 由 Driver 选择 EnvironmentEvent 驱动 Mealy Machine 产生。
@@ -102,6 +105,7 @@ SystemBus (所有 EnvironmentEvent/RuntimeEvent)
 ```
 
 Driver 职责：
+
 1. **订阅** SystemBus 上的 RuntimeEvent
 2. **筛选** Agent 需要的事件（如 text_chunk, stream_start, stream_end）
 3. **驱动** Agent 的 Mealy Machine
@@ -171,6 +175,7 @@ Driver 职责：
 ### 1. 删除冗余类型
 
 删除 `packages/types/src/ecosystem/event/runtime/stream/` 下的：
+
 - `TextDeltaEnvEvent` - 直接用 `text_chunk`
 - `MessageStartEnvEvent` - 直接用 `stream_start`
 - `MessageStopEnvEvent` - 直接用 `stream_end`
@@ -181,8 +186,7 @@ Driver 职责：
 
 ```typescript
 // RuntimeEvent 只是加 context 的 EnvironmentEvent
-interface RuntimeEvent<T extends string = string, D = unknown>
-  extends EnvironmentEvent<T, D> {
+interface RuntimeEvent<T extends string = string, D = unknown> extends EnvironmentEvent<T, D> {
   readonly agentId?: string;
   readonly sessionId?: string;
   readonly containerId?: string;
@@ -216,9 +220,9 @@ class Receptor {
 class Driver {
   start(bus: SystemBus): void {
     // 只订阅 Agent 需要的事件
-    bus.on('text_chunk', (e) => this.agent.process(e));
-    bus.on('stream_start', (e) => this.agent.process(e));
-    bus.on('stream_end', (e) => this.agent.process(e));
+    bus.on("text_chunk", (e) => this.agent.process(e));
+    bus.on("stream_start", (e) => this.agent.process(e));
+    bus.on("stream_end", (e) => this.agent.process(e));
     // ...
   }
 }
@@ -226,13 +230,13 @@ class Driver {
 
 ## 总结
 
-| 概念 | 职责 | 事件类型 |
-|------|------|---------|
-| EnvironmentEvent | 外部原始物料 | text_chunk, stream_start... |
-| RuntimeEvent | EnvironmentEvent + context | 同上，加 agentId/sessionId |
-| AgentEvent | Agent 内部组装 | message_start, text_delta, state... |
-| Receptor | 加 context | 不变事件类型 |
-| Driver | 筛选事件驱动 Agent | 选择需要的 RuntimeEvent |
+| 概念             | 职责                       | 事件类型                            |
+| ---------------- | -------------------------- | ----------------------------------- |
+| EnvironmentEvent | 外部原始物料               | text_chunk, stream_start...         |
+| RuntimeEvent     | EnvironmentEvent + context | 同上，加 agentId/sessionId          |
+| AgentEvent       | Agent 内部组装             | message_start, text_delta, state... |
+| Receptor         | 加 context                 | 不变事件类型                        |
+| Driver           | 筛选事件驱动 Agent         | 选择需要的 RuntimeEvent             |
 
 ## 相关文档
 

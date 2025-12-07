@@ -166,18 +166,11 @@ export function ToolCard({
           )}
 
           {/* Status Label (only for executing) */}
-          {status === "executing" && (
-            <span className="text-xs opacity-60">• {config.label}</span>
-          )}
+          {status === "executing" && <span className="text-xs opacity-60">• {config.label}</span>}
         </div>
 
         {/* Expand/Collapse Icon */}
-        <ChevronDown
-          className={cn(
-            "w-4 h-4 transition-transform",
-            isExpanded && "rotate-180"
-          )}
-        />
+        <ChevronDown className={cn("w-4 h-4 transition-transform", isExpanded && "rotate-180")} />
       </button>
 
       {/* Expanded Content */}
@@ -186,8 +179,7 @@ export function ToolCard({
           {/* Tool Call ID */}
           {id && (
             <div className="text-xs opacity-60">
-              <span className="font-medium">ID:</span>{" "}
-              <span className="font-mono">{id}</span>
+              <span className="font-medium">ID:</span> <span className="font-mono">{id}</span>
             </div>
           )}
 

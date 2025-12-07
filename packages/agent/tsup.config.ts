@@ -8,5 +8,11 @@ export default defineConfig({
   sourcemap: true,
   splitting: false,
   treeshake: true,
-  external: ["@agentxjs/types", "@agentxjs/types/agent", "@agentxjs/types/runtime", "@agentxjs/common", "@agentxjs/engine"],
+  external: [
+    "@agentxjs/types",
+    "@agentxjs/types/agent",
+    "@agentxjs/types/runtime",
+    "@agentxjs/common",
+    "@agentxjs/engine",
+  ],
 });

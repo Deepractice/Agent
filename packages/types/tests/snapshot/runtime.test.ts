@@ -72,10 +72,7 @@ describe("Runtime Types Contract", () => {
     ];
 
     for (const exportName of expectedRuntimeExports) {
-      expect(
-        RuntimeExports,
-        `Missing expected export: ${exportName}`
-      ).toHaveProperty(exportName);
+      expect(RuntimeExports, `Missing expected export: ${exportName}`).toHaveProperty(exportName);
     }
   });
 

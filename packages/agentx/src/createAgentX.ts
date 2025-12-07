@@ -9,11 +9,7 @@
  * in browser builds.
  */
 
-import type {
-  AgentX,
-  AgentXConfig,
-  Unsubscribe,
-} from "@agentxjs/types/agentx";
+import type { AgentX, AgentXConfig, Unsubscribe } from "@agentxjs/types/agentx";
 import { isRemoteConfig } from "@agentxjs/types/agentx";
 import type {
   CommandEventMap,
@@ -72,9 +68,7 @@ const isBrowser = typeof window !== "undefined" && typeof window.WebSocket !== "
  */
 export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
   // Use native WebSocket in browser, ws library in Node.js
-  const WebSocketImpl = isBrowser
-    ? window.WebSocket
-    : (await import("ws")).WebSocket;
+  const WebSocketImpl = isBrowser ? window.WebSocket : (await import("ws")).WebSocket;
 
   const ws = new WebSocketImpl(serverUrl);
   const handlers = new Map<string, Set<(event: SystemEvent) => void>>();
@@ -104,12 +98,14 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
   const handleMessage = (data: unknown) => {
     try {
       // Browser: data is MessageEvent, Node.js: data is Buffer
-      const text = isBrowser
-        ? (data as MessageEvent).data
-        : (data as Buffer).toString();
+      const text = isBrowser ? (data as { data: string }).data : (data as Buffer).toString();
       const event = JSON.parse(text) as SystemEvent;
 
-      remoteLogger.info("Received event", { type: event.type, category: event.category, requestId: (event.data as any)?.requestId });
+      remoteLogger.info("Received event", {
+        type: event.type,
+        category: event.category,
+        requestId: (event.data as any)?.requestId,
+      });
 
       // Handle error events - log as error (but still dispatch to handlers)
       if (event.type === "system_error") {
@@ -162,10 +158,7 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
     (ws as any).on("message", handleMessage);
   }
 
-  function subscribe(
-    type: string,
-    handler: (event: SystemEvent) => void
-  ): Unsubscribe {
+  function subscribe(type: string, handler: (event: SystemEvent) => void): Unsubscribe {
     if (!handlers.has(type)) {
       handlers.set(type, new Set());
     }
@@ -222,10 +215,7 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
       return subscribe(type, handler as (event: SystemEvent) => void);
     },
 
-    emitCommand<T extends keyof CommandEventMap>(
-      type: T,
-      data: CommandEventMap[T]["data"]
-    ): void {
+    emitCommand<T extends keyof CommandEventMap>(type: T, data: CommandEventMap[T]["data"]): void {
       const event: SystemEvent = {
         type,
         timestamp: Date.now(),

@@ -143,10 +143,6 @@ export class PinoLoggerFactory implements LoggerFactory {
 
   getLogger(name: string): Logger {
     const childLogger = this.rootLogger.child({ name });
-    return new PinoLoggerAdapter(
-      name,
-      this.rootLogger.level as LogLevel,
-      childLogger
-    );
+    return new PinoLoggerAdapter(name, this.rootLogger.level as LogLevel, childLogger);
   }
 }

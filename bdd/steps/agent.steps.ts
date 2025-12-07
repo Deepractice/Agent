@@ -45,12 +45,7 @@ When(
 
 When(
   /^I call agentx\.request\("agent_run_request", \{ containerId: "([^"]*)", config: \{ name: "([^"]*)", systemPrompt: "([^"]*)" \} \}\)$/,
-  async function (
-    this: AgentXWorld,
-    containerId: string,
-    name: string,
-    systemPrompt: string
-  ) {
+  async function (this: AgentXWorld, containerId: string, name: string, systemPrompt: string) {
     assert(this.agentx, "AgentX not initialized");
     this.lastResponse = await this.agentx.request("agent_run_request", {
       containerId,
@@ -143,14 +138,11 @@ When(
 // Then - Response assertions
 // ============================================================================
 
-Then(
-  "response.data.agentId should be defined",
-  function (this: AgentXWorld) {
-    assert(this.lastResponse, "No response received");
-    const data = this.lastResponse.data as { agentId?: string };
-    assert(data.agentId !== undefined, "agentId should be defined");
-  }
-);
+Then("response.data.agentId should be defined", function (this: AgentXWorld) {
+  assert(this.lastResponse, "No response received");
+  const data = this.lastResponse.data as { agentId?: string };
+  assert(data.agentId !== undefined, "agentId should be defined");
+});
 
 Then(
   /^response\.data\.agentId should be "([^"]*)"$/,
@@ -174,23 +166,17 @@ Then(
   }
 );
 
-Then(
-  "response.data.success should be true",
-  function (this: AgentXWorld) {
-    assert(this.lastResponse, "No response received");
-    const data = this.lastResponse.data as { success?: boolean };
-    assert.strictEqual(data.success, true);
-  }
-);
+Then("response.data.success should be true", function (this: AgentXWorld) {
+  assert(this.lastResponse, "No response received");
+  const data = this.lastResponse.data as { success?: boolean };
+  assert.strictEqual(data.success, true);
+});
 
-Then(
-  "response.data.success should be false",
-  function (this: AgentXWorld) {
-    assert(this.lastResponse, "No response received");
-    const data = this.lastResponse.data as { success?: boolean };
-    assert.strictEqual(data.success, false);
-  }
-);
+Then("response.data.success should be false", function (this: AgentXWorld) {
+  assert(this.lastResponse, "No response received");
+  const data = this.lastResponse.data as { success?: boolean };
+  assert.strictEqual(data.success, false);
+});
 
 Then(
   /^container "([^"]*)" should have (\d+) agents$/,

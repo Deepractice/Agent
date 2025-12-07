@@ -56,13 +56,27 @@
   },
   "typesVersions": {
     "*": {
-      "agent": ["./dist/agent.d.ts"],
-      "agent/internal": ["./dist/agent-internal.d.ts"],
-      "runtime": ["./dist/runtime.d.ts"],
-      "runtime/internal": ["./dist/runtime-internal.d.ts"],
-      "event": ["./dist/event.d.ts"],
-      "common": ["./dist/common.d.ts"],
-      "agentx": ["./dist/agentx.d.ts"]
+      "agent": [
+        "./dist/agent.d.ts"
+      ],
+      "agent/internal": [
+        "./dist/agent-internal.d.ts"
+      ],
+      "runtime": [
+        "./dist/runtime.d.ts"
+      ],
+      "runtime/internal": [
+        "./dist/runtime-internal.d.ts"
+      ],
+      "event": [
+        "./dist/event.d.ts"
+      ],
+      "common": [
+        "./dist/common.d.ts"
+      ],
+      "agentx": [
+        "./dist/agentx.d.ts"
+      ]
     }
   },
   "files": [
