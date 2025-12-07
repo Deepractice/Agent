@@ -124,7 +124,7 @@ export class AgentStateMachine {
 
       // Error
       case "error_occurred":
-        return "idle";
+        return "error";
 
       default:
         // Unknown event type, no state change

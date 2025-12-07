@@ -32,6 +32,7 @@ import type {
   ConversationInterruptedEvent,
   ToolPlannedEvent,
   ToolExecutingEvent,
+  ErrorOccurredEvent,
 } from "@agentxjs/types/agent";
 import { createLogger } from "@agentxjs/common";
 
@@ -69,7 +70,8 @@ export type StateEventProcessorOutput =
   | ConversationEndEvent
   | ConversationInterruptedEvent
   | ToolPlannedEvent
-  | ToolExecutingEvent;
+  | ToolExecutingEvent
+  | ErrorOccurredEvent;
 
 /**
  * Input event types for StateEventProcessor
@@ -117,6 +119,9 @@ export const stateEventProcessor: Processor<
 
     case "tool_use_stop":
       return handleToolUseStop(context);
+
+    case "error_received":
+      return handleErrorReceived(context, input);
 
     default:
       // Pass through unhandled events
@@ -263,6 +268,30 @@ function handleToolUseStop(
 ): [StateEventProcessorContext, StateEventProcessorOutput[]] {
   // Pass through - no State Event
   return [context, []];
+}
+
+/**
+ * Handle error_received event
+ *
+ * Emits: error_occurred
+ */
+function handleErrorReceived(
+  context: Readonly<StateEventProcessorContext>,
+  event: StreamEvent
+): [StateEventProcessorContext, StateEventProcessorOutput[]] {
+  const data = event.data as { message: string; errorCode?: string };
+
+  const errorOccurredEvent: ErrorOccurredEvent = {
+    type: "error_occurred",
+    timestamp: Date.now(),
+    data: {
+      code: data.errorCode || "unknown_error",
+      message: data.message,
+      recoverable: true,
+    },
+  };
+
+  return [context, [errorOccurredEvent]];
 }
 
 /**

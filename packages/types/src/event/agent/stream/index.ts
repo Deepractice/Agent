@@ -105,6 +105,24 @@ export interface AgentToolResultEvent extends AgentStreamEventBase<"tool_result"
 }> {}
 
 // ============================================================================
+// Error Events
+// ============================================================================
+
+/**
+ * AgentErrorReceivedEvent - Error received from environment
+ *
+ * Processed by MealyMachine to produce:
+ * - error_occurred (StateEvent)
+ * - error_message (MessageEvent)
+ */
+export interface AgentErrorReceivedEvent extends AgentStreamEventBase<"error_received", {
+  /** Error message (human-readable) */
+  message: string;
+  /** Error code (e.g., "rate_limit_error", "api_error") */
+  errorCode?: string;
+}> {}
+
+// ============================================================================
 // Union Type
 // ============================================================================
 
@@ -119,7 +137,8 @@ export type AgentStreamEvent =
   | AgentToolUseStartEvent
   | AgentInputJsonDeltaEvent
   | AgentToolUseStopEvent
-  | AgentToolResultEvent;
+  | AgentToolResultEvent
+  | AgentErrorReceivedEvent;
 
 /**
  * AgentStreamEventType - String literal union

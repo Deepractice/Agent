@@ -53,9 +53,11 @@ export type AgentStatus =
  */
 export interface UIMessage {
   id: string;
-  role: "user" | "assistant" | "tool_call" | "tool_result";
+  role: "user" | "assistant" | "tool_call" | "tool_result" | "error";
   content: string | unknown;
   timestamp: number;
+  /** Optional metadata (e.g., errorCode for error messages) */
+  metadata?: Record<string, unknown>;
 }
 
 /**
@@ -358,6 +360,33 @@ export function useAgent(
               role: "tool_result",
               content: data.toolResult,
               timestamp: data.timestamp,
+            },
+          ];
+        });
+      })
+    );
+
+    // Error message - displayed in chat
+    unsubscribes.push(
+      agentx.on("error_message", (event) => {
+        if (!mountedRef.current || !isForThisImage(event)) return;
+        const data = event.data as {
+          messageId: string;
+          content: string;
+          errorCode?: string;
+          timestamp: number;
+        };
+        setStreaming(""); // Clear streaming
+        setMessages((prev) => {
+          if (prev.some((m) => m.id === data.messageId)) return prev;
+          return [
+            ...prev,
+            {
+              id: data.messageId,
+              role: "error",
+              content: data.content,
+              timestamp: data.timestamp,
+              metadata: { errorCode: data.errorCode },
             },
           ];
         });

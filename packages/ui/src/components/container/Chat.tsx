@@ -173,6 +173,17 @@ function toMessagePaneItem(msg: UIMessage, allMessages: UIMessage[]): MessagePan
     };
   }
 
+  // Handle error messages
+  if (msg.role === "error") {
+    return {
+      id: msg.id,
+      role: "error",
+      content: msg.content,
+      timestamp: msg.timestamp,
+      metadata: msg.metadata,
+    };
+  }
+
   // Regular messages
   return {
     id: msg.id,

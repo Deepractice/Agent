@@ -33,6 +33,7 @@ import type {
   AssistantMessageEvent,
   ToolCallMessageEvent,
   ToolResultMessageEvent,
+  ErrorMessageEvent,
   // Content parts
   TextPart,
   ToolCallPart,
@@ -119,7 +120,8 @@ function generateId(): string {
 export type MessageAssemblerOutput =
   | AssistantMessageEvent
   | ToolCallMessageEvent
-  | ToolResultMessageEvent;
+  | ToolResultMessageEvent
+  | ErrorMessageEvent;
 
 /**
  * Input event types for MessageAssembler
@@ -158,6 +160,9 @@ export const messageAssemblerProcessor: Processor<
 
     case "message_stop":
       return handleMessageStop(state, input);
+
+    case "error_received":
+      return handleErrorReceived(state, input);
 
     default:
       // Pass through unhandled events (no state change, no output)
@@ -467,6 +472,32 @@ function handleMessageStop(
     },
     [assistantEvent],
   ];
+}
+
+/**
+ * Handle error_received event
+ *
+ * Emits: error_message (Message Event) - for UI display
+ */
+function handleErrorReceived(
+  _state: Readonly<MessageAssemblerState>,
+  event: StreamEvent
+): [MessageAssemblerState, MessageAssemblerOutput[]] {
+  const data = event.data as { message: string; errorCode?: string };
+
+  const errorMessageEvent: ErrorMessageEvent = {
+    type: "error_message",
+    timestamp: Date.now(),
+    data: {
+      messageId: generateId(),
+      content: data.message,
+      errorCode: data.errorCode,
+      timestamp: Date.now(),
+    },
+  };
+
+  // Reset state on error
+  return [createInitialMessageAssemblerState(), [errorMessageEvent]];
 }
 
 /**

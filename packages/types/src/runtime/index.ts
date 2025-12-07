@@ -135,4 +135,5 @@ export type {
   ToolCallEvent,
   ToolResultEvent,
   InterruptedEvent,
+  ErrorReceivedEvent,
 } from "~/event/environment";

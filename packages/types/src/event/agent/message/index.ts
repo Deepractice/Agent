@@ -58,6 +58,21 @@ export interface ToolResultMessageEvent extends AgentMessageEventBase<"tool_resu
   timestamp: number;
 }> {}
 
+/**
+ * ErrorMessageEvent - Error message displayed in chat
+ *
+ * Generated when error_received StreamEvent is processed by MealyMachine.
+ * Displayed in the chat history so users can see what went wrong.
+ */
+export interface ErrorMessageEvent extends AgentMessageEventBase<"error_message", {
+  messageId: string;
+  /** Error message (human-readable) */
+  content: string;
+  /** Error code (e.g., "rate_limit_error", "api_error") */
+  errorCode?: string;
+  timestamp: number;
+}> {}
+
 // ============================================================================
 // Union Type
 // ============================================================================
@@ -69,7 +84,8 @@ export type AgentMessageEvent =
   | UserMessageEvent
   | AssistantMessageEvent
   | ToolCallMessageEvent
-  | ToolResultMessageEvent;
+  | ToolResultMessageEvent
+  | ErrorMessageEvent;
 
 /**
  * AgentMessageEventType - String literal union

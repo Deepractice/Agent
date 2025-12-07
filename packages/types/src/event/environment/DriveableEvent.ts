@@ -164,6 +164,24 @@ export interface InterruptedEvent extends BaseStreamEvent<"interrupted", {
 }> {}
 
 // ============================================================================
+// Error Event
+// ============================================================================
+
+/**
+ * ErrorReceivedEvent - Error received from environment (e.g., Claude API error)
+ *
+ * This event drives the MealyMachine to produce:
+ * - error_occurred (StateEvent) → state transitions to "error"
+ * - error_message (MessageEvent) → displayed in chat
+ */
+export interface ErrorReceivedEvent extends BaseStreamEvent<"error_received", {
+  /** Error message (human-readable) */
+  message: string;
+  /** Error code (e.g., "rate_limit_error", "api_error", "overloaded_error") */
+  errorCode?: string;
+}> {}
+
+// ============================================================================
 // Union Type
 // ============================================================================
 
@@ -187,7 +205,9 @@ export type DriveableEvent =
   | ToolCallEvent
   | ToolResultEvent
   // Interrupt
-  | InterruptedEvent;
+  | InterruptedEvent
+  // Error
+  | ErrorReceivedEvent;
 
 /**
  * DriveableEventType - String literal union of all driveable event types

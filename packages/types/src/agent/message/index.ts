@@ -6,8 +6,8 @@
  * ## Design Decision: Role + Subtype Discrimination
  *
  * Messages use two discriminators:
- * - `role`: WHO sent it (user, assistant, tool, system)
- * - `subtype`: WHAT TYPE of message (user, assistant, tool-call, tool-result, system)
+ * - `role`: WHO sent it (user, assistant, tool, system, error)
+ * - `subtype`: WHAT TYPE of message (user, assistant, tool-call, tool-result, error)
  *
  * Why two fields?
  * 1. `role` is semantic - indicates the participant in conversation
@@ -36,15 +36,6 @@
  * ```
  *
  * This avoids wrapping simple strings in arrays while supporting rich content.
- *
- * ## Design Decision: Error is NOT a Message
- *
- * Previously we had ErrorMessage in the Message union. This was removed because:
- * 1. Errors are system notifications, not conversation content
- * 2. Errors need special SSE transport handling
- * 3. Error UI rendering differs from message rendering
- *
- * Errors now use independent ErrorEvent (see ~/event/error).
  */
 
 // Core message types
@@ -53,6 +44,7 @@ export type { UserMessage } from "./UserMessage";
 export type { AssistantMessage } from "./AssistantMessage";
 export type { ToolCallMessage } from "./ToolCallMessage";
 export type { ToolResultMessage } from "./ToolResultMessage";
+export type { ErrorMessage } from "./ErrorMessage";
 
 // Message metadata
 export type { MessageRole } from "./MessageRole";

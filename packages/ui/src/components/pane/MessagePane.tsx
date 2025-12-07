@@ -59,7 +59,7 @@ export interface MessagePaneItem {
   /**
    * Message role
    */
-  role: "user" | "assistant" | "system" | "tool";
+  role: "user" | "assistant" | "system" | "tool" | "error";
   /**
    * Message content (string for text, any for structured content)
    */
@@ -69,7 +69,7 @@ export interface MessagePaneItem {
    */
   timestamp?: number;
   /**
-   * Optional metadata (tool info for role="tool")
+   * Optional metadata (tool info for role="tool", errorCode for role="error")
    */
   metadata?: Record<string, unknown>;
   /**
@@ -191,6 +191,12 @@ const defaultRenderAvatar = (role: MessagePaneItem["role"]): React.ReactNode => 
           T
         </div>
       );
+    case "error":
+      return (
+        <div className={cn(avatarClasses, "bg-destructive text-destructive-foreground")}>
+          !
+        </div>
+      );
     default:
       return null;
   }
@@ -211,6 +217,7 @@ const MessageBubble = ({
   const isUser = item.role === "user";
   const isSystem = item.role === "system";
   const isTool = item.role === "tool";
+  const isError = item.role === "error";
 
   // System messages are centered
   if (isSystem) {
@@ -251,6 +258,23 @@ const MessageBubble = ({
           </div>
           <div className="bg-muted/30 border border-border rounded-lg p-3 text-sm">
             {renderContent(item.content, item)}
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  // Error messages have special styling
+  if (isError) {
+    return (
+      <div className="flex gap-3 py-2">
+        {renderAvatar(item.role)}
+        <div className="flex-1 min-w-0">
+          <div className="text-xs text-destructive mb-1">
+            Error{item.metadata?.errorCode ? ` (${item.metadata.errorCode})` : ""}
+          </div>
+          <div className="bg-destructive/10 border border-destructive/30 rounded-lg px-4 py-2 text-sm text-destructive">
+            {typeof item.content === "string" ? item.content : "An error occurred"}
           </div>
         </div>
       </div>

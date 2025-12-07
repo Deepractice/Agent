@@ -247,7 +247,7 @@ export class ClaudeEffector implements Effector {
 
           // Handle result
           if (sdkMsg.type === "result") {
-            const resultMsg = sdkMsg as { subtype: string; is_error?: boolean; errors?: string[] };
+            const resultMsg = sdkMsg as { subtype: string; is_error?: boolean; errors?: string[]; error?: { message?: string; type?: string } };
             // Log full result object for debugging
             logger.info("SDK result received (full)", {
               fullResult: JSON.stringify(sdkMsg, null, 2),
@@ -258,8 +258,18 @@ export class ClaudeEffector implements Effector {
               errors: resultMsg.errors,
               wasInterrupted: this.wasInterrupted,
             });
+
+            // Handle user interrupt
             if (resultMsg.subtype === "error_during_execution" && this.wasInterrupted) {
               this.receptor.emitInterrupted("user_interrupt", this.currentMeta || undefined);
+            }
+            // Handle SDK errors (API errors, rate limits, etc.)
+            else if (resultMsg.is_error && this.currentMeta) {
+              const errorMessage = resultMsg.error?.message
+                || resultMsg.errors?.join(", ")
+                || "An error occurred";
+              const errorCode = resultMsg.error?.type || resultMsg.subtype || "api_error";
+              this.receptor.emitError(errorMessage, errorCode, this.currentMeta);
             }
           }
         }
@@ -269,6 +279,11 @@ export class ClaudeEffector implements Effector {
           this.resetState();
         } else {
           logger.error("Background listener error", { error });
+          // Emit error to receptor so it can be displayed in chat
+          if (this.currentMeta) {
+            const errorMessage = error instanceof Error ? error.message : "Unknown error occurred";
+            this.receptor.emitError(errorMessage, "runtime_error", this.currentMeta);
+          }
         }
       }
     })();

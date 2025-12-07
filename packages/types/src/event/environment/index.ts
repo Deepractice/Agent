@@ -27,6 +27,8 @@ export type {
   ToolResultEvent,
   // Interrupt
   InterruptedEvent,
+  // Error
+  ErrorReceivedEvent,
 } from "./DriveableEvent";
 export { isDriveableEvent } from "./DriveableEvent";
 

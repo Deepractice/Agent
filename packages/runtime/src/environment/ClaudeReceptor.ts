@@ -26,6 +26,7 @@ import type {
   ToolUseContentBlockStopEvent,
   ToolResultEvent,
   InterruptedEvent,
+  ErrorReceivedEvent,
   EventContext,
 } from "@agentxjs/types/runtime";
 import type { SDKPartialAssistantMessage } from "@anthropic-ai/claude-agent-sdk";
@@ -106,6 +107,27 @@ export class ClaudeReceptor implements Receptor {
       context: eventMeta?.context,
       data: { reason },
     } as InterruptedEvent);
+  }
+
+  /**
+   * Emit error_received event
+   *
+   * Used when an error is received from the environment (e.g., Claude API error).
+   * This drives the MealyMachine to produce error_occurred + error_message events.
+   */
+  emitError(message: string, errorCode?: string, meta?: ReceptorMeta): void {
+    const eventMeta = meta || this.currentMeta;
+    this.emitToBus({
+      type: "error_received",
+      timestamp: Date.now(),
+      source: "environment",
+      category: "stream",
+      intent: "notification",
+      broadcastable: false,
+      requestId: eventMeta?.requestId,
+      context: eventMeta?.context,
+      data: { message, errorCode },
+    } as ErrorReceivedEvent);
   }
 
   /**
