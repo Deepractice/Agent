@@ -42,6 +42,7 @@ import type {
   AssistantMessage,
   ToolCallMessage,
   ToolResultMessage,
+  ErrorMessage,
   ContentPart,
   ToolCallPart,
   ToolResultPart,
@@ -188,6 +189,19 @@ class BusPresenter implements AgentPresenter {
         } as ToolResultMessage;
       }
 
+      case "error_message": {
+        const content = eventData.content as string;
+        const errorCode = eventData.errorCode as string | undefined;
+        return {
+          id: messageId,
+          role: "error",
+          subtype: "error",
+          content,
+          errorCode,
+          timestamp,
+        } as ErrorMessage;
+      }
+
       default:
         logger.warn("Unknown message type, passing through", { type: output.type });
         return eventData as unknown as Message;
@@ -219,7 +233,8 @@ class BusPresenter implements AgentPresenter {
       type === "user_message" ||
       type === "assistant_message" ||
       type === "tool_call_message" ||
-      type === "tool_result_message"
+      type === "tool_result_message" ||
+      type === "error_message"
     ) {
       return "message";
     }

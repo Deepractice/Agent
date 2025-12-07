@@ -84,6 +84,7 @@ export type {
   AssistantMessage,
   ToolCallMessage,
   ToolResultMessage,
+  ErrorMessage,
   Message,
   ContentPart,
   TextPart,

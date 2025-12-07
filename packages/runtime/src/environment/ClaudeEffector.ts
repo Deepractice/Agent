@@ -265,10 +265,12 @@ export class ClaudeEffector implements Effector {
             }
             // Handle SDK errors (API errors, rate limits, etc.)
             else if (resultMsg.is_error && this.currentMeta) {
-              const errorMessage = resultMsg.error?.message
-                || resultMsg.errors?.join(", ")
+              const fullResult = sdkMsg as { result?: string; error?: { message?: string; type?: string }; errors?: string[] };
+              const errorMessage = fullResult.error?.message
+                || fullResult.errors?.join(", ")
+                || (typeof fullResult.result === "string" ? fullResult.result : null)
                 || "An error occurred";
-              const errorCode = resultMsg.error?.type || resultMsg.subtype || "api_error";
+              const errorCode = fullResult.error?.type || resultMsg.subtype || "api_error";
               this.receptor.emitError(errorMessage, errorCode, this.currentMeta);
             }
           }

@@ -202,9 +202,10 @@ export function useAgent(
           const data = response.data as {
             messages: Array<{
               id: string;
-              role: "user" | "assistant" | "tool_call" | "tool_result";
+              role: "user" | "assistant" | "tool_call" | "tool_result" | "error";
               content: unknown;
               timestamp: number;
+              errorCode?: string;
             }>;
           };
           if (data.messages && data.messages.length > 0) {
@@ -213,6 +214,7 @@ export function useAgent(
               role: m.role,
               content: m.content as string | unknown,
               timestamp: m.timestamp,
+              metadata: m.role === "error" && m.errorCode ? { errorCode: m.errorCode } : undefined,
             }));
             setMessages(mappedMessages);
             logger.debug("Loaded messages from storage", { imageId, count: mappedMessages.length });

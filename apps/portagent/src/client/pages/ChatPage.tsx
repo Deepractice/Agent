@@ -8,7 +8,6 @@ import { useState, useEffect } from "react";
 import type { AgentX } from "agentxjs";
 import { createAgentX } from "agentxjs";
 import { Studio } from "@agentxjs/ui";
-import "@agentxjs/ui/globals.css";
 
 import { useAuth, getAuthToken } from "../hooks/useAuth";
 

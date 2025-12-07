@@ -119,6 +119,7 @@ export class BusDriver {
       "tool_call",
       "tool_result",
       "interrupted",
+      "error_received",
     ];
 
     if (
@@ -257,6 +258,17 @@ export class BusDriver {
           timestamp,
           data: { stopReason: "end_turn" },  // Use valid StopReason
         };
+      }
+      case "error_received": {
+        const d = data as { message: string; errorCode?: string };
+        return {
+          type: "error_received",
+          timestamp,
+          data: {
+            message: d.message,
+            errorCode: d.errorCode,
+          },
+        } as StreamEvent;
       }
       default:
         // For other events, pass through with minimal transformation

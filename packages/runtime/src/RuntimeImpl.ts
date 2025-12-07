@@ -345,6 +345,7 @@ export class RuntimeImpl implements Runtime {
           // Extract content based on message subtype
           let content: unknown;
           let role: string = m.role;
+          let errorCode: string | undefined;
 
           if (m.subtype === "user" || m.subtype === "assistant") {
             content = (m as { content: unknown }).content;
@@ -354,6 +355,10 @@ export class RuntimeImpl implements Runtime {
           } else if (m.subtype === "tool-result") {
             content = (m as { toolResult: unknown }).toolResult;
             role = "tool_result";
+          } else if (m.subtype === "error") {
+            content = (m as { content: string }).content;
+            role = "error";
+            errorCode = (m as { errorCode?: string }).errorCode;
           }
 
           return {
@@ -361,6 +366,7 @@ export class RuntimeImpl implements Runtime {
             role,
             content,
             timestamp: m.timestamp,
+            errorCode,
           };
         });
       },
