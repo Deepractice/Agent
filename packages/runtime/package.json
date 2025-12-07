@@ -1,6 +1,6 @@
 {
   "name": "@agentxjs/runtime",
-  "version": "0.1.5",
+  "version": "0.1.6",
   "description": "Runtime for AI Agents - Agent execution, SystemBus, Environment, and Repository",
   "license": "MIT",
   "type": "module",

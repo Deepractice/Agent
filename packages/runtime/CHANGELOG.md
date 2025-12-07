@@ -1,5 +1,13 @@
 # @agentxjs/runtime
 
+## 0.1.6
+
+### Patch Changes
+
+- 2474559: fix: properly configure SDK subprocess environment
+  - Properly copy process.env to ensure PATH is available for SDK subprocess
+  - Add stderr callback for debugging SDK subprocess errors
+
 ## 0.1.5
 
 ### Patch Changes
