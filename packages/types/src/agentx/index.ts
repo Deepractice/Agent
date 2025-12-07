@@ -180,6 +180,27 @@ export interface LocalConfig {
    * Logger configuration
    */
   logger?: LoggerConfig;
+
+  /**
+   * HTTP server to attach WebSocket to.
+   * If provided, WebSocket upgrade will be handled on the same port.
+   * The server should handle authentication before upgrading.
+   *
+   * @example
+   * ```typescript
+   * import { createServer } from "http";
+   * import { Hono } from "hono";
+   *
+   * const app = new Hono();
+   * // ... add auth middleware
+   *
+   * const server = createServer(app.fetch);
+   * const agentx = await createAgentX({ server });
+   *
+   * server.listen(5200);
+   * ```
+   */
+  server?: unknown;
 }
 
 // ============================================================================
@@ -196,7 +217,7 @@ export interface RemoteConfig {
    * Remote server URL (WebSocket)
    * @example "ws://localhost:5200"
    */
-  server: string;
+  serverUrl: string;
 }
 
 // ============================================================================
@@ -215,7 +236,7 @@ export type AgentXConfig = LocalConfig | RemoteConfig;
  * Type guard: is this a remote config?
  */
 export function isRemoteConfig(config: AgentXConfig): config is RemoteConfig {
-  return "server" in config && typeof config.server === "string";
+  return "serverUrl" in config && typeof config.serverUrl === "string";
 }
 
 /**

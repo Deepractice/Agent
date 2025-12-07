@@ -2,52 +2,45 @@
  * Portagent Server
  *
  * Hono-based server that combines:
- * - AgentX API (SSE, agents, sessions)
- * - Authentication (simple password + JWT)
+ * - AgentX API (via WebSocket on /ws)
+ * - Authentication (JWT)
  * - Static file serving (Vite build output)
+ *
+ * Single port architecture:
+ * - HTTP requests handled by Hono
+ * - WebSocket upgrade on /ws path handled by AgentX
  */
 
 import { dirname, resolve } from "path";
 import { fileURLToPath } from "url";
+import { createServer } from "http";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 
-import { serve } from "@hono/node-server";
 import { Hono } from "hono";
 import { cors } from "hono/cors";
 import { serveStatic } from "@hono/node-server/serve-static";
 import { existsSync, readFileSync } from "fs";
 
-import { createAgentX, defineAgent } from "agentxjs";
-import { createAgentXHandler, type AgentXHandlerWithUtils } from "agentxjs/server";
-import { toHonoHandler } from "agentxjs/server/adapters/hono";
-import { nodeRuntime } from "../../../../temp/node-runtime/dist";
+import { createAgentX } from "agentxjs";
 import { homedir } from "node:os";
 import { join } from "node:path";
 
 import { createAuthMiddleware, authRoutes } from "./auth";
 import { SQLiteUserRepository } from "./database";
-import { createOwnershipHandler } from "./ownership";
 
 // Configuration from environment
 const PORT = parseInt(process.env.PORT || "5200", 10);
 const JWT_SECRET = process.env.JWT_SECRET || crypto.randomUUID();
 const USER_DB_PATH = process.env.USER_DB_PATH || join(homedir(), ".agentx/data/portagent.db");
+const AGENTX_DB_PATH = process.env.AGENTX_DB_PATH || join(homedir(), ".agentx/data/agentx.db");
 const INVITE_CODE_REQUIRED = process.env.INVITE_CODE_REQUIRED !== "false"; // default: true
-
-/**
- * Default Agent Definition
- */
-const DefaultAgent = defineAgent({
-  name: "Assistant",
-  systemPrompt: "You are a helpful AI assistant.",
-});
 
 /**
  * Create and configure the Hono app
  */
-function createApp() {
+async function createApp() {
   const app = new Hono();
 
   // CORS
@@ -60,23 +53,34 @@ function createApp() {
     })
   );
 
-  // Create runtime and AgentX instance
-  const runtime = nodeRuntime();
-  const agentx = createAgentX(runtime);
+  // Check API key
+  const apiKey = process.env.LLM_PROVIDER_KEY;
+  if (!apiKey) {
+    console.error("Error: LLM_PROVIDER_KEY is required");
+    console.log("\nSet it via environment variable:");
+    console.log("  export LLM_PROVIDER_KEY=sk-ant-xxx");
+    process.exit(1);
+  }
 
-  // Register default definition
-  agentx.definitions.register(DefaultAgent);
+  // Create HTTP server using @hono/node-server's serve function internally
+  // We need to create the server ourselves to pass it to AgentX
+  const { getRequestListener } = await import("@hono/node-server");
+  const listener = getRequestListener(app.fetch);
+  const server = createServer(listener);
 
-  // Create AgentX handler
-  const agentxHandler = createAgentXHandler(agentx, {
-    basePath: "/agentx",
-    allowDynamicCreation: true,
-    allowedDefinitions: ["Assistant"],
-    repository: runtime.repository,
-  }) as AgentXHandlerWithUtils;
-
-  // Register definition with handler
-  agentxHandler.registerDefinition("Assistant", DefaultAgent);
+  // Create AgentX instance attached to HTTP server
+  // WebSocket upgrade will be handled on /ws path
+  const agentx = await createAgentX({
+    llm: {
+      apiKey,
+      baseUrl: process.env.LLM_BASE_URL,
+    },
+    storage: {
+      driver: "sqlite",
+      path: AGENTX_DB_PATH,
+    },
+    server, // Attach to existing HTTP server
+  });
 
   // Initialize user repository (separate database)
   const userRepository = new SQLiteUserRepository(USER_DB_PATH);
@@ -97,12 +101,16 @@ function createApp() {
     authRoutes(userRepository, JWT_SECRET, agentx, { inviteCodeRequired: INVITE_CODE_REQUIRED })
   );
 
-  // AgentX API (protected with ownership validation)
-  const ownershipHandler = createOwnershipHandler(agentx, agentxHandler);
+  // AgentX info endpoint (protected)
   app.use("/agentx/*", authMiddleware);
-  app.all("/agentx/*", toHonoHandler(ownershipHandler));
+  app.get("/agentx/info", (c) => {
+    return c.json({
+      version: "0.1.0",
+      wsPath: "/ws",
+    });
+  });
 
-  // Static files (protected in production)
+  // Static files
   const publicDir = resolve(__dirname, "../public");
   const isDev = process.env.NODE_ENV !== "production";
 
@@ -120,7 +128,6 @@ function createApp() {
       return c.text("Not Found", 404);
     });
   } else if (isDev) {
-    // In dev mode, proxy to Vite
     app.get("*", (c) => {
       return c.text(
         "Static files not found. Run 'pnpm build:client' first, or use 'pnpm dev' for development.",
@@ -129,22 +136,14 @@ function createApp() {
     });
   }
 
-  return { app, agentx, userRepository };
+  return { app, server, agentx, userRepository };
 }
 
 /**
  * Start the server
  */
 async function startServer() {
-  // Check API key
-  if (!process.env.LLM_PROVIDER_KEY) {
-    console.error("Error: LLM_PROVIDER_KEY is required");
-    console.log("\nSet it via environment variable:");
-    console.log("  export LLM_PROVIDER_KEY=sk-ant-xxx");
-    process.exit(1);
-  }
-
-  const { app, agentx, userRepository } = createApp();
+  const { server, agentx, userRepository } = await createApp();
 
   console.log(`
   ____            _                         _
@@ -161,7 +160,7 @@ async function startServer() {
   console.log(`  Port: ${PORT}`);
   console.log(`  API Key: ${process.env.LLM_PROVIDER_KEY!.substring(0, 15)}...`);
   console.log(`  User DB: ${USER_DB_PATH}`);
-  console.log(`  AgentX DB: ${join(homedir(), ".agentx/data/agentx.db")}`);
+  console.log(`  AgentX DB: ${AGENTX_DB_PATH}`);
   console.log(`  Invite Code: ${INVITE_CODE_REQUIRED ? "required" : "disabled"}`);
 
   console.log(`\nEndpoints:`);
@@ -169,29 +168,21 @@ async function startServer() {
   console.log(`  POST /api/auth/register         - Register new user`);
   console.log(`  POST /api/auth/login            - Login`);
   console.log(`  GET  /api/auth/verify           - Verify token`);
-  console.log(`  ---  AgentX API (protected) ---`);
   console.log(`  GET  /agentx/info               - Platform info`);
-  console.log(`  GET  /agentx/containers         - List containers`);
-  console.log(`  POST /agentx/containers         - Create container`);
-  console.log(`  GET  /agentx/containers/:id     - Get container`);
-  console.log(`  DELETE /agentx/containers/:id   - Delete container`);
-  console.log(`  POST /agentx/agents             - Create agent`);
-  console.log(`  GET  /agentx/agents/:id/sse     - SSE stream`);
-  console.log(`  POST /agentx/agents/:id/messages- Send message`);
+  console.log(`  WS   /ws                        - WebSocket connection`);
 
-  serve({
-    fetch: app.fetch,
-    port: PORT,
-    hostname: "0.0.0.0",
+  // Start HTTP server (WebSocket is already attached)
+  server.listen(PORT, "0.0.0.0", () => {
+    console.log(`\n🚀 Server running at http://localhost:${PORT}`);
+    console.log(`🔌 WebSocket available at ws://localhost:${PORT}/ws`);
   });
-
-  console.log(`\n🚀 Server running at http://localhost:${PORT}`);
 
   // Graceful shutdown
   const shutdown = async () => {
     console.log("\nShutting down...");
-    await agentx.agents.destroyAll();
+    await agentx.dispose();
     userRepository.close();
+    server.close();
     console.log("Server stopped");
     process.exit(0);
   };

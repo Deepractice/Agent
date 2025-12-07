@@ -35,7 +35,7 @@ const remoteLogger = createLogger("agentx/RemoteClient");
  * @example
  * ```typescript
  * // Remote mode (browser & Node.js)
- * const agentx = await createAgentX({ server: "ws://localhost:5200" });
+ * const agentx = await createAgentX({ serverUrl: "ws://localhost:5200" });
  *
  * // Local mode (Node.js only)
  * const agentx = await createAgentX({ llm: { apiKey: "sk-..." } });
@@ -43,7 +43,7 @@ const remoteLogger = createLogger("agentx/RemoteClient");
  */
 export async function createAgentX(config?: AgentXConfig): Promise<AgentX> {
   if (config && isRemoteConfig(config)) {
-    return createRemoteAgentX(config.server);
+    return createRemoteAgentX(config.serverUrl);
   }
 
   // Dynamic import for tree-shaking in browser builds

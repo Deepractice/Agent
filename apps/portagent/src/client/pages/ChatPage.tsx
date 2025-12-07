@@ -5,26 +5,16 @@
  */
 
 import { useState, useEffect } from "react";
-import type { AgentX } from "@agentxjs/types";
-import { createAgentX, sseRuntime } from "agentxjs";
-import { Studio, type AgentDefinitionItem } from "@agentxjs/ui";
+import type { AgentX } from "agentxjs";
+import { createAgentX } from "agentxjs";
+import { Studio } from "@agentxjs/ui";
 import "@agentxjs/ui/globals.css";
 
 import { useAuth, getAuthToken } from "../hooks/useAuth";
 
-// Server URL for AgentX API
-const AGENTX_URL = "/agentx";
-
-// Default agent definitions
-const definitions: AgentDefinitionItem[] = [
-  {
-    name: "Assistant",
-    description: "AI Assistant powered by Claude",
-    icon: "A",
-    color: "bg-primary",
-    isOnline: true,
-  },
-];
+// Server URLs
+const AGENTX_INFO_URL = "/agentx/info";
+// WebSocket URL will be determined from server info
 
 /**
  * Loading screen
@@ -92,6 +82,7 @@ export function ChatPage() {
   // Initialize AgentX connection
   useEffect(() => {
     let mounted = true;
+    let agentxInstance: AgentX | null = null;
 
     const connect = async () => {
       try {
@@ -101,8 +92,8 @@ export function ChatPage() {
           return;
         }
 
-        // Check server is reachable
-        const response = await fetch(`${AGENTX_URL}/info`, {
+        // Get server info (includes WebSocket URL)
+        const response = await fetch(AGENTX_INFO_URL, {
           headers: { Authorization: `Bearer ${token}` },
         });
 
@@ -110,24 +101,22 @@ export function ChatPage() {
           throw new Error("Server returned error");
         }
 
+        const info = await response.json();
         if (!mounted) return;
 
-        // Create SSERuntime with auth token
-        // - headers: Used for HTTP requests (POST, DELETE, etc.)
-        // - sseParams: Used for SSE connections (EventSource doesn't support headers)
-        const agentxInstance = createAgentX(
-          sseRuntime({
-            serverUrl: AGENTX_URL,
-            headers: {
-              Authorization: `Bearer ${token}`,
-            },
-            sseParams: {
-              token: token,
-            },
-          })
-        );
+        // Determine WebSocket URL (same host, /ws path)
+        const wsProtocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+        const wsPath = info.wsPath || "/ws";
+        const wsUrl = `${wsProtocol}//${window.location.host}${wsPath}`;
 
-        if (!mounted) return;
+        // Create AgentX instance in remote mode (WebSocket)
+        agentxInstance = await createAgentX({ serverUrl: wsUrl });
+
+        if (!mounted) {
+          await agentxInstance.dispose();
+          return;
+        }
+
         setAgentx(agentxInstance);
         setError(null);
       } catch (err) {
@@ -145,6 +134,9 @@ export function ChatPage() {
 
     return () => {
       mounted = false;
+      if (agentxInstance) {
+        agentxInstance.dispose();
+      }
     };
   }, []);
 
@@ -171,12 +163,7 @@ export function ChatPage() {
     <div className="h-screen flex flex-col bg-background">
       <Header onLogout={logout} />
       <div className="flex-1 overflow-hidden">
-        <Studio
-          agentx={agentx}
-          userId={user.userId}
-          containerId={user.containerId}
-          definitions={definitions}
-        />
+        <Studio agentx={agentx} containerId={user.containerId} />
       </div>
     </div>
   );

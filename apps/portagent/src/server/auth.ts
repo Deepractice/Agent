@@ -152,14 +152,19 @@ export function authRoutes(
       }
 
       // Create Container for the user first
-      const container = await agentx.containers.create();
+      // Generate a unique container ID for the user
+      const containerId = `user-${crypto.randomUUID()}`;
+      const containerRes = await agentx.request("container_create_request", { containerId });
+      if (containerRes.data.error) {
+        return c.json({ error: "Failed to create user container" }, 500);
+      }
 
       // Create user with the container ID
       const user = await userRepository.createUser({
         username: body.username,
         email: body.email,
         password: body.password,
-        containerId: container.containerId,
+        containerId,
         displayName: body.displayName,
         avatar: body.avatar,
       });

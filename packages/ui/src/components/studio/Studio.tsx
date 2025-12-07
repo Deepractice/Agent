@@ -49,6 +49,12 @@ export interface StudioProps {
    */
   agentx: AgentX | null;
   /**
+   * Container ID for user isolation
+   * Each user should have their own container to isolate their conversations
+   * @default "default"
+   */
+  containerId?: string;
+  /**
    * Width of the sidebar (AgentList)
    * @default 280
    */
@@ -79,6 +85,7 @@ export interface StudioProps {
  */
 export function Studio({
   agentx,
+  containerId = "default",
   sidebarWidth = 280,
   searchable = true,
   showSaveButton = false, // Default to false in Image-First model
@@ -92,8 +99,8 @@ export function Studio({
   // Toast state
   const { toasts, showToast, dismissToast } = useToast();
 
-  // Images hook
-  const { images } = useImages(agentx, { autoLoad: true });
+  // Images hook - pass containerId for user isolation
+  const { images } = useImages(agentx, { containerId, autoLoad: true });
 
   // Handle selecting a conversation
   const handleSelect = React.useCallback(
@@ -143,6 +150,7 @@ export function Studio({
       >
         <AgentList
           agentx={agentx}
+          containerId={containerId}
           selectedId={currentImageId}
           onSelect={handleSelect}
           onNew={handleNew}

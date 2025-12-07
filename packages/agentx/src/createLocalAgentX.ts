@@ -8,9 +8,62 @@
 import type { AgentX, LocalConfig } from "@agentxjs/types/agentx";
 import type { SystemEvent } from "@agentxjs/types/event";
 import type { WebSocket as WS, WebSocketServer as WSS } from "ws";
+import type { Server as HttpServer } from "http";
 import { createLogger } from "@agentxjs/common";
 
 const logger = createLogger("agentx/createAgentX");
+
+/**
+ * Setup WebSocket connection handler
+ */
+function setupConnectionHandler(
+  ws: WS,
+  connections: Set<WS>,
+  runtime: { emit: (event: SystemEvent) => void }
+) {
+  connections.add(ws);
+  logger.info("Client connected", { totalConnections: connections.size });
+
+  // Forward client commands to runtime
+  ws.on("message", (data: Buffer) => {
+    try {
+      const event = JSON.parse(data.toString()) as SystemEvent;
+      logger.info("Received from client", { type: event.type, requestId: (event.data as { requestId?: string })?.requestId });
+      runtime.emit(event);
+    } catch {
+      // Ignore parse errors
+    }
+  });
+
+  ws.on("close", () => {
+    connections.delete(ws);
+    logger.info("Client disconnected", { totalConnections: connections.size });
+  });
+}
+
+/**
+ * Setup event broadcasting to all connected clients
+ */
+function setupBroadcasting(
+  connections: Set<WS>,
+  runtime: { onAny: (handler: (event: SystemEvent & { broadcastable?: boolean }) => void) => void }
+) {
+  runtime.onAny((event) => {
+    // Skip non-broadcastable events (internal events like DriveableEvent)
+    if (event.broadcastable === false) {
+      return;
+    }
+
+    logger.info("Broadcasting to clients", { type: event.type, category: event.category, requestId: (event.data as { requestId?: string })?.requestId });
+    const message = JSON.stringify(event);
+    for (const ws of connections) {
+      if (ws.readyState === 1) {
+        // WebSocket.OPEN
+        ws.send(message);
+      }
+    }
+  });
+}
 
 export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
   // Apply logger configuration
@@ -49,6 +102,34 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
   // WebSocket server state
   let peer: WSS | null = null;
   const connections = new Set<WS>();
+  let attachedToServer = false;
+
+  // If server is provided, attach WebSocket to it immediately
+  if (config.server) {
+    const { WebSocketServer } = await import("ws");
+    peer = new WebSocketServer({ noServer: true });
+
+    // Handle WebSocket upgrade on the HTTP server
+    config.server.on("upgrade", (request, socket, head) => {
+      // Only handle /ws path for WebSocket upgrade
+      const url = new URL(request.url || "", `http://${request.headers.host}`);
+      if (url.pathname === "/ws") {
+        peer!.handleUpgrade(request, socket, head, (ws) => {
+          peer!.emit("connection", ws, request);
+        });
+      } else {
+        socket.destroy();
+      }
+    });
+
+    peer.on("connection", (ws: WS) => {
+      setupConnectionHandler(ws, connections, runtime);
+    });
+
+    setupBroadcasting(connections, runtime);
+    attachedToServer = true;
+    logger.info("WebSocket attached to existing HTTP server on /ws path");
+  }
 
   return {
     // Core API - delegate to runtime
@@ -62,6 +143,10 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
 
     // Server API
     async listen(port: number, host?: string) {
+      if (attachedToServer) {
+        throw new Error("Cannot listen when attached to existing server. The server should call listen() instead.");
+      }
+
       if (peer) {
         throw new Error("Server already listening");
       }
@@ -70,42 +155,10 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
       peer = new WebSocketServer({ port, host: host ?? "0.0.0.0" });
 
       peer.on("connection", (ws: WS) => {
-        connections.add(ws);
-        logger.info("Client connected", { totalConnections: connections.size });
-
-        // Forward client commands to runtime
-        ws.on("message", (data: Buffer) => {
-          try {
-            const event = JSON.parse(data.toString()) as SystemEvent;
-            logger.info("Received from client", { type: event.type, requestId: (event.data as { requestId?: string })?.requestId });
-            runtime.emit(event);
-          } catch {
-            // Ignore parse errors
-          }
-        });
-
-        ws.on("close", () => {
-          connections.delete(ws);
-          logger.info("Client disconnected", { totalConnections: connections.size });
-        });
+        setupConnectionHandler(ws, connections, runtime);
       });
 
-      // Forward runtime events to all clients (only broadcastable events)
-      runtime.onAny((event) => {
-        // Skip non-broadcastable events (internal events like DriveableEvent)
-        if (event.broadcastable === false) {
-          return;
-        }
-
-        logger.info("Broadcasting to clients", { type: event.type, category: event.category, requestId: (event.data as { requestId?: string })?.requestId });
-        const message = JSON.stringify(event);
-        for (const ws of connections) {
-          if (ws.readyState === 1) {
-            // WebSocket.OPEN
-            ws.send(message);
-          }
-        }
-      });
+      setupBroadcasting(connections, runtime);
     },
 
     async close() {
@@ -116,9 +169,12 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
       }
       connections.clear();
 
-      await new Promise<void>((resolve) => {
-        peer!.close(() => resolve());
-      });
+      // Don't close the server if attached to existing HTTP server
+      if (!attachedToServer) {
+        await new Promise<void>((resolve) => {
+          peer!.close(() => resolve());
+        });
+      }
       peer = null;
     },
 
@@ -128,9 +184,13 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
           ws.close();
         }
         connections.clear();
-        await new Promise<void>((resolve) => {
-          peer!.close(() => resolve());
-        });
+
+        // Don't close the server if attached to existing HTTP server
+        if (!attachedToServer) {
+          await new Promise<void>((resolve) => {
+            peer!.close(() => resolve());
+          });
+        }
         peer = null;
       }
       await runtime.dispose();
