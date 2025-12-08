@@ -53,6 +53,11 @@
       "types": "./dist/agentx.d.ts",
       "import": "./dist/agentx.js",
       "require": "./dist/agentx.cjs"
+    },
+    "./network": {
+      "types": "./dist/network.d.ts",
+      "import": "./dist/network.js",
+      "require": "./dist/network.cjs"
     }
   },
   "typesVersions": {
@@ -77,6 +82,9 @@
       ],
       "agentx": [
         "./dist/agentx.d.ts"
+      ],
+      "network": [
+        "./dist/network.d.ts"
       ]
     }
   },

@@ -10,6 +10,7 @@ export default defineConfig({
     event: "src/event/index.ts",
     common: "src/common/index.ts",
     agentx: "src/agentx/index.ts",
+    network: "src/network/index.ts",
   },
   format: ["cjs", "esm"],
   dts: true,

@@ -51,12 +51,6 @@ export async function createAgentX(config?: AgentXConfig): Promise<AgentX> {
 // Remote Mode Implementation (Browser & Node.js compatible)
 // ============================================================================
 
-// Declare window for TypeScript (available in browser)
-declare const window: { WebSocket: typeof WebSocket } | undefined;
-
-// Detect browser environment
-const isBrowser = typeof window !== "undefined" && typeof window.WebSocket !== "undefined";
-
 /**
  * Create AgentX instance in remote mode
  *
@@ -67,10 +61,19 @@ const isBrowser = typeof window !== "undefined" && typeof window.WebSocket !== "
  * @returns AgentX instance
  */
 export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
-  // Use native WebSocket in browser, ws library in Node.js
-  const WebSocketImpl = isBrowser ? window.WebSocket : (await import("ws")).WebSocket;
+  // Use @agentxjs/network for WebSocket client (handles browser/Node.js differences)
+  const { createWebSocketClient } = await import("@agentxjs/network");
 
-  const ws = new WebSocketImpl(serverUrl);
+  const client = await createWebSocketClient({
+    serverUrl,
+    autoReconnect: true,
+    minReconnectionDelay: 1000,
+    maxReconnectionDelay: 10000,
+    connectionTimeout: 4000,
+    maxRetries: Infinity,
+    debug: false,
+  });
+
   const handlers = new Map<string, Set<(event: SystemEvent) => void>>();
   const pendingRequests = new Map<
     string,
@@ -81,25 +84,10 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
     }
   >();
 
-  // Wait for connection
-  await new Promise<void>((resolve, reject) => {
-    if (isBrowser) {
-      // Browser WebSocket uses event properties
-      ws.onopen = () => resolve();
-      ws.onerror = () => reject(new Error("WebSocket connection failed"));
-    } else {
-      // Node.js ws uses EventEmitter
-      (ws as any).on("open", () => resolve());
-      (ws as any).on("error", (err: Error) => reject(err));
-    }
-  });
-
   // Handle incoming messages
-  const handleMessage = (data: unknown) => {
+  client.onMessage((message: string) => {
     try {
-      // Browser: data is MessageEvent, Node.js: data is Buffer
-      const text = isBrowser ? (data as { data: string }).data : (data as Buffer).toString();
-      const event = JSON.parse(text) as SystemEvent;
+      const event = JSON.parse(message) as SystemEvent;
 
       remoteLogger.info("Received event", {
         type: event.type,
@@ -119,7 +107,6 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
       }
 
       // Check if it's a response to a pending request
-      // Only response events (category === "response") should resolve pending requests
       const requestId = (event.data as { requestId?: string })?.requestId;
       if (event.category === "response" && requestId && pendingRequests.has(requestId)) {
         remoteLogger.info("Resolving pending request", { requestId, eventType: event.type });
@@ -129,6 +116,7 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
         pending.resolve(event);
         return;
       }
+
       remoteLogger.info("Dispatching to handlers", { type: event.type });
 
       // Dispatch to handlers
@@ -149,14 +137,16 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
     } catch {
       // Ignore parse errors
     }
-  };
+  });
 
-  // Register message handler
-  if (isBrowser) {
-    ws.onmessage = handleMessage;
-  } else {
-    (ws as any).on("message", handleMessage);
-  }
+  // Handle connection events
+  client.onClose(() => {
+    remoteLogger.warn("WebSocket closed");
+  });
+
+  client.onError((error: Error) => {
+    remoteLogger.error("WebSocket error", { error: error.message });
+  });
 
   function subscribe(type: string, handler: (event: SystemEvent) => void): Unsubscribe {
     if (!handlers.has(type)) {
@@ -197,7 +187,7 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
           intent: "request",
         };
 
-        ws.send(JSON.stringify(event));
+        client.send(JSON.stringify(event));
       });
     },
 
@@ -224,7 +214,7 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
         category: type.toString().endsWith("_response") ? "response" : "request",
         intent: type.toString().endsWith("_response") ? "result" : "request",
       };
-      ws.send(JSON.stringify(event));
+      client.send(JSON.stringify(event));
     },
 
     async listen() {
@@ -242,12 +232,7 @@ export async function createRemoteAgentX(serverUrl: string): Promise<AgentX> {
       }
       pendingRequests.clear();
       handlers.clear();
-
-      if (isBrowser) {
-        ws.close();
-      } else {
-        (ws as any).close();
-      }
+      client.dispose();
     },
   };
 }

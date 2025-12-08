@@ -35,7 +35,7 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
-    "ws": "^8.18.0"
+    "@agentxjs/network": "workspace:*"
   },
   "peerDependencies": {
     "@agentxjs/runtime": ">=0.1.9"
@@ -50,7 +50,6 @@
     "@agentxjs/runtime": "workspace:*",
     "@agentxjs/types": "workspace:*",
     "@types/node": "^24.9.2",
-    "@types/ws": "^8.5.10",
     "tsup": "^8.3.5",
     "typescript": "^5.7.2",
     "vitest": "^3.2.4"

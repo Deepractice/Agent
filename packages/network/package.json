@@ -1,0 +1,61 @@
+{
+  "name": "@agentxjs/network",
+  "private": true,
+  "version": "0.1.0",
+  "description": "Network layer abstraction for AgentX platform - WebSocket client/server with heartbeat and auto-reconnect",
+  "keywords": [
+    "agentx",
+    "network",
+    "websocket",
+    "channel",
+    "internal"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/deepractice/Agent",
+    "directory": "packages/network"
+  },
+  "license": "MIT",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs"
+    },
+    "./browser": {
+      "types": "./dist/browser.d.ts",
+      "import": "./dist/browser.js",
+      "require": "./dist/browser.cjs"
+    }
+  },
+  "main": "./dist/index.cjs",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "files": [
+    "dist",
+    "README.md"
+  ],
+  "scripts": {
+    "build": "tsup",
+    "dev": "tsup --watch",
+    "lint": "eslint .",
+    "typecheck": "tsc --noEmit",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "@agentxjs/common": "workspace:*",
+    "@agentxjs/types": "workspace:*",
+    "reconnecting-websocket": "^4.4.0",
+    "ws": "^8.18.0"
+  },
+  "devDependencies": {
+    "@types/node": "^22.19.1",
+    "@types/ws": "^8.5.13",
+    "tsup": "^8.5.0",
+    "typescript": "^5.9.3"
+  },
+  "publishConfig": {
+    "access": "public"
+  }
+}
