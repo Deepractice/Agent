@@ -9,6 +9,9 @@ ARG VERSION=latest
 
 WORKDIR /app
 
+# Switch to root for npm install
+USER root
+
 # Install specific version from npm
 RUN npm install -g @agentxjs/portagent@${VERSION}
 
