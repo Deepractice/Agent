@@ -1,5 +1,12 @@
 # @agentxjs/ui
 
+## 1.0.1
+
+### Patch Changes
+
+- Updated dependencies [608bc77]
+  - agentxjs@1.0.1
+
 ## 1.0.0
 
 ### Patch Changes
