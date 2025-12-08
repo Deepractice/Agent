@@ -2,7 +2,7 @@
 
 services:
   portagent:
-    image: deepracticexs/portagent:0.1.9
+    image: deepracticexs/portagent:latest
     container_name: portagent
     restart: unless-stopped
     ports:
