@@ -130,10 +130,13 @@ function handleUserMessage(
   const data = event.data as UserMessageEvent["data"];
   const turnId = generateId();
 
+  // Extract content as string (UserMessage.content can be string or array)
+  const contentText = typeof data.content === "string" ? data.content : "";
+
   const pendingTurn: PendingTurn = {
     turnId,
-    messageId: data.messageId,
-    content: data.content,
+    messageId: data.id,
+    content: contentText,
     requestedAt: event.timestamp,
   };
 
@@ -142,8 +145,8 @@ function handleUserMessage(
     timestamp: Date.now(),
     data: {
       turnId,
-      messageId: data.messageId,
-      content: data.content,
+      messageId: data.id,
+      content: contentText,
       timestamp: event.timestamp,
     },
   };

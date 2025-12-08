@@ -108,7 +108,10 @@ function processMessages(messages: Message[]): Message[] {
     // For tool-call messages, attach the corresponding tool-result
     if (msg.subtype === "tool-call") {
       const toolCall = msg as ToolCallMessage;
-      const toolResult = toolResultMap.get(toolCall.toolCall.id);
+      // Now we can directly access toolCall field (proper Message structure)
+      const toolCallId = toolCall.toolCall.id;
+
+      const toolResult = toolResultMap.get(toolCallId);
 
       if (toolResult) {
         // Attach tool-result via metadata

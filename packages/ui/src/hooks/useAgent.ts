@@ -32,7 +32,7 @@
  */
 
 import { useState, useEffect, useCallback, useRef } from "react";
-import type { AgentX, SystemEvent } from "agentxjs";
+import type { AgentX, SystemEvent, Message } from "agentxjs";
 import { createLogger } from "@agentxjs/common";
 
 const logger = createLogger("ui/useAgent");
@@ -50,16 +50,11 @@ export type AgentStatus =
 
 /**
  * Message for UI display
+ *
+ * UIMessage is now a type alias for Message from agentxjs.
+ * Event.data already contains complete Message objects, no transformation needed.
  */
-export interface UIMessage {
-  id: string;
-  role: "user" | "assistant" | "tool" | "error";
-  subtype: "user" | "assistant" | "tool-call" | "tool-result" | "error";
-  content: string | unknown;
-  timestamp: number;
-  /** Optional metadata (e.g., errorCode for error messages) */
-  metadata?: Record<string, unknown>;
-}
+export type UIMessage = Message;
 
 /**
  * Error info for UI
@@ -201,26 +196,11 @@ export function useAgent(
         .then((response) => {
           if (!mountedRef.current) return;
           const data = response.data as unknown as {
-            messages: Array<{
-              id: string;
-              role: "user" | "assistant" | "tool" | "error";
-              subtype: "user" | "assistant" | "tool-call" | "tool-result" | "error";
-              content: unknown;
-              timestamp: number;
-              errorCode?: string;
-            }>;
+            messages: Message[];
           };
           if (data.messages && data.messages.length > 0) {
-            const mappedMessages: UIMessage[] = data.messages.map((m) => ({
-              id: m.id,
-              role: m.role,
-              subtype: m.subtype,
-              content: m.content as string | unknown,
-              timestamp: m.timestamp,
-              metadata: m.role === "error" && m.errorCode ? { errorCode: m.errorCode } : undefined,
-            }));
-            setMessages(mappedMessages);
-            logger.debug("Loaded messages from storage", { imageId, count: mappedMessages.length });
+            setMessages(data.messages);
+            logger.debug("Loaded messages from storage", { imageId, count: data.messages.length });
           }
         })
         .catch((err) => {
@@ -294,30 +274,15 @@ export function useAgent(
       })
     );
 
-    // Message events - complete messages (now in Message type format)
+    // Message events - data is complete Message object
     unsubscribes.push(
       agentx.on("assistant_message", (event) => {
         if (!mountedRef.current || !isForThisImage(event)) return;
-        const data = event.data as {
-          id: string;
-          role: string;
-          subtype: string;
-          content: unknown;
-          timestamp: number;
-        };
+        const message = event.data as Message;
         setStreaming(""); // Clear streaming
         setMessages((prev) => {
-          if (prev.some((m) => m.id === data.id)) return prev;
-          return [
-            ...prev,
-            {
-              id: data.id,
-              role: "assistant",
-              subtype: "assistant",
-              content: data.content,
-              timestamp: data.timestamp,
-            },
-          ];
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
         });
       })
     );
@@ -325,25 +290,10 @@ export function useAgent(
     unsubscribes.push(
       agentx.on("tool_call_message", (event) => {
         if (!mountedRef.current || !isForThisImage(event)) return;
-        const data = event.data as {
-          id: string;
-          role: string;
-          subtype: string;
-          toolCall: unknown;
-          timestamp: number;
-        };
+        const message = event.data as Message;
         setMessages((prev) => {
-          if (prev.some((m) => m.id === data.id)) return prev;
-          return [
-            ...prev,
-            {
-              id: data.id,
-              role: "assistant",
-              subtype: "tool-call",
-              content: data.toolCall,
-              timestamp: data.timestamp,
-            },
-          ];
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
         });
       })
     );
@@ -351,25 +301,10 @@ export function useAgent(
     unsubscribes.push(
       agentx.on("tool_result_message", (event) => {
         if (!mountedRef.current || !isForThisImage(event)) return;
-        const data = event.data as {
-          id: string;
-          role: string;
-          subtype: string;
-          toolResult: unknown;
-          timestamp: number;
-        };
+        const message = event.data as Message;
         setMessages((prev) => {
-          if (prev.some((m) => m.id === data.id)) return prev;
-          return [
-            ...prev,
-            {
-              id: data.id,
-              role: "tool",
-              subtype: "tool-result",
-              content: data.toolResult,
-              timestamp: data.timestamp,
-            },
-          ];
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
         });
       })
     );
@@ -378,26 +313,11 @@ export function useAgent(
     unsubscribes.push(
       agentx.on("error_message", (event) => {
         if (!mountedRef.current || !isForThisImage(event)) return;
-        const data = event.data as {
-          messageId: string;
-          content: string;
-          errorCode?: string;
-          timestamp: number;
-        };
+        const message = event.data as Message;
         setStreaming(""); // Clear streaming
         setMessages((prev) => {
-          if (prev.some((m) => m.id === data.messageId)) return prev;
-          return [
-            ...prev,
-            {
-              id: data.messageId,
-              role: "error",
-              subtype: "error",
-              content: data.content,
-              timestamp: data.timestamp,
-              metadata: { errorCode: data.errorCode },
-            },
-          ];
+          if (prev.some((m) => m.id === message.id)) return prev;
+          return [...prev, message];
         });
       })
     );

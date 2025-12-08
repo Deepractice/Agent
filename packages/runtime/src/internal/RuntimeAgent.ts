@@ -160,66 +160,13 @@ class BusPresenter implements AgentPresenter {
 
   /**
    * Convert AgentOutput to proper Message type for persistence
+   *
+   * Since messageAssemblerProcessor now emits complete Message objects,
+   * we can directly use the data field without transformation.
    */
   private convertToMessage(output: AgentOutput): Message {
-    const eventData = output.data as Record<string, unknown>;
-    const messageId = (eventData.messageId ?? eventData.id) as string;
-    const timestamp = (eventData.timestamp as number) || output.timestamp;
-
-    switch (output.type) {
-      case "assistant_message": {
-        const content = eventData.content as ContentPart[];
-        return {
-          id: messageId,
-          role: "assistant",
-          subtype: "assistant",
-          content,
-          timestamp,
-        } as AssistantMessage;
-      }
-
-      case "tool_call_message": {
-        const toolCalls = eventData.toolCalls as ToolCallPart[];
-        const toolCall = toolCalls[0];
-        return {
-          id: messageId,
-          role: "assistant",
-          subtype: "tool-call",
-          toolCall,
-          timestamp,
-        } as ToolCallMessage;
-      }
-
-      case "tool_result_message": {
-        const results = eventData.results as ToolResultPart[];
-        const toolResult = results[0];
-        return {
-          id: messageId,
-          role: "tool",
-          subtype: "tool-result",
-          toolCallId: toolResult.id,
-          toolResult,
-          timestamp,
-        } as ToolResultMessage;
-      }
-
-      case "error_message": {
-        const content = eventData.content as string;
-        const errorCode = eventData.errorCode as string | undefined;
-        return {
-          id: messageId,
-          role: "error",
-          subtype: "error",
-          content,
-          errorCode,
-          timestamp,
-        } as ErrorMessage;
-      }
-
-      default:
-        logger.warn("Unknown message type, passing through", { type: output.type });
-        return eventData as unknown as Message;
-    }
+    // AgentOutput.data is already a complete Message object
+    return output.data as Message;
   }
 
   /**
