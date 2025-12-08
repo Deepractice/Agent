@@ -41,19 +41,7 @@ import type {
   EventCategory,
   ClaudeLLMConfig,
 } from "@agentxjs/types/runtime";
-import type {
-  AgentEngine,
-  AgentPresenter,
-  AgentOutput,
-  Message,
-  AssistantMessage,
-  ToolCallMessage,
-  ToolResultMessage,
-  ErrorMessage,
-  ContentPart,
-  ToolCallPart,
-  ToolResultPart,
-} from "@agentxjs/types/agent";
+import type { AgentEngine, AgentPresenter, AgentOutput, Message } from "@agentxjs/types/agent";
 import type {
   SystemBus,
   SystemBusProducer,
