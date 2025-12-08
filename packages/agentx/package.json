@@ -1,6 +1,6 @@
 {
   "name": "agentxjs",
-  "version": "0.1.9",
+  "version": "1.0.0",
   "description": "Unified API for AI Agents - Server and Browser",
   "license": "MIT",
   "repository": {
@@ -38,7 +38,7 @@
     "@agentxjs/network": "workspace:*"
   },
   "peerDependencies": {
-    "@agentxjs/runtime": ">=0.1.9"
+    "@agentxjs/runtime": ">=1.0.0"
   },
   "peerDependenciesMeta": {
     "@agentxjs/runtime": {
