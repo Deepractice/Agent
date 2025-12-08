@@ -4,6 +4,7 @@
 
 export type {
   Unsubscribe,
+  MinimalHTTPServer,
   ChannelConnection,
   ChannelServer,
   ChannelClient,

@@ -2,12 +2,12 @@
  * WebSocket Server implementation of ChannelServer
  */
 
-import type { Server } from "http";
 import type { WebSocket as WS, WebSocketServer as WSS } from "ws";
 import type {
   ChannelServer,
   ChannelConnection,
   ChannelServerOptions,
+  MinimalHTTPServer,
   Unsubscribe,
 } from "@agentxjs/types/network";
 import { createLogger } from "@agentxjs/common";
@@ -151,7 +151,7 @@ export class WebSocketServer implements ChannelServer {
     logger.info("WebSocket server listening", { port, host });
   }
 
-  attach(server: Server, path: string = "/ws"): void {
+  attach(server: MinimalHTTPServer, path: string = "/ws"): void {
     if (this.wss) {
       throw new Error("Server already initialized");
     }

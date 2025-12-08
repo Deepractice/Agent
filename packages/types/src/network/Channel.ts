@@ -5,8 +5,13 @@
  * Can be implemented with WebSocket, HTTP/2, gRPC, etc.
  */
 
-// Use any for Server type to avoid Node.js dependency in types package
-type Server = any;
+/**
+ * Minimal HTTP server interface for attaching WebSocket
+ * Avoids Node.js dependency in types package
+ */
+export interface MinimalHTTPServer {
+  on(event: "upgrade", listener: (request: any, socket: any, head: any) => void): void;
+}
 
 /**
  * Unsubscribe function type
@@ -60,7 +65,7 @@ export interface ChannelServer {
   /**
    * Attach to an existing HTTP server
    */
-  attach(server: Server, path?: string): void;
+  attach(server: MinimalHTTPServer, path?: string): void;
 
   /**
    * Register connection handler
