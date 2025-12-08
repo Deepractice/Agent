@@ -208,13 +208,19 @@ importers:
 
   packages/agentx:
     dependencies:
-      '@agentxjs/network':
-        specifier: workspace:*
-        version: link:../network
+      reconnecting-websocket:
+        specifier: ^4.4.0
+        version: 4.4.0
+      ws:
+        specifier: ^8.18.0
+        version: 8.18.3
     devDependencies:
       '@agentxjs/common':
         specifier: workspace:*
         version: link:../common
+      '@agentxjs/network':
+        specifier: workspace:*
+        version: link:../network
       '@agentxjs/runtime':
         specifier: workspace:*
         version: link:../runtime
@@ -224,6 +230,9 @@ importers:
       '@types/node':
         specifier: ^24.9.2
         version: 24.9.2
+      '@types/ws':
+        specifier: ^8.5.13
+        version: 8.18.1
       tsup:
         specifier: ^8.3.5
         version: 8.5.1(@microsoft/api-extractor@7.55.0(@types/node@24.9.2))(jiti@2.6.1)(postcss@8.5.6)(tsx@4.20.6)(typescript@5.9.3)(yaml@2.8.1)
