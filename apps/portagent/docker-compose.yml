@@ -2,7 +2,7 @@
 
 services:
   portagent:
-    image: deepracticexs/portagent:latest
+    image: deepracticexs/portagent:0.1.9
     container_name: portagent
     restart: unless-stopped
     ports:
@@ -16,9 +16,9 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - JWT_SECRET=${JWT_SECRET}
       - INVITE_CODE_REQUIRED=${INVITE_CODE_REQUIRED:-true}
-      - DATA_DIR=/data
+      - DATA_DIR=/home/agentx/.agentx
     volumes:
-      - ./data:/data
+      - ./data:/home/agentx/.agentx
     healthcheck:
       test: ["CMD", "wget", "--no-verbose", "--tries=1", "--spider", "http://localhost:5200/health"]
       interval: 30s
