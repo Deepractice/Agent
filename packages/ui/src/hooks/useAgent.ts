@@ -53,7 +53,8 @@ export type AgentStatus =
  */
 export interface UIMessage {
   id: string;
-  role: "user" | "assistant" | "tool_call" | "tool_result" | "error";
+  role: "user" | "assistant" | "tool" | "error";
+  subtype: "user" | "assistant" | "tool-call" | "tool-result" | "error";
   content: string | unknown;
   timestamp: number;
   /** Optional metadata (e.g., errorCode for error messages) */
@@ -199,19 +200,21 @@ export function useAgent(
         .request("image_messages_request", { imageId })
         .then((response) => {
           if (!mountedRef.current) return;
-          const data = response.data as {
+          const data = response.data as unknown as {
             messages: Array<{
               id: string;
-              role: "user" | "assistant" | "tool_call" | "tool_result" | "error";
+              role: "user" | "assistant" | "tool" | "error";
+              subtype: "user" | "assistant" | "tool-call" | "tool-result" | "error";
               content: unknown;
               timestamp: number;
               errorCode?: string;
             }>;
           };
           if (data.messages && data.messages.length > 0) {
-            const mappedMessages = data.messages.map((m) => ({
+            const mappedMessages: UIMessage[] = data.messages.map((m) => ({
               id: m.id,
               role: m.role,
+              subtype: m.subtype,
               content: m.content as string | unknown,
               timestamp: m.timestamp,
               metadata: m.role === "error" && m.errorCode ? { errorCode: m.errorCode } : undefined,
@@ -310,6 +313,7 @@ export function useAgent(
             {
               id: data.id,
               role: "assistant",
+              subtype: "assistant",
               content: data.content,
               timestamp: data.timestamp,
             },
@@ -334,7 +338,8 @@ export function useAgent(
             ...prev,
             {
               id: data.id,
-              role: "tool_call",
+              role: "assistant",
+              subtype: "tool-call",
               content: data.toolCall,
               timestamp: data.timestamp,
             },
@@ -359,7 +364,8 @@ export function useAgent(
             ...prev,
             {
               id: data.id,
-              role: "tool_result",
+              role: "tool",
+              subtype: "tool-result",
               content: data.toolResult,
               timestamp: data.timestamp,
             },
@@ -386,6 +392,7 @@ export function useAgent(
             {
               id: data.messageId,
               role: "error",
+              subtype: "error",
               content: data.content,
               timestamp: data.timestamp,
               metadata: { errorCode: data.errorCode },
@@ -430,6 +437,7 @@ export function useAgent(
       const userMessage: UIMessage = {
         id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
         role: "user",
+        subtype: "user",
         content: text,
         timestamp: Date.now(),
       };

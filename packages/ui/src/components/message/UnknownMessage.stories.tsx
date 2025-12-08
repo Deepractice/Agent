@@ -45,16 +45,6 @@ export const CustomType: Story = {
  */
 export const WithComplexData: Story = {
   args: {
-    message: {
-      ...unknownMessage,
-      metadata: {
-        nested: {
-          data: {
-            foo: "bar",
-            items: [1, 2, 3],
-          },
-        },
-      },
-    } as Message,
+    message: unknownMessage,
   },
 };
