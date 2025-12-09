@@ -162,7 +162,11 @@ export function Chat({
   );
 
   // Determine loading state
-  const isLoading = status === "thinking" || status === "responding" || status === "tool_executing";
+  const isLoading =
+    status === "thinking" ||
+    status === "responding" ||
+    status === "planning_tool" ||
+    status === "awaiting_tool_result";
 
   // Toolbar items
   const toolbarItems: ToolBarItem[] = React.useMemo(() => {

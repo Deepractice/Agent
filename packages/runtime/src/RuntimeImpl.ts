@@ -375,34 +375,9 @@ export class RuntimeImpl implements Runtime {
 
         const messages = await image.getMessages();
         logger.debug("Got messages from storage", { imageId, count: messages.length });
-        return messages.map((m) => {
-          // Extract content based on message subtype
-          let content: unknown;
-          let role: string = m.role;
-          let errorCode: string | undefined;
-
-          if (m.subtype === "user" || m.subtype === "assistant") {
-            content = (m as { content: unknown }).content;
-          } else if (m.subtype === "tool-call") {
-            content = (m as { toolCall: unknown }).toolCall;
-            role = "tool_call";
-          } else if (m.subtype === "tool-result") {
-            content = (m as { toolResult: unknown }).toolResult;
-            role = "tool_result";
-          } else if (m.subtype === "error") {
-            content = (m as { content: string }).content;
-            role = "error";
-            errorCode = (m as { errorCode?: string }).errorCode;
-          }
-
-          return {
-            id: m.id,
-            role,
-            content,
-            timestamp: m.timestamp,
-            errorCode,
-          };
-        });
+        // Return complete Message objects (not transformed)
+        // UI layer expects full Message structure with subtype
+        return messages;
       },
     };
   }

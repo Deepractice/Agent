@@ -175,6 +175,7 @@ export type {
   ToolResultMessage,
   ErrorMessage,
   AgentError,
+  AgentState,
   ContentPart,
   TextPart,
   ThinkingPart,
