@@ -17,7 +17,7 @@ config({ path: resolve(projectRoot, ".env.local") });
 config({ path: resolve(projectRoot, ".env") });
 
 // Set data directory to project root/.agentx for dev
-process.env.DATA_DIR = resolve(projectRoot, ".agentx");
+process.env.AGENTX_DIR = resolve(projectRoot, ".agentx");
 
 import { startServer } from "./index.js";
 

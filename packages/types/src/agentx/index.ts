@@ -172,14 +172,22 @@ export interface LocalConfig {
   llm?: LLMConfig;
 
   /**
-   * Storage configuration
-   */
-  storage?: StorageConfig;
-
-  /**
    * Logger configuration
    */
   logger?: LoggerConfig;
+
+  /**
+   * AgentX base directory for runtime data (containers, workdirs, storage, logs)
+   * @default "~/.agentx" (user's home directory)
+   * @example "/var/lib/agentx"
+   * @example "/Users/john/.agentx"
+   *
+   * Directory structure:
+   * - {agentxDir}/data/agentx.db - SQLite database (auto-configured)
+   * - {agentxDir}/logs/ - Log files (if configured)
+   * - {agentxDir}/containers/ - Agent workdirs
+   */
+  agentxDir?: string;
 
   /**
    * HTTP server to attach WebSocket to.

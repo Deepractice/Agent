@@ -132,6 +132,7 @@ export class RuntimeContainer implements Container {
     // Create and initialize Sandbox
     const sandbox = new RuntimeSandbox({
       agentId,
+      imageId: image.imageId,
       containerId: this.containerId,
       basePath: this.context.basePath,
     });

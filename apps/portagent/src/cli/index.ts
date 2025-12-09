@@ -54,8 +54,8 @@ program
     }
 
     // Set data directory (CLI > env > default)
-    const dataDir = options.dataDir || process.env.DATA_DIR || resolve(homedir(), ".agentx");
-    process.env.DATA_DIR = dataDir;
+    const dataDir = options.dataDir || process.env.AGENTX_DIR || resolve(homedir(), ".agentx");
+    process.env.AGENTX_DIR = dataDir;
 
     // Ensure directories exist
     const dataDirPath = resolve(dataDir, "data");

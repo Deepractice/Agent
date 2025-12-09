@@ -44,7 +44,9 @@ export {
   type UseAgentOptions,
   type AgentIdentifier,
   type AgentStatus,
+  type MessageStatus,
   type UIMessage,
+  type UIMessageMetadata,
   type UIError,
 } from "./useAgent";
 

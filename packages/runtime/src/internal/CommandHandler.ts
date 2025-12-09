@@ -14,6 +14,7 @@
 
 import type { SystemBus } from "@agentxjs/types/runtime/internal";
 import type { SystemEvent } from "@agentxjs/types/event";
+import type { Message } from "@agentxjs/types/agent";
 import { BaseEventHandler } from "./BaseEventHandler";
 import { createLogger } from "@agentxjs/common";
 
@@ -77,9 +78,7 @@ export interface RuntimeOperations {
   listImages(containerId?: string): Promise<ImageListItemResult[]>;
   getImage(imageId: string): Promise<ImageListItemResult | null>;
   deleteImage(imageId: string): Promise<void>;
-  getImageMessages(
-    imageId: string
-  ): Promise<Array<{ id: string; role: string; content: unknown; timestamp: number }>>;
+  getImageMessages(imageId: string): Promise<Message[]>;
 }
 
 /**

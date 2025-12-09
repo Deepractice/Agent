@@ -34,10 +34,10 @@ import { PinoLoggerFactory } from "./logger";
 
 /**
  * Get data directory paths
- * Uses DATA_DIR env var, or defaults to ~/.agentx
+ * Uses AGENTX_DIR env var, or defaults to ~/.agentx
  *
  * Directory structure:
- *   data-dir/
+ *   agentx-dir/
  *   ├── data/           # Database files
  *   │   ├── agentx.db
  *   │   └── portagent.db
@@ -45,7 +45,7 @@ import { PinoLoggerFactory } from "./logger";
  *       └── portagent.log
  */
 function getDataPaths() {
-  const dataDir = process.env.DATA_DIR || join(homedir(), ".agentx");
+  const dataDir = process.env.AGENTX_DIR || join(homedir(), ".agentx");
   const dataDirPath = join(dataDir, "data");
   const logsDirPath = join(dataDir, "logs");
 
@@ -110,20 +110,18 @@ async function createApp() {
 
   // Create AgentX instance attached to HTTP server
   // WebSocket upgrade will be handled on /ws path
+  // Storage is auto-configured: SQLite at {agentxDir}/data/agentx.db
   const agentx = await createAgentX({
     llm: {
       apiKey,
       baseUrl: process.env.LLM_PROVIDER_URL,
       model: process.env.LLM_PROVIDER_MODEL,
     },
-    storage: {
-      driver: "sqlite",
-      path: paths.agentxDbPath,
-    },
     logger: {
       level: logLevel,
       factory: loggerFactory,
     },
+    agentxDir: paths.dataDir, // Auto-configures storage at {dataDir}/data/agentx.db
     server, // Attach to existing HTTP server
   });
 

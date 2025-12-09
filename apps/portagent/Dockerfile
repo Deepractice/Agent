@@ -19,7 +19,7 @@ RUN mkdir -p /home/node/.agentx
 ENV NODE_ENV=production
 ENV PORT=5200
 ENV LOG_LEVEL=info
-ENV DATA_DIR=/home/node/.agentx
+ENV AGENTX_DIR=/home/node/.agentx
 
 # Environment - Required (must be provided at runtime)
 # LLM_PROVIDER_KEY=sk-ant-xxxxx    # Anthropic API key

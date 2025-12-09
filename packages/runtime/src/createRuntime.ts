@@ -22,6 +22,12 @@ export interface RuntimeConfig {
   llmProvider: LLMProvider<ClaudeLLMConfig>;
 
   /**
+   * Base path for runtime data (containers, workdirs, etc.)
+   * @example "/Users/john/.agentx"
+   */
+  basePath: string;
+
+  /**
    * Optional custom environment (for testing)
    * If not provided, ClaudeEnvironment will be created from llmProvider
    */

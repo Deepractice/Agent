@@ -29,9 +29,9 @@ export type { NavBarProps, NavBarItem } from "./NavBar";
 export { ListPane } from "./ListPane";
 export type { ListPaneProps, ListPaneItem } from "./ListPane";
 
-// MessagePane - Message display area
+// MessagePane - Message display area (Pure UI Container)
 export { MessagePane } from "./MessagePane";
-export type { MessagePaneProps, MessagePaneItem, ToolMetadata } from "./MessagePane";
+export type { MessagePaneProps } from "./MessagePane";
 
 // InputPane - Input area with toolbar
 export { InputPane } from "./InputPane";

@@ -91,7 +91,7 @@ portagent
 | `LLM_PROVIDER_URL`     | No       | `https://api.anthropic.com` | API base URL                                |
 | `LLM_PROVIDER_MODEL`   | No       | `claude-sonnet-4-20250514`  | Claude model to use                         |
 | `PORT`                 | No       | `5200`                      | Server port                                 |
-| `DATA_DIR`             | No       | `~/.agentx`                 | Data directory path                         |
+| `AGENTX_DIR`           | No       | `~/.agentx`                 | AgentX data directory path                  |
 | `JWT_SECRET`           | No       | Auto-generated              | Secret for JWT token signing                |
 | `INVITE_CODE_REQUIRED` | No       | `false`                     | Require invite code for registration        |
 | `LOG_LEVEL`            | No       | `info`                      | Log level: `debug`, `info`, `warn`, `error` |
@@ -117,7 +117,7 @@ Options:
 ### Data Directory Structure
 
 ```text
-~/.agentx/                  # Default data directory (configurable via DATA_DIR)
+~/.agentx/                  # Default data directory (configurable via AGENTX_DIR)
 ├── data/                   # Database files
 │   ├── agentx.db          # AgentX data (containers, images, sessions)
 │   └── portagent.db       # User authentication data

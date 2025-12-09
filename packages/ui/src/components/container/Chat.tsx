@@ -19,15 +19,15 @@
  */
 
 import * as React from "react";
-import type { AgentX } from "agentxjs";
+import type {
+  AgentX,
+  ToolCallMessage,
+  ToolResultMessage,
+  AssistantMessage as AssistantMessageType,
+} from "agentxjs";
 import { Save, Smile, Paperclip, FolderOpen } from "lucide-react";
-import {
-  MessagePane,
-  InputPane,
-  type MessagePaneItem,
-  type ToolBarItem,
-  type ToolMetadata,
-} from "~/components/pane";
+import { MessagePane, InputPane, type ToolBarItem } from "~/components/pane";
+import { MessageRenderer, AssistantMessage } from "~/components/message";
 import { useAgent, type UIMessage } from "~/hooks";
 import { cn } from "~/utils";
 import { ChatHeader } from "./ChatHeader";
@@ -76,130 +76,70 @@ export interface ChatProps {
 }
 
 /**
- * Tool call content structure from events
+ * Extended UIMessage with tool result attached
+ * Used for pairing tool-call and tool-result
  */
-interface ToolCallContent {
-  type: "tool-call";
-  id: string;
-  name: string;
-  input: Record<string, unknown>;
-}
-
-/**
- * Tool result content structure from events
- */
-interface ToolResultContent {
-  type: "tool-result";
-  id: string;
-  name: string;
-  output: {
-    type: string;
-    value: unknown;
+type UIMessageWithToolResult = UIMessage & {
+  metadata?: UIMessage["metadata"] & {
+    toolResult?: ToolResultMessage;
   };
-}
+};
 
 /**
- * Pending tool calls for matching with results
+ * Process messages for rendering
+ * - Pair tool-call with tool-result
+ * - Filter out standalone tool-result messages
  */
-const pendingToolCalls = new Map<
-  string,
-  { name: string; input: Record<string, unknown>; timestamp: number }
->();
+function processMessages(messages: UIMessage[]): UIMessage[] {
+  // Build a map of tool-result by toolCallId
+  const toolResultMap = new Map<string, ToolResultMessage>();
 
-/**
- * Convert UIMessage to MessagePaneItem
- */
-function toMessagePaneItem(msg: UIMessage, allMessages: UIMessage[]): MessagePaneItem {
-  // Handle tool_call messages
-  if (msg.role === "tool_call") {
-    const toolCall = msg.content as ToolCallContent;
+  messages.forEach((msg) => {
+    if (msg.subtype === "tool-result") {
+      const toolResult = msg as ToolResultMessage;
+      toolResultMap.set(toolResult.toolCallId, toolResult);
+    }
+  });
 
-    // Store for later matching with result
-    pendingToolCalls.set(toolCall.id, {
-      name: toolCall.name,
-      input: toolCall.input,
-      timestamp: msg.timestamp,
-    });
+  // Filter and enrich messages
+  const processed: UIMessage[] = [];
 
-    // Find matching result
-    const resultMsg = allMessages.find(
-      (m) => m.role === "tool_result" && (m.content as ToolResultContent)?.id === toolCall.id
-    );
-    const result = resultMsg ? (resultMsg.content as ToolResultContent) : undefined;
-
-    // Build tool metadata
-    const toolMetadata: ToolMetadata = {
-      toolName: toolCall.name || "Unknown Tool",
-      toolId: toolCall.id,
-      status: result ? "success" : "executing",
-      input: toolCall.input,
-      output: result?.output?.value,
-      isError: result?.output?.type?.includes("error"),
-      duration: resultMsg ? (resultMsg.timestamp - msg.timestamp) / 1000 : undefined,
-    };
-
-    return {
-      id: msg.id,
-      role: "tool",
-      content: msg.content,
-      timestamp: msg.timestamp,
-      toolMetadata,
-    };
-  }
-
-  // Skip tool_result messages - they are merged into tool_call
-  if (msg.role === "tool_result") {
-    const toolResult = msg.content as ToolResultContent;
-    const pending = pendingToolCalls.get(toolResult.id);
-
-    // If we already rendered this as part of tool_call, skip
-    // But if somehow the call wasn't received, render standalone
-    if (!pending) {
-      const toolMetadata: ToolMetadata = {
-        toolName: toolResult.name || "Unknown Tool",
-        toolId: toolResult.id,
-        status: toolResult.output?.type?.includes("error") ? "error" : "success",
-        output: toolResult.output?.value,
-        isError: toolResult.output?.type?.includes("error"),
-      };
-
-      return {
-        id: msg.id,
-        role: "tool",
-        content: msg.content,
-        timestamp: msg.timestamp,
-        toolMetadata,
-      };
+  messages.forEach((msg) => {
+    // Skip tool-result messages (they will be attached to tool-call)
+    if (msg.subtype === "tool-result") {
+      return;
     }
 
-    // Return null marker - will be filtered out
-    return {
-      id: msg.id,
-      role: "tool",
-      content: null,
-      timestamp: msg.timestamp,
-      metadata: { skip: true },
-    };
-  }
+    // For tool-call messages, attach the corresponding tool-result
+    if (msg.subtype === "tool-call") {
+      const toolCall = msg as ToolCallMessage & UIMessage;
+      // Now we can directly access toolCall field (proper Message structure)
+      const toolCallId = toolCall.toolCall.id;
 
-  // Handle error messages
-  if (msg.role === "error") {
-    return {
-      id: msg.id,
-      role: "error",
-      content: msg.content,
-      timestamp: msg.timestamp,
-      metadata: msg.metadata,
-    };
-  }
+      const toolResult = toolResultMap.get(toolCallId);
 
-  // Regular messages
-  return {
-    id: msg.id,
-    role: msg.role,
-    content: msg.content,
-    timestamp: msg.timestamp,
-  };
+      if (toolResult) {
+        // Attach tool-result via metadata
+        const enriched: UIMessageWithToolResult = {
+          ...toolCall,
+          metadata: {
+            ...toolCall.metadata,
+            toolResult,
+          },
+        };
+        processed.push(enriched);
+      } else {
+        // No result yet, just add the tool-call
+        processed.push(msg);
+      }
+      return;
+    }
+
+    // Other messages pass through
+    processed.push(msg);
+  });
+
+  return processed;
 }
 
 /**
@@ -220,20 +160,15 @@ export function Chat({
   // legacyAgentId is deprecated and ignored
   const { messages, streaming, status, send, interrupt } = useAgent(agentx, imageId ?? null);
 
-  // Map UIMessage[] to MessagePaneItem[]
-  // Filter out tool_result messages that have been merged into tool_call
-  // Sort by timestamp to ensure correct order
-  const items: MessagePaneItem[] = React.useMemo(() => {
-    // Clear pending tool calls on each render
-    pendingToolCalls.clear();
-    return messages
-      .map((msg) => toMessagePaneItem(msg, messages))
-      .filter((item) => !item.metadata?.skip)
-      .sort((a, b) => (a.timestamp || 0) - (b.timestamp || 0));
-  }, [messages]);
+  // Process messages: pair tool-call with tool-result
+  const processedMessages = React.useMemo(() => processMessages(messages), [messages]);
 
   // Determine loading state
-  const isLoading = status === "thinking" || status === "responding" || status === "tool_executing";
+  const isLoading =
+    status === "thinking" ||
+    status === "responding" ||
+    status === "planning_tool" ||
+    status === "awaiting_tool_result";
 
   // Toolbar items
   const toolbarItems: ToolBarItem[] = React.useMemo(() => {
@@ -285,7 +220,33 @@ export function Chat({
 
       {/* Message area */}
       <div style={{ height: messageHeight }} className="min-h-0">
-        <MessagePane items={items} streamingText={streaming} isLoading={isLoading && !streaming} />
+        <MessagePane>
+          {/* Render each message */}
+          {processedMessages.map((message) => {
+            // Assistant messages: handle all lifecycle states
+            if (message.role === "assistant" && message.subtype === "assistant") {
+              const assistantMsg = message as UIMessage & AssistantMessageType;
+              const messageStatus = assistantMsg.metadata?.status as
+                | "queued"
+                | "thinking"
+                | "responding"
+                | "success"
+                | undefined;
+
+              return (
+                <AssistantMessage
+                  key={message.id}
+                  message={assistantMsg}
+                  status={messageStatus}
+                  streamingText={streaming}
+                />
+              );
+            }
+
+            // All other messages render through handler chain
+            return <MessageRenderer key={message.id} message={message} />;
+          })}
+        </MessagePane>
       </div>
 
       {/* Input area */}

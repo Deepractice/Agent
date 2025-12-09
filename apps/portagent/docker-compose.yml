@@ -16,7 +16,7 @@ services:
       - LOG_LEVEL=${LOG_LEVEL:-info}
       - JWT_SECRET=${JWT_SECRET}
       - INVITE_CODE_REQUIRED=${INVITE_CODE_REQUIRED:-false}
-      - DATA_DIR=/home/node/.agentx
+      - AGENTX_DIR=/home/node/.agentx
     volumes:
       - ./data:/home/node/.agentx
     healthcheck:

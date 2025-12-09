@@ -33,7 +33,8 @@ async function startDevServer() {
   }
 
   const PORT = 5200;
-  const LOG_DIR = resolve(__dirname, "../../logs");
+  const AGENTX_DIR = resolve(__dirname, "../../.agentx");
+  const LOG_DIR = resolve(AGENTX_DIR, "logs");
 
   console.log("Starting AgentX Development Server...\n");
   console.log("Configuration:");
@@ -42,26 +43,25 @@ async function startDevServer() {
     console.log(`  Base URL: ${baseUrl}`);
   }
   console.log(`  Port: ${PORT}`);
+  console.log(`  AgentX Directory: ${AGENTX_DIR}`);
+  console.log(`  Storage: SQLite (auto-configured at ${AGENTX_DIR}/data/agentx.db)`);
   console.log(`  Log Directory: ${LOG_DIR}`);
-  console.log(`  Storage: fs (${LOG_DIR})`);
   console.log();
 
   // Import and create AgentX instance
   const { createAgentX } = await import("agentxjs");
 
+  // Storage is auto-configured: SQLite at {agentxDir}/data/agentx.db
   const agentx = await createAgentX({
     llm: {
       apiKey,
       baseUrl,
     },
-    storage: {
-      driver: "fs",
-      path: LOG_DIR,
-    },
     logger: {
       level: "debug",
       factory: new FileLoggerFactory("debug", LOG_DIR),
     },
+    agentxDir: AGENTX_DIR,
   });
 
   // Create default container for Studio (single-tenant mode)

@@ -155,6 +155,7 @@ export function Studio({
       {/* Main area - Chat */}
       <div className="flex-1 min-w-0">
         <Chat
+          key={currentImageId || "empty"}
           agentx={agentx}
           imageId={currentImageId}
           agentName={currentImageName}

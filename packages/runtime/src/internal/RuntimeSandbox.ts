@@ -15,6 +15,7 @@ import { join } from "node:path";
  */
 export interface RuntimeSandboxConfig {
   agentId: string;
+  imageId: string;
   containerId: string;
   basePath: string;
 }
@@ -51,7 +52,7 @@ export class RuntimeSandbox implements Sandbox {
       "containers",
       config.containerId,
       "workdirs",
-      config.agentId
+      config.imageId
     );
     this.workdir = new RuntimeWorkdir(config.agentId, workdirPath);
   }

@@ -26,15 +26,22 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
 
   // Dynamic import to avoid bundling runtime in browser
   const { createRuntime, createPersistence } = await import("@agentxjs/runtime");
+  const { homedir } = await import("node:os");
+  const { join } = await import("node:path");
 
-  // Create persistence from storage config (async)
-  const storageConfig = config.storage ?? {};
-  const persistence = await createPersistence(
-    storageConfig as Parameters<typeof createPersistence>[0]
-  );
+  // Determine base path for runtime data
+  const basePath = config.agentxDir ?? join(homedir(), ".agentx");
+
+  // Auto-configure storage: SQLite at {agentxDir}/data/agentx.db
+  const storagePath = join(basePath, "data", "agentx.db");
+  const persistence = await createPersistence({
+    driver: "sqlite",
+    path: storagePath,
+  });
 
   const runtime = createRuntime({
     persistence,
+    basePath,
     llmProvider: {
       name: "claude",
       provide: () => ({

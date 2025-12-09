@@ -34,6 +34,11 @@ import type {
   ToolCallMessageEvent,
   ToolResultMessageEvent,
   ErrorMessageEvent,
+  // Message types
+  AssistantMessage,
+  ToolCallMessage,
+  ToolResultMessage,
+  ErrorMessage,
   // Content parts
   TextPart,
   ToolCallPart,
@@ -325,15 +330,22 @@ function handleToolUseStop(
     input: toolInput,
   };
 
-  // Emit tool_call_message event (Agent layer event structure)
+  // Create ToolCallMessage (complete Message object)
+  const messageId = generateId();
+  const timestamp = Date.now();
+  const toolCallMessage: ToolCallMessage = {
+    id: messageId,
+    role: "assistant",
+    subtype: "tool-call",
+    toolCall,
+    timestamp,
+  };
+
+  // Emit tool_call_message event - data is complete Message object
   const toolCallMessageEvent: ToolCallMessageEvent = {
     type: "tool_call_message",
-    timestamp: Date.now(),
-    data: {
-      messageId: generateId(),
-      toolCalls: [toolCall],
-      timestamp: Date.now(),
-    },
+    timestamp,
+    data: toolCallMessage,
   };
 
   // Remove from pending contents, add to pending tool calls
@@ -380,15 +392,23 @@ function handleToolResult(
     },
   };
 
-  // Emit tool_result_message event (Agent layer event structure)
+  // Create ToolResultMessage (complete Message object)
+  const messageId = generateId();
+  const timestamp = Date.now();
+  const toolResultMessage: ToolResultMessage = {
+    id: messageId,
+    role: "tool",
+    subtype: "tool-result",
+    toolCallId,
+    toolResult,
+    timestamp,
+  };
+
+  // Emit tool_result_message event - data is complete Message object
   const toolResultMessageEvent: ToolResultMessageEvent = {
     type: "tool_result_message",
-    timestamp: Date.now(),
-    data: {
-      messageId: generateId(),
-      results: [toolResult],
-      timestamp: Date.now(),
-    },
+    timestamp,
+    data: toolResultMessage,
   };
 
   // Remove from pending tool calls
@@ -449,16 +469,21 @@ function handleMessageStop(
     },
   ];
 
-  // Emit AssistantMessageEvent (Agent layer event structure)
+  // Create AssistantMessage (complete Message object)
+  const timestamp = state.messageStartTime || Date.now();
+  const assistantMessage: AssistantMessage = {
+    id: state.currentMessageId,
+    role: "assistant",
+    subtype: "assistant",
+    content: contentParts,
+    timestamp,
+  };
+
+  // Emit AssistantMessageEvent - data is complete Message object
   const assistantEvent: AssistantMessageEvent = {
     type: "assistant_message",
-    timestamp: Date.now(),
-    data: {
-      messageId: state.currentMessageId,
-      content: contentParts,
-      stopReason: stopReason,
-      timestamp: state.messageStartTime || Date.now(),
-    },
+    timestamp,
+    data: assistantMessage,
   };
 
   // Reset state, but preserve pendingToolCalls if stopReason is "tool_use"
@@ -485,15 +510,23 @@ function handleErrorReceived(
 ): [MessageAssemblerState, MessageAssemblerOutput[]] {
   const data = event.data as { message: string; errorCode?: string };
 
+  // Create ErrorMessage (complete Message object)
+  const messageId = generateId();
+  const timestamp = Date.now();
+  const errorMessage: ErrorMessage = {
+    id: messageId,
+    role: "error",
+    subtype: "error",
+    content: data.message,
+    errorCode: data.errorCode,
+    timestamp,
+  };
+
+  // Emit error_message event - data is complete Message object
   const errorMessageEvent: ErrorMessageEvent = {
     type: "error_message",
-    timestamp: Date.now(),
-    data: {
-      messageId: generateId(),
-      content: data.message,
-      errorCode: data.errorCode,
-      timestamp: Date.now(),
-    },
+    timestamp,
+    data: errorMessage,
   };
 
   // Reset state on error

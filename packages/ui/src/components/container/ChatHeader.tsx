@@ -15,6 +15,7 @@
 
 import * as React from "react";
 import { MessageSquare, Loader2 } from "lucide-react";
+import type { AgentState } from "agentxjs";
 import { Badge } from "~/components/element/Badge";
 import { cn } from "~/utils";
 
@@ -26,7 +27,7 @@ export interface ChatHeaderProps {
   /**
    * Current agent status
    */
-  status?: "idle" | "queued" | "thinking" | "responding" | "tool_executing" | "error";
+  status?: AgentState;
   /**
    * Number of messages in conversation
    */
@@ -44,7 +45,7 @@ export interface ChatHeaderProps {
 /**
  * Get status display info
  */
-function getStatusInfo(status?: string): {
+function getStatusInfo(status?: AgentState): {
   text: string;
   variant: "default" | "secondary" | "outline";
 } {
@@ -53,8 +54,12 @@ function getStatusInfo(status?: string): {
       return { text: "Thinking", variant: "default" };
     case "responding":
       return { text: "Responding", variant: "default" };
-    case "tool_executing":
+    case "planning_tool":
+      return { text: "Planning", variant: "default" };
+    case "awaiting_tool_result":
       return { text: "Executing", variant: "default" };
+    case "error":
+      return { text: "Error", variant: "outline" };
     default:
       return { text: "Idle", variant: "secondary" };
   }
