@@ -140,9 +140,8 @@ export function useAgent(
       onAssistantMessage: (message: Message) => {
         setMessages((prev) => {
           if (prev.some((m) => m.id === message.id)) return prev;
-          // Update last user message status to success
-          const updatedMessages = updateLastUserMessageStatus(prev, "success");
-          return [...updatedMessages, message];
+          // Just add the assistant message, user message status already set by send()
+          return [...prev, message];
         });
       },
       onErrorMessage: (message: Message) => {
@@ -210,8 +209,13 @@ export function useAgent(
           setAgentIdState(response.data.agentId);
           logger.debug("Agent activated", { imageId, agentId: response.data.agentId });
         }
+
+        // Mark as success immediately - message delivered to server
+        setMessages((prev) => updateLastUserMessageStatus(prev, "success"));
       } catch (error) {
         logger.error("Failed to send message", { imageId, error });
+        // Mark as error - failed to send
+        setMessages((prev) => updateLastUserMessageStatus(prev, "error", "SEND_FAILED"));
         setStatus("error");
         onStatusChange?.("error");
       }
