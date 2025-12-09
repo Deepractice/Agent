@@ -161,11 +161,7 @@ export function Chat({
   const { messages, streaming, status, send, interrupt } = useAgent(agentx, imageId ?? null);
 
   // Process messages: pair tool-call with tool-result
-  const processedMessages = React.useMemo(() => {
-    const processed = processMessages(messages);
-    console.log("[Chat] processedMessages:", processed);
-    return processed;
-  }, [messages]);
+  const processedMessages = React.useMemo(() => processMessages(messages), [messages]);
 
   // Determine loading state
   const isLoading =
@@ -227,8 +223,6 @@ export function Chat({
         <MessagePane>
           {/* Render each message */}
           {processedMessages.map((message) => {
-            console.log("[Chat] Rendering message:", message.id, message.subtype, message);
-
             // Assistant messages: handle all lifecycle states
             if (message.role === "assistant" && message.subtype === "assistant") {
               const assistantMsg = message as UIMessage & AssistantMessageType;
@@ -250,7 +244,6 @@ export function Chat({
             }
 
             // All other messages render through handler chain
-            console.log("[Chat] Using MessageRenderer for:", message.subtype);
             return <MessageRenderer key={message.id} message={message} />;
           })}
         </MessagePane>
