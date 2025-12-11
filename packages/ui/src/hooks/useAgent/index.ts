@@ -165,10 +165,15 @@ export function useAgent(
       },
       onAssistantMessage: (message: Message) => {
         setMessages((prev) => {
-          // Remove queued placeholder and add real assistant message with success status
+          // Only remove "queued" placeholder, preserve history messages
+          // History messages have no metadata or status !== "queued"
           const filtered = prev.filter(
-            (m) => !(m.role === "assistant" && m.metadata?.status !== "success")
+            (m) => !(m.role === "assistant" && m.metadata?.status === "queued")
           );
+          // Check if message already exists (avoid duplicates)
+          if (filtered.some((m) => m.id === message.id)) {
+            return filtered;
+          }
           return [
             ...filtered,
             {
