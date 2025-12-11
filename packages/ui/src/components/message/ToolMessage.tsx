@@ -7,7 +7,13 @@
 
 import * as React from "react";
 import { ToolCard, type ToolStatus } from "~/components/container/ToolCard";
-import type { EmbeddedToolResult } from "~/hooks/useAgent";
+/**
+ * @deprecated Use ToolBlock from ~/components/entry instead
+ */
+interface EmbeddedToolResult {
+  output: unknown;
+  duration?: number;
+}
 import { cn } from "~/utils/utils";
 
 export interface ToolMessageProps {

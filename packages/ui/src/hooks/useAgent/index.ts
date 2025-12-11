@@ -1,27 +1,37 @@
 /**
  * useAgent - React hook for Agent event binding
  *
- * Unified message state management with reducer pattern.
+ * Entry-first design: directly produces EntryData[] for UI rendering.
  * All events flow through a single reducer for consistent state.
  *
  * @example
  * ```tsx
  * function ChatPage({ agentx, imageId }) {
  *   const {
- *     messages,
- *     pendingAssistant,
- *     streaming,
+ *     entries,
+ *     streamingText,
  *     status,
  *     send,
  *   } = useAgent(agentx, imageId);
  *
  *   return (
  *     <div>
- *       {messages.map(m => <MessageRenderer key={m.id} message={m} />)}
- *       {pendingAssistant && (
- *         <AssistantMessage status={pendingAssistant.status} streaming={streaming} />
- *       )}
- *       <Input onSend={send} />
+ *       {entries.map(entry => {
+ *         switch (entry.type) {
+ *           case 'user':
+ *             return <UserEntry key={entry.id} entry={entry} />;
+ *           case 'assistant':
+ *             return (
+ *               <AssistantEntry
+ *                 key={entry.id}
+ *                 entry={entry}
+ *                 streamingText={entry.status === 'streaming' ? streamingText : undefined}
+ *               />
+ *             );
+ *           case 'error':
+ *             return <ErrorEntry key={entry.id} entry={entry} />;
+ *         }
+ *       })}
  *     </div>
  *   );
  * }
@@ -31,13 +41,13 @@
 import { useReducer, useCallback, useRef, useEffect } from "react";
 import type { AgentX, Message } from "agentxjs";
 import { createLogger } from "@agentxjs/common";
-import type { RenderUserMessage, UseAgentResult, UseAgentOptions, UIError } from "./types";
-import { messageReducer, initialMessageState } from "./messageReducer";
+import type { UserEntryData, UseAgentResult, UseAgentOptions, UIError } from "./types";
+import { entryReducer, initialEntryState } from "./entryReducer";
 
 const logger = createLogger("ui/useAgent");
 
 /**
- * Generate unique message ID
+ * Generate unique ID
  */
 function generateId(prefix: string): string {
   return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
@@ -53,8 +63,8 @@ export function useAgent(
 ): UseAgentResult {
   const { onSend, onError, onStatusChange } = options;
 
-  // Single reducer for all message state
-  const [state, dispatch] = useReducer(messageReducer, initialMessageState);
+  // Single reducer for all entry state
+  const [state, dispatch] = useReducer(entryReducer, initialEntryState);
 
   // Track agent ID
   const agentIdRef = useRef<string | null>(null);
@@ -108,12 +118,24 @@ export function useAgent(
       return event.context?.imageId === imageId;
     };
 
+    // Stream events - message_start (creates new assistant entry)
+    unsubscribes.push(
+      agentx.on("message_start", (event) => {
+        if (!isForThisImage(event)) return;
+        const data = event.data as { messageId: string };
+        // Create new assistant entry for each backend message
+        const entryId = `assistant_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+        dispatch({ type: "ASSISTANT_ENTRY_START", id: entryId });
+        dispatch({ type: "ASSISTANT_ENTRY_MESSAGE_START", messageId: data.messageId });
+      })
+    );
+
     // Stream events - text_delta
     unsubscribes.push(
       agentx.on("text_delta", (event) => {
         if (!isForThisImage(event)) return;
         const data = event.data as { text: string };
-        dispatch({ type: "TEXT_DELTA", text: data.text });
+        dispatch({ type: "ASSISTANT_ENTRY_TEXT_DELTA", text: data.text });
       })
     );
 
@@ -122,7 +144,7 @@ export function useAgent(
       agentx.on("conversation_start", (event) => {
         if (!isForThisImage(event)) return;
         dispatch({ type: "AGENT_STATUS", status: "thinking" });
-        dispatch({ type: "PENDING_ASSISTANT_STATUS", status: "thinking" });
+        dispatch({ type: "ASSISTANT_ENTRY_STATUS", status: "thinking" });
         onStatusChange?.("thinking");
       })
     );
@@ -131,7 +153,7 @@ export function useAgent(
       agentx.on("conversation_thinking", (event) => {
         if (!isForThisImage(event)) return;
         dispatch({ type: "AGENT_STATUS", status: "thinking" });
-        dispatch({ type: "PENDING_ASSISTANT_STATUS", status: "thinking" });
+        dispatch({ type: "ASSISTANT_ENTRY_STATUS", status: "thinking" });
         onStatusChange?.("thinking");
       })
     );
@@ -140,7 +162,7 @@ export function useAgent(
       agentx.on("conversation_responding", (event) => {
         if (!isForThisImage(event)) return;
         dispatch({ type: "AGENT_STATUS", status: "responding" });
-        dispatch({ type: "PENDING_ASSISTANT_STATUS", status: "responding" });
+        dispatch({ type: "ASSISTANT_ENTRY_STATUS", status: "streaming" });
         onStatusChange?.("responding");
       })
     );
@@ -166,7 +188,7 @@ export function useAgent(
       agentx.on("assistant_message", (event) => {
         if (!isForThisImage(event)) return;
         const message = event.data as Message;
-        dispatch({ type: "ASSISTANT_COMPLETE", message });
+        dispatch({ type: "ASSISTANT_ENTRY_COMPLETE", message });
       })
     );
 
@@ -174,7 +196,10 @@ export function useAgent(
       agentx.on("tool_call_message", (event) => {
         if (!isForThisImage(event)) return;
         const message = event.data as Message;
-        dispatch({ type: "TOOL_CALL", message: message as import("agentxjs").ToolCallMessage });
+        dispatch({
+          type: "TOOL_BLOCK_ADD",
+          message: message as import("agentxjs").ToolCallMessage,
+        });
       })
     );
 
@@ -182,7 +207,10 @@ export function useAgent(
       agentx.on("tool_result_message", (event) => {
         if (!isForThisImage(event)) return;
         const message = event.data as Message;
-        dispatch({ type: "TOOL_RESULT", message: message as import("agentxjs").ToolResultMessage });
+        dispatch({
+          type: "TOOL_BLOCK_RESULT",
+          message: message as import("agentxjs").ToolResultMessage,
+        });
       })
     );
 
@@ -190,7 +218,7 @@ export function useAgent(
       agentx.on("error_message", (event) => {
         if (!isForThisImage(event)) return;
         const message = event.data as Message;
-        dispatch({ type: "ERROR_MESSAGE", message });
+        dispatch({ type: "ERROR_ENTRY_ADD", message });
       })
     );
 
@@ -201,7 +229,7 @@ export function useAgent(
         const error = event.data as UIError;
         dispatch({ type: "ERROR_ADD", error });
         dispatch({ type: "AGENT_STATUS", status: "error" });
-        dispatch({ type: "USER_MESSAGE_STATUS", status: "error", errorCode: error.code });
+        dispatch({ type: "USER_ENTRY_STATUS", status: "error", errorCode: error.code });
         onError?.(error);
         onStatusChange?.("error");
       })
@@ -224,16 +252,15 @@ export function useAgent(
       dispatch({ type: "ERRORS_CLEAR" });
       onSend?.(text);
 
-      // Add user message immediately
-      const userMessage: RenderUserMessage = {
-        id: generateId("msg"),
-        role: "user",
-        subtype: "user",
+      // Add user entry immediately
+      const userEntry: UserEntryData = {
+        type: "user",
+        id: generateId("user"),
         content: text,
         timestamp: Date.now(),
         status: "pending",
       };
-      dispatch({ type: "USER_MESSAGE_ADD", message: userMessage });
+      dispatch({ type: "USER_ENTRY_ADD", entry: userEntry });
 
       try {
         // Send to agent
@@ -248,14 +275,13 @@ export function useAgent(
           logger.debug("Agent activated", { imageId, agentId: response.data.agentId });
         }
 
-        // Mark user message as success
-        dispatch({ type: "USER_MESSAGE_STATUS", status: "success" });
+        // Mark user entry as success
+        dispatch({ type: "USER_ENTRY_STATUS", status: "success" });
 
-        // Add pending assistant
-        dispatch({ type: "PENDING_ASSISTANT_ADD", id: generateId("assistant") });
+        // Assistant entry will be created by message_start event
       } catch (error) {
         logger.error("Failed to send message", { imageId, error });
-        dispatch({ type: "USER_MESSAGE_STATUS", status: "error", errorCode: "SEND_FAILED" });
+        dispatch({ type: "USER_ENTRY_STATUS", status: "error", errorCode: "SEND_FAILED" });
         dispatch({ type: "AGENT_STATUS", status: "error" });
         onStatusChange?.("error");
       }
@@ -267,15 +293,15 @@ export function useAgent(
   const interrupt = useCallback(() => {
     if (!agentx || !imageId) return;
 
-    dispatch({ type: "USER_MESSAGE_STATUS", status: "interrupted" });
+    dispatch({ type: "USER_ENTRY_STATUS", status: "interrupted" });
 
     agentx.request("agent_interrupt_request", { imageId }).catch((error) => {
       logger.error("Failed to interrupt agent", { imageId, error });
     });
   }, [agentx, imageId]);
 
-  // Clear messages
-  const clearMessages = useCallback(() => {
+  // Clear entries
+  const clearEntries = useCallback(() => {
     dispatch({ type: "RESET" });
   }, []);
 
@@ -285,15 +311,14 @@ export function useAgent(
   }, []);
 
   return {
-    messages: state.messages,
-    pendingAssistant: state.pendingAssistant,
-    streaming: state.streaming,
+    entries: state.entries,
+    streamingText: state.streamingText,
     status: state.agentStatus,
     errors: state.errors,
     send,
     interrupt,
     isLoading,
-    clearMessages,
+    clearEntries,
     clearErrors,
     agentId: agentIdRef.current,
   };
@@ -302,15 +327,13 @@ export function useAgent(
 // Re-export types
 export type {
   AgentStatus,
-  UserMessageStatus,
-  AssistantMessageStatus,
-  RenderMessage,
-  RenderUserMessage,
-  RenderAssistantMessage,
-  RenderToolCallMessage,
-  RenderErrorMessage,
-  EmbeddedToolResult,
-  PendingAssistant,
+  EntryData,
+  UserEntryData,
+  AssistantEntryData,
+  ErrorEntryData,
+  ToolBlockData,
+  UserEntryStatus,
+  AssistantEntryStatus,
   UIError,
   UseAgentResult,
   UseAgentOptions,

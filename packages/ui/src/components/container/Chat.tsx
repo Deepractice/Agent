@@ -2,12 +2,11 @@
  * Chat - Chat interface component
  *
  * Business component that combines MessagePane + InputPane with useAgent hook.
- * Displays messages and handles sending/receiving.
+ * Displays entries and handles sending/receiving.
  *
- * Uses unified message state with reducer pattern:
- * - messages: completed messages (user, assistant, tool-call, error)
- * - pendingAssistant: current streaming assistant message
- * - streaming: accumulated streaming text
+ * Uses Entry-first design:
+ * - entries: all conversation entries (user, assistant, error)
+ * - streamingText: current streaming text for assistant entry
  *
  * @example
  * ```tsx
@@ -22,18 +21,8 @@ import * as React from "react";
 import type { AgentX } from "agentxjs";
 import { Save, Smile, Paperclip, FolderOpen } from "lucide-react";
 import { MessagePane, InputPane, type ToolBarItem } from "~/components/pane";
-import { AssistantMessage } from "~/components/message/AssistantMessage";
-import { ToolMessage } from "~/components/message/ToolMessage";
-import { UserMessage } from "~/components/message/UserMessage";
-import { ErrorMessage } from "~/components/message/ErrorMessage";
-import {
-  useAgent,
-  type RenderMessage,
-  type RenderUserMessage,
-  type RenderAssistantMessage,
-  type RenderToolCallMessage,
-  type RenderErrorMessage,
-} from "~/hooks";
+import { UserEntry, AssistantEntry, ErrorEntry } from "~/components/entry";
+import { useAgent, type EntryData } from "~/hooks";
 import { cn } from "~/utils";
 import { ChatHeader } from "./ChatHeader";
 
@@ -75,42 +64,28 @@ export interface ChatProps {
 }
 
 /**
- * Render a single message based on its type
+ * Render a single entry based on its type
  */
-function renderMessage(message: RenderMessage): React.ReactNode {
-  switch (message.subtype) {
-    case "user": {
-      const userMsg = message as RenderUserMessage;
-      return <UserMessage key={message.id} content={userMsg.content} status={userMsg.status} />;
-    }
+function renderEntry(entry: EntryData, streamingText: string): React.ReactNode {
+  switch (entry.type) {
+    case "user":
+      return <UserEntry key={entry.id} entry={entry} />;
 
-    case "assistant": {
-      const assistantMsg = message as RenderAssistantMessage;
+    case "assistant":
       return (
-        <AssistantMessage
-          key={message.id}
-          status={assistantMsg.status}
-          content={assistantMsg.content}
+        <AssistantEntry
+          key={entry.id}
+          entry={entry}
+          streamingText={
+            entry.status === "streaming" || entry.status === "thinking" || entry.status === "queued"
+              ? streamingText
+              : undefined
+          }
         />
       );
-    }
 
-    case "tool-call": {
-      const toolMsg = message as RenderToolCallMessage;
-      return (
-        <ToolMessage
-          key={message.id}
-          toolCall={toolMsg.toolCall}
-          toolResult={toolMsg.toolResult}
-          timestamp={toolMsg.timestamp}
-        />
-      );
-    }
-
-    case "error": {
-      const errorMsg = message as RenderErrorMessage;
-      return <ErrorMessage key={message.id} content={errorMsg.content} />;
-    }
+    case "error":
+      return <ErrorEntry key={entry.id} entry={entry} />;
 
     default:
       return null;
@@ -130,11 +105,8 @@ export function Chat({
   inputHeightRatio = 0.25,
   className,
 }: ChatProps) {
-  // Use unified message state
-  const { messages, pendingAssistant, streaming, status, send, interrupt } = useAgent(
-    agentx,
-    imageId ?? null
-  );
+  // Use Entry-first state
+  const { entries, streamingText, status, send, interrupt } = useAgent(agentx, imageId ?? null);
 
   // Determine loading state
   const isLoading =
@@ -188,23 +160,11 @@ export function Chat({
   return (
     <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Header */}
-      <ChatHeader agentName={agentName} status={status} messageCount={messages.length} />
+      <ChatHeader agentName={agentName} status={status} messageCount={entries.length} />
 
       {/* Message area */}
       <div style={{ height: messageHeight }} className="min-h-0">
-        <MessagePane>
-          {/* Completed messages */}
-          {messages.map((message) => renderMessage(message))}
-
-          {/* Pending assistant (streaming) */}
-          {pendingAssistant && (
-            <AssistantMessage
-              key="pending-assistant"
-              status={pendingAssistant.status}
-              streaming={streaming}
-            />
-          )}
-        </MessagePane>
+        <MessagePane>{entries.map((entry) => renderEntry(entry, streamingText))}</MessagePane>
       </div>
 
       {/* Input area */}

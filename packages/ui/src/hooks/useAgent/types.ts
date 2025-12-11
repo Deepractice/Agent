@@ -1,10 +1,30 @@
 /**
  * Types for useAgent hook
  *
- * Unified message state management with reducer pattern.
+ * Entry-first design: directly produces EntryData for UI rendering.
  */
 
 import type { Message, AgentState, ToolCallMessage, ToolResultMessage } from "agentxjs";
+import type {
+  EntryData,
+  UserEntryData,
+  AssistantEntryData,
+  ErrorEntryData,
+  ToolBlockData,
+  UserEntryStatus,
+  AssistantEntryStatus,
+} from "~/components/entry/types";
+
+// Re-export entry types for convenience
+export type {
+  EntryData,
+  UserEntryData,
+  AssistantEntryData,
+  ErrorEntryData,
+  ToolBlockData,
+  UserEntryStatus,
+  AssistantEntryStatus,
+};
 
 // ============================================================================
 // Status Types
@@ -15,119 +35,32 @@ import type { Message, AgentState, ToolCallMessage, ToolResultMessage } from "ag
  */
 export type AgentStatus = AgentState;
 
-/**
- * Status for user messages
- */
-export type UserMessageStatus = "pending" | "success" | "error" | "interrupted";
-
-/**
- * Status for assistant messages (4-state lifecycle)
- */
-export type AssistantMessageStatus = "queued" | "thinking" | "responding" | "completed";
-
 // ============================================================================
-// Render Message Types
+// Entry State
 // ============================================================================
 
 /**
- * Tool result embedded in tool-call message
+ * Entry state managed by reducer
+ *
+ * ID Design:
+ * - entry.id: frontend instance ID, never changes (used for React key, internal tracking)
+ * - entry.messageId: backend message ID, set on message_start (used for tool_call association)
  */
-export interface EmbeddedToolResult {
-  output: unknown;
-  duration?: number;
-}
+export interface EntryState {
+  /** Ordered list of entries */
+  entries: EntryData[];
 
-/**
- * Base render message
- */
-interface BaseRenderMessage {
-  id: string;
-  timestamp: number;
-}
+  /** Set of entry IDs for deduplication */
+  entryIds: Set<string>;
 
-/**
- * User message for rendering
- */
-export interface RenderUserMessage extends BaseRenderMessage {
-  role: "user";
-  subtype: "user";
-  content: string;
-  status: UserMessageStatus;
-  errorCode?: string;
-}
+  /** Map of toolCallId -> parent entry id for pairing tool results */
+  pendingToolCalls: Map<string, string>;
 
-/**
- * Assistant message for rendering
- */
-export interface RenderAssistantMessage extends BaseRenderMessage {
-  role: "assistant";
-  subtype: "assistant";
-  content: string;
-  status: AssistantMessageStatus;
-}
+  /** Current streaming assistant entry id (if any) */
+  streamingEntryId: string | null;
 
-/**
- * Tool call message for rendering (with embedded result)
- */
-export interface RenderToolCallMessage extends BaseRenderMessage {
-  role: "assistant";
-  subtype: "tool-call";
-  toolCall: {
-    id: string;
-    name: string;
-    input: unknown;
-  };
-  toolResult?: EmbeddedToolResult;
-}
-
-/**
- * Error message for rendering
- */
-export interface RenderErrorMessage extends BaseRenderMessage {
-  role: "system";
-  subtype: "error";
-  content: string;
-}
-
-/**
- * Union type for all render messages
- */
-export type RenderMessage =
-  | RenderUserMessage
-  | RenderAssistantMessage
-  | RenderToolCallMessage
-  | RenderErrorMessage;
-
-// ============================================================================
-// Message State
-// ============================================================================
-
-/**
- * Pending assistant state
- */
-export interface PendingAssistant {
-  id: string;
-  status: "queued" | "thinking" | "responding";
-}
-
-/**
- * Message state managed by reducer
- */
-export interface MessageState {
-  /** Ordered list of render messages */
-  messages: RenderMessage[];
-
-  /** Current pending assistant (if any) */
-  pendingAssistant: PendingAssistant | null;
-
-  /** Streaming text for responding state */
-  streaming: string;
-
-  /** Set of message IDs for deduplication */
-  messageIds: Set<string>;
-
-  /** Map of toolCallId -> message index for pairing */
-  pendingToolCalls: Map<string, number>;
+  /** Accumulated streaming text */
+  streamingText: string;
 
   /** Errors */
   errors: UIError[];
@@ -137,22 +70,28 @@ export interface MessageState {
 }
 
 /**
- * Actions for message reducer
+ * Actions for entry reducer
  */
-export type MessageAction =
+export type EntryAction =
   | { type: "LOAD_HISTORY"; messages: Message[] }
   | { type: "RESET" }
-  | { type: "USER_MESSAGE_ADD"; message: RenderUserMessage }
-  | { type: "USER_MESSAGE_STATUS"; status: UserMessageStatus; errorCode?: string }
-  | { type: "PENDING_ASSISTANT_ADD"; id: string }
-  | { type: "PENDING_ASSISTANT_STATUS"; status: "thinking" | "responding" }
-  | { type: "TEXT_DELTA"; text: string }
-  | { type: "ASSISTANT_COMPLETE"; message: Message }
-  | { type: "TOOL_CALL"; message: ToolCallMessage }
-  | { type: "TOOL_RESULT"; message: ToolResultMessage }
-  | { type: "ERROR_MESSAGE"; message: Message }
+  // User entry actions
+  | { type: "USER_ENTRY_ADD"; entry: UserEntryData }
+  | { type: "USER_ENTRY_STATUS"; status: UserEntryStatus; errorCode?: string }
+  // Assistant entry actions
+  | { type: "ASSISTANT_ENTRY_START"; id: string }
+  | { type: "ASSISTANT_ENTRY_STATUS"; status: AssistantEntryStatus }
+  | { type: "ASSISTANT_ENTRY_TEXT_DELTA"; text: string }
+  | { type: "ASSISTANT_ENTRY_MESSAGE_START"; messageId: string }
+  | { type: "ASSISTANT_ENTRY_COMPLETE"; message: Message }
+  // Tool block actions
+  | { type: "TOOL_BLOCK_ADD"; message: ToolCallMessage }
+  | { type: "TOOL_BLOCK_RESULT"; message: ToolResultMessage }
+  // Error actions
+  | { type: "ERROR_ENTRY_ADD"; message: Message }
   | { type: "ERROR_ADD"; error: UIError }
   | { type: "ERRORS_CLEAR" }
+  // Agent status
   | { type: "AGENT_STATUS"; status: AgentStatus };
 
 // ============================================================================
@@ -176,14 +115,11 @@ export interface UIError {
  * Return type of useAgent hook
  */
 export interface UseAgentResult {
-  /** All completed messages */
-  messages: RenderMessage[];
+  /** All entries (user, assistant, error) */
+  entries: EntryData[];
 
-  /** Current pending assistant (if any) */
-  pendingAssistant: PendingAssistant | null;
-
-  /** Streaming text */
-  streaming: string;
+  /** Current streaming text (for streaming assistant entry) */
+  streamingText: string;
 
   /** Agent status */
   status: AgentStatus;
@@ -200,8 +136,8 @@ export interface UseAgentResult {
   /** Whether agent is processing */
   isLoading: boolean;
 
-  /** Clear all messages */
-  clearMessages: () => void;
+  /** Clear all entries */
+  clearEntries: () => void;
 
   /** Clear all errors */
   clearErrors: () => void;
