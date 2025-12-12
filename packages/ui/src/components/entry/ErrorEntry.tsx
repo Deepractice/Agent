@@ -20,13 +20,13 @@
 import * as React from "react";
 import { MessageAvatar } from "~/components/message/MessageAvatar";
 import { cn } from "~/utils/utils";
-import type { ErrorEntryData } from "./types";
+import type { ErrorConversationData } from "./types";
 
 export interface ErrorEntryProps {
   /**
-   * Error entry data
+   * Error conversation data
    */
-  entry: ErrorEntryData;
+  entry: ErrorConversationData;
   /**
    * Additional class name
    */

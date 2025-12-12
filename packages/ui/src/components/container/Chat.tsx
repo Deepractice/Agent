@@ -2,11 +2,11 @@
  * Chat - Chat interface component
  *
  * Business component that combines MessagePane + InputPane with useAgent hook.
- * Displays entries and handles sending/receiving.
+ * Displays conversations and handles sending/receiving.
  *
- * Uses Entry-first design:
- * - entries: all conversation entries (user, assistant, error)
- * - streamingText: current streaming text for assistant entry
+ * Uses Conversation-first design:
+ * - conversations: all conversation entries (user, assistant, error)
+ * - streamingText: current streaming text for assistant conversation
  *
  * @example
  * ```tsx
@@ -22,7 +22,7 @@ import type { AgentX } from "agentxjs";
 import { Save, Smile, Paperclip, FolderOpen } from "lucide-react";
 import { MessagePane, InputPane, type ToolBarItem } from "~/components/pane";
 import { UserEntry, AssistantEntry, ErrorEntry } from "~/components/entry";
-import { useAgent, type EntryData } from "~/hooks";
+import { useAgent, type ConversationData } from "~/hooks";
 import { cn } from "~/utils";
 import { ChatHeader } from "./ChatHeader";
 
@@ -64,20 +64,26 @@ export interface ChatProps {
 }
 
 /**
- * Render a single entry based on its type
+ * Render a single conversation based on its type
  */
-function renderEntry(entry: EntryData, streamingText: string): React.ReactNode {
-  switch (entry.type) {
+function renderConversation(
+  conversation: ConversationData,
+  streamingText: string
+): React.ReactNode {
+  switch (conversation.type) {
     case "user":
-      return <UserEntry key={entry.id} entry={entry} />;
+      return <UserEntry key={conversation.id} entry={conversation} />;
 
     case "assistant":
       return (
         <AssistantEntry
-          key={entry.id}
-          entry={entry}
+          key={conversation.id}
+          entry={conversation}
           streamingText={
-            entry.status === "streaming" || entry.status === "thinking" || entry.status === "queued"
+            conversation.status === "streaming" ||
+            conversation.status === "thinking" ||
+            conversation.status === "processing" ||
+            conversation.status === "queued"
               ? streamingText
               : undefined
           }
@@ -85,7 +91,7 @@ function renderEntry(entry: EntryData, streamingText: string): React.ReactNode {
       );
 
     case "error":
-      return <ErrorEntry key={entry.id} entry={entry} />;
+      return <ErrorEntry key={conversation.id} entry={conversation} />;
 
     default:
       return null;
@@ -105,8 +111,11 @@ export function Chat({
   inputHeightRatio = 0.25,
   className,
 }: ChatProps) {
-  // Use Entry-first state
-  const { entries, streamingText, status, send, interrupt } = useAgent(agentx, imageId ?? null);
+  // Use Conversation-first state
+  const { conversations, streamingText, status, send, interrupt } = useAgent(
+    agentx,
+    imageId ?? null
+  );
 
   // Determine loading state
   const isLoading =
@@ -160,11 +169,13 @@ export function Chat({
   return (
     <div className={cn("flex flex-col h-full bg-background", className)}>
       {/* Header */}
-      <ChatHeader agentName={agentName} status={status} messageCount={entries.length} />
+      <ChatHeader agentName={agentName} status={status} messageCount={conversations.length} />
 
       {/* Message area */}
       <div style={{ height: messageHeight }} className="min-h-0">
-        <MessagePane>{entries.map((entry) => renderEntry(entry, streamingText))}</MessagePane>
+        <MessagePane>
+          {conversations.map((conv) => renderConversation(conv, streamingText))}
+        </MessagePane>
       </div>
 
       {/* Input area */}

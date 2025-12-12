@@ -1,29 +1,29 @@
 /**
  * Types for useAgent hook
  *
- * Entry-first design: directly produces EntryData for UI rendering.
+ * Conversation-first design: directly produces ConversationData for UI rendering.
  */
 
 import type { Message, AgentState, ToolCallMessage, ToolResultMessage } from "agentxjs";
 import type {
-  EntryData,
-  UserEntryData,
-  AssistantEntryData,
-  ErrorEntryData,
+  ConversationData,
+  UserConversationData,
+  AssistantConversationData,
+  ErrorConversationData,
   ToolBlockData,
-  UserEntryStatus,
-  AssistantEntryStatus,
+  UserConversationStatus,
+  AssistantConversationStatus,
 } from "~/components/entry/types";
 
-// Re-export entry types for convenience
+// Re-export conversation types for convenience
 export type {
-  EntryData,
-  UserEntryData,
-  AssistantEntryData,
-  ErrorEntryData,
+  ConversationData,
+  UserConversationData,
+  AssistantConversationData,
+  ErrorConversationData,
   ToolBlockData,
-  UserEntryStatus,
-  AssistantEntryStatus,
+  UserConversationStatus,
+  AssistantConversationStatus,
 };
 
 // ============================================================================
@@ -36,28 +36,28 @@ export type {
 export type AgentStatus = AgentState;
 
 // ============================================================================
-// Entry State
+// Conversation State
 // ============================================================================
 
 /**
- * Entry state managed by reducer
+ * Conversation state managed by reducer
  *
  * ID Design:
- * - entry.id: frontend instance ID, never changes (used for React key, internal tracking)
- * - entry.messageId: backend message ID, set on message_start (used for tool_call association)
+ * - conversation.id: frontend instance ID, never changes (used for React key, internal tracking)
+ * - conversation.messageIds: backend message IDs, accumulated from message_start events
  */
-export interface EntryState {
-  /** Ordered list of entries */
-  entries: EntryData[];
+export interface ConversationState {
+  /** Ordered list of conversations */
+  conversations: ConversationData[];
 
-  /** Set of entry IDs for deduplication */
-  entryIds: Set<string>;
+  /** Set of conversation IDs for deduplication */
+  conversationIds: Set<string>;
 
-  /** Map of toolCallId -> parent entry id for pairing tool results */
+  /** Map of toolCallId -> parent conversation id for pairing tool results */
   pendingToolCalls: Map<string, string>;
 
-  /** Current streaming assistant entry id (if any) */
-  streamingEntryId: string | null;
+  /** Current streaming assistant conversation id (if any) */
+  streamingConversationId: string | null;
 
   /** Accumulated streaming text */
   streamingText: string;
@@ -70,25 +70,26 @@ export interface EntryState {
 }
 
 /**
- * Actions for entry reducer
+ * Actions for conversation reducer
  */
-export type EntryAction =
+export type ConversationAction =
   | { type: "LOAD_HISTORY"; messages: Message[] }
   | { type: "RESET" }
-  // User entry actions
-  | { type: "USER_ENTRY_ADD"; entry: UserEntryData }
-  | { type: "USER_ENTRY_STATUS"; status: UserEntryStatus; errorCode?: string }
-  // Assistant entry actions
-  | { type: "ASSISTANT_ENTRY_START"; id: string }
-  | { type: "ASSISTANT_ENTRY_STATUS"; status: AssistantEntryStatus }
-  | { type: "ASSISTANT_ENTRY_TEXT_DELTA"; text: string }
-  | { type: "ASSISTANT_ENTRY_MESSAGE_START"; messageId: string }
-  | { type: "ASSISTANT_ENTRY_COMPLETE"; message: Message }
+  // User conversation actions
+  | { type: "USER_CONVERSATION_ADD"; conversation: UserConversationData }
+  | { type: "USER_CONVERSATION_STATUS"; status: UserConversationStatus; errorCode?: string }
+  // Assistant conversation actions
+  | { type: "ASSISTANT_CONVERSATION_START"; id: string }
+  | { type: "ASSISTANT_CONVERSATION_STATUS"; status: AssistantConversationStatus }
+  | { type: "ASSISTANT_CONVERSATION_TEXT_DELTA"; text: string }
+  | { type: "ASSISTANT_CONVERSATION_MESSAGE_START"; messageId: string }
+  | { type: "ASSISTANT_CONVERSATION_CONTENT"; message: Message }
+  | { type: "ASSISTANT_CONVERSATION_FINISH" }
   // Tool block actions
   | { type: "TOOL_BLOCK_ADD"; message: ToolCallMessage }
   | { type: "TOOL_BLOCK_RESULT"; message: ToolResultMessage }
   // Error actions
-  | { type: "ERROR_ENTRY_ADD"; message: Message }
+  | { type: "ERROR_CONVERSATION_ADD"; message: Message }
   | { type: "ERROR_ADD"; error: UIError }
   | { type: "ERRORS_CLEAR" }
   // Agent status
@@ -115,10 +116,10 @@ export interface UIError {
  * Return type of useAgent hook
  */
 export interface UseAgentResult {
-  /** All entries (user, assistant, error) */
-  entries: EntryData[];
+  /** All conversations (user, assistant, error) */
+  conversations: ConversationData[];
 
-  /** Current streaming text (for streaming assistant entry) */
+  /** Current streaming text (for streaming assistant conversation) */
   streamingText: string;
 
   /** Agent status */
@@ -136,8 +137,8 @@ export interface UseAgentResult {
   /** Whether agent is processing */
   isLoading: boolean;
 
-  /** Clear all entries */
-  clearEntries: () => void;
+  /** Clear all conversations */
+  clearConversations: () => void;
 
   /** Clear all errors */
   clearErrors: () => void;

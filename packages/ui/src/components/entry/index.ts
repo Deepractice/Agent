@@ -1,26 +1,26 @@
 /**
- * Entry Components
+ * Conversation Components
  *
- * Entry-first design for chat UI rendering.
- * Entry = one party's complete utterance in conversation.
- * Block = component within an Entry.
+ * Conversation-first design for chat UI rendering.
+ * Conversation = one party's complete utterance in a turn.
+ * Block = component within a Conversation.
  */
 
 // Types
 export type {
-  EntryData,
-  UserEntryData,
-  AssistantEntryData,
-  ErrorEntryData,
+  ConversationData,
+  UserConversationData,
+  AssistantConversationData,
+  ErrorConversationData,
   ToolBlockData,
-  UserEntryStatus,
-  AssistantEntryStatus,
+  UserConversationStatus,
+  AssistantConversationStatus,
   ToolBlockStatus,
 } from "./types";
 
-export { isUserEntry, isAssistantEntry, isErrorEntry } from "./types";
+export { isUserConversation, isAssistantConversation, isErrorConversation } from "./types";
 
-// Entry components
+// Conversation components (keep old names for now, will rename files later)
 export { UserEntry, type UserEntryProps } from "./UserEntry";
 export { AssistantEntry, type AssistantEntryProps } from "./AssistantEntry";
 export { ErrorEntry, type ErrorEntryProps } from "./ErrorEntry";

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { AssistantEntry } from "./AssistantEntry";
-import type { AssistantEntryData, ToolBlockData } from "./types";
+import type { AssistantConversationData, ToolBlockData } from "./types";
 
 const meta: Meta<typeof AssistantEntry> = {
   title: "Entry/AssistantEntry",
@@ -14,18 +14,20 @@ const meta: Meta<typeof AssistantEntry> = {
 export default meta;
 type Story = StoryObj<typeof AssistantEntry>;
 
-const streamingEntry: AssistantEntryData = {
+const streamingEntry: AssistantConversationData = {
   type: "assistant",
   id: "msg_001",
+  messageIds: [],
   content: "",
   timestamp: Date.now(),
   status: "streaming",
   blocks: [],
 };
 
-const completedEntry: AssistantEntryData = {
+const completedEntry: AssistantConversationData = {
   type: "assistant",
   id: "msg_002",
+  messageIds: ["msg_002"],
   content:
     "I'd be happy to help you with that! Here's what you need to know about TypeScript generics...",
   timestamp: Date.now(),
@@ -61,45 +63,50 @@ const errorToolBlock: ToolBlockData = {
   duration: 0.02,
 };
 
-const withToolsEntry: AssistantEntryData = {
+const withToolsEntry: AssistantConversationData = {
   type: "assistant",
   id: "msg_003",
+  messageIds: ["msg_003"],
   content: "Let me check that for you.",
   timestamp: Date.now(),
   status: "completed",
   blocks: [successToolBlock],
 };
 
-const withMultipleToolsEntry: AssistantEntryData = {
+const withMultipleToolsEntry: AssistantConversationData = {
   type: "assistant",
   id: "msg_004",
+  messageIds: ["msg_004"],
   content: "I'll run a few commands to help you.",
   timestamp: Date.now(),
   status: "completed",
   blocks: [successToolBlock, errorToolBlock],
 };
 
-const streamingWithToolEntry: AssistantEntryData = {
+const streamingWithToolEntry: AssistantConversationData = {
   type: "assistant",
   id: "msg_005",
+  messageIds: [],
   content: "",
   timestamp: Date.now(),
   status: "streaming",
   blocks: [executingToolBlock],
 };
 
-const toolOnlyEntry: AssistantEntryData = {
+const toolOnlyEntry: AssistantConversationData = {
   type: "assistant",
   id: "msg_006",
+  messageIds: ["msg_006"],
   content: "",
   timestamp: Date.now(),
   status: "completed",
   blocks: [successToolBlock, successToolBlock],
 };
 
-const longContentEntry: AssistantEntryData = {
+const longContentEntry: AssistantConversationData = {
   type: "assistant",
   id: "msg_007",
+  messageIds: ["msg_007"],
   content: `Here's a detailed explanation of TypeScript generics:
 
 ## What are Generics?

@@ -92,6 +92,7 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
       category: event.category,
       source: event.source,
       context: event.context,
+      data: event.data,
     });
 
     wsServer.broadcast(JSON.stringify(event));

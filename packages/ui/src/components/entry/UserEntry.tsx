@@ -22,13 +22,13 @@ import { Loader2, Check, AlertCircle, PauseCircle } from "lucide-react";
 import { MessageAvatar } from "~/components/message/MessageAvatar";
 import { MessageContent } from "~/components/message/MessageContent";
 import { cn } from "~/utils/utils";
-import type { UserEntryData, UserEntryStatus } from "./types";
+import type { UserConversationData, UserConversationStatus } from "./types";
 
 export interface UserEntryProps {
   /**
-   * User entry data
+   * User conversation data
    */
-  entry: UserEntryData;
+  entry: UserConversationData;
   /**
    * Additional class name
    */
@@ -38,7 +38,7 @@ export interface UserEntryProps {
 /**
  * Status icon component
  */
-const StatusIcon: React.FC<{ status: UserEntryStatus }> = ({ status }) => {
+const StatusIcon: React.FC<{ status: UserConversationStatus }> = ({ status }) => {
   const iconClassName = "w-4 h-4 flex-shrink-0";
 
   switch (status) {

@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { ErrorEntry } from "./ErrorEntry";
-import type { ErrorEntryData } from "./types";
+import type { ErrorConversationData } from "./types";
 
 const meta: Meta<typeof ErrorEntry> = {
   title: "Entry/ErrorEntry",
@@ -14,14 +14,14 @@ const meta: Meta<typeof ErrorEntry> = {
 export default meta;
 type Story = StoryObj<typeof ErrorEntry>;
 
-const basicError: ErrorEntryData = {
+const basicError: ErrorConversationData = {
   type: "error",
   id: "err_001",
   content: "Something went wrong. Please try again.",
   timestamp: Date.now(),
 };
 
-const errorWithCode: ErrorEntryData = {
+const errorWithCode: ErrorConversationData = {
   type: "error",
   id: "err_002",
   content: "Failed to connect to the server. Please check your network connection.",
@@ -29,7 +29,7 @@ const errorWithCode: ErrorEntryData = {
   errorCode: "CONNECTION_ERROR",
 };
 
-const rateLimitError: ErrorEntryData = {
+const rateLimitError: ErrorConversationData = {
   type: "error",
   id: "err_003",
   content: "You have exceeded the rate limit. Please wait a moment before trying again.",
@@ -37,7 +37,7 @@ const rateLimitError: ErrorEntryData = {
   errorCode: "RATE_LIMIT_EXCEEDED",
 };
 
-const authError: ErrorEntryData = {
+const authError: ErrorConversationData = {
   type: "error",
   id: "err_004",
   content: "Your session has expired. Please log in again to continue.",
@@ -45,7 +45,7 @@ const authError: ErrorEntryData = {
   errorCode: "AUTH_EXPIRED",
 };
 
-const longError: ErrorEntryData = {
+const longError: ErrorConversationData = {
   type: "error",
   id: "err_005",
   content: `An unexpected error occurred while processing your request.

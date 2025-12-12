@@ -1,6 +1,6 @@
 import type { Meta, StoryObj } from "@storybook/react";
 import { UserEntry } from "./UserEntry";
-import type { UserEntryData } from "./types";
+import type { UserConversationData } from "./types";
 
 const meta: Meta<typeof UserEntry> = {
   title: "Entry/UserEntry",
@@ -14,7 +14,7 @@ const meta: Meta<typeof UserEntry> = {
 export default meta;
 type Story = StoryObj<typeof UserEntry>;
 
-const pendingEntry: UserEntryData = {
+const pendingEntry: UserConversationData = {
   type: "user",
   id: "msg_001",
   content: "Hello, can you help me with a coding question?",
@@ -22,7 +22,7 @@ const pendingEntry: UserEntryData = {
   status: "pending",
 };
 
-const successEntry: UserEntryData = {
+const successEntry: UserConversationData = {
   type: "user",
   id: "msg_002",
   content: "What is the best way to handle async errors in TypeScript?",
@@ -30,7 +30,7 @@ const successEntry: UserEntryData = {
   status: "success",
 };
 
-const errorEntry: UserEntryData = {
+const errorEntry: UserConversationData = {
   type: "user",
   id: "msg_003",
   content: "This message failed to send",
@@ -39,7 +39,7 @@ const errorEntry: UserEntryData = {
   errorCode: "NETWORK_ERROR",
 };
 
-const interruptedEntry: UserEntryData = {
+const interruptedEntry: UserConversationData = {
   type: "user",
   id: "msg_004",
   content: "I interrupted this request",
@@ -47,7 +47,7 @@ const interruptedEntry: UserEntryData = {
   status: "interrupted",
 };
 
-const longMessageEntry: UserEntryData = {
+const longMessageEntry: UserConversationData = {
   type: "user",
   id: "msg_005",
   content: `I have a complex question about TypeScript generics.

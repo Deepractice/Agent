@@ -9,12 +9,12 @@ import { Loader2, Check, AlertCircle, PauseCircle } from "lucide-react";
 import { MessageAvatar } from "./MessageAvatar";
 import { MessageContent } from "./MessageContent";
 import { cn } from "~/utils/utils";
-import type { UserEntryStatus } from "~/hooks/useAgent";
+import type { UserConversationStatus } from "~/hooks/useAgent";
 
 /**
  * @deprecated Use UserEntry from ~/components/entry instead
  */
-type UserMessageStatus = UserEntryStatus;
+type UserMessageStatus = UserConversationStatus;
 
 export interface UserMessageProps {
   /**

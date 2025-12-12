@@ -40,13 +40,13 @@ import { MessageAvatar } from "~/components/message/MessageAvatar";
 import { MessageContent } from "~/components/message/MessageContent";
 import { ToolBlock } from "./blocks/ToolBlock";
 import { cn } from "~/utils/utils";
-import type { AssistantEntryData } from "./types";
+import type { AssistantConversationData } from "./types";
 
 export interface AssistantEntryProps {
   /**
-   * Assistant entry data
+   * Assistant conversation data
    */
-  entry: AssistantEntryData;
+  entry: AssistantConversationData;
   /**
    * Streaming text (for streaming status)
    */
@@ -67,9 +67,9 @@ export const AssistantEntry: React.FC<AssistantEntryProps> = ({
 }) => {
   const [dots, setDots] = React.useState("");
 
-  // Animated dots for queued/thinking states
+  // Animated dots for queued/processing/thinking states
   React.useEffect(() => {
-    if (entry.status === "queued" || entry.status === "thinking") {
+    if (entry.status === "queued" || entry.status === "processing" || entry.status === "thinking") {
       const interval = setInterval(() => {
         setDots((prev) => (prev.length >= 3 ? "" : prev + "."));
       }, 500);
@@ -83,6 +83,9 @@ export const AssistantEntry: React.FC<AssistantEntryProps> = ({
     switch (entry.status) {
       case "queued":
         return <span className="text-muted-foreground">Queued{dots}</span>;
+
+      case "processing":
+        return <span className="text-muted-foreground">Processing{dots}</span>;
 
       case "thinking":
         return <span className="text-muted-foreground">Thinking{dots}</span>;
@@ -106,6 +109,7 @@ export const AssistantEntry: React.FC<AssistantEntryProps> = ({
   // Determine if we should show text content area
   const shouldShowTextContent =
     entry.status === "queued" ||
+    entry.status === "processing" ||
     entry.status === "thinking" ||
     entry.status === "streaming" ||
     (entry.status === "completed" && entry.content.length > 0);

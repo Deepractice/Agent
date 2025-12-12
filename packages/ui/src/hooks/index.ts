@@ -6,14 +6,14 @@
  * - Agent = transient runtime instance (auto-activated)
  * - Session = internal message storage (not exposed to UI)
  *
- * Entry-First Design:
- * - useAgent returns EntryData[] directly for UI rendering
- * - Entry = one party's complete utterance (user, assistant, error)
- * - Block = component within Entry (e.g., ToolBlock inside AssistantEntry)
+ * Conversation-First Design:
+ * - useAgent returns ConversationData[] directly for UI rendering
+ * - Conversation = one party's complete utterance (user, assistant, error)
+ * - Block = component within Conversation (e.g., ToolBlock inside AssistantConversation)
  *
  * Hooks:
  * - useAgentX: Create and manage AgentX instance
- * - useAgent: Subscribe to agent events, returns EntryData[]
+ * - useAgent: Subscribe to agent events, returns ConversationData[]
  * - useImages: Manage conversations (list, create, run, stop, delete)
  *
  * @example
@@ -28,18 +28,18 @@
  *   const { images, createImage, runImage, stopImage, deleteImage } = useImages(agentx);
  *
  *   // Current conversation - use imageId, agent auto-activates on first message
- *   const { entries, streamingText, send, isLoading } = useAgent(agentx, currentImageId);
+ *   const { conversations, streamingText, send, isLoading } = useAgent(agentx, currentImageId);
  *
  *   return (
  *     <div>
- *       {entries.map(entry => {
- *         switch (entry.type) {
+ *       {conversations.map(conv => {
+ *         switch (conv.type) {
  *           case 'user':
- *             return <UserEntry key={entry.id} entry={entry} />;
+ *             return <UserEntry key={conv.id} entry={conv} />;
  *           case 'assistant':
- *             return <AssistantEntry key={entry.id} entry={entry} streamingText={streamingText} />;
+ *             return <AssistantEntry key={conv.id} entry={conv} streamingText={streamingText} />;
  *           case 'error':
- *             return <ErrorEntry key={entry.id} entry={entry} />;
+ *             return <ErrorEntry key={conv.id} entry={conv} />;
  *         }
  *       })}
  *     </div>
@@ -53,13 +53,13 @@ export {
   type UseAgentResult,
   type UseAgentOptions,
   type AgentStatus,
-  type EntryData,
-  type UserEntryData,
-  type AssistantEntryData,
-  type ErrorEntryData,
+  type ConversationData,
+  type UserConversationData,
+  type AssistantConversationData,
+  type ErrorConversationData,
   type ToolBlockData,
-  type UserEntryStatus,
-  type AssistantEntryStatus,
+  type UserConversationStatus,
+  type AssistantConversationStatus,
   type UIError,
 } from "./useAgent";
 
