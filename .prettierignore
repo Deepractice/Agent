@@ -43,5 +43,8 @@ yarn.lock
 .cache/
 .DS_Store
 
+# AgentX runtime data
+.agentx/
+
 # Generated files
 CHANGELOG.md
