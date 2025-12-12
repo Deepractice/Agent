@@ -12,6 +12,4 @@ export default defineConfig({
   splitting: false,
   treeshake: true,
   target: "es2020",
-  // Bundle internal packages (private packages that won't be published)
-  noExternal: ["@agentxjs/types", "@agentxjs/common", "@agentxjs/network"],
 });

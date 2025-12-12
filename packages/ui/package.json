@@ -40,6 +40,7 @@
     "build-storybook": "storybook build"
   },
   "dependencies": {
+    "@agentxjs/common": "workspace:*",
     "@emoji-mart/data": "^1.2.1",
     "@emoji-mart/react": "^1.1.1",
     "agentxjs": "workspace:*",
@@ -57,7 +58,6 @@
     "zustand": "^5.0.2"
   },
   "devDependencies": {
-    "@agentxjs/common": "workspace:*",
     "@agentxjs/runtime": "workspace:*",
     "@storybook/addon-a11y": "^8.4.7",
     "@storybook/addon-essentials": "^8.4.7",
