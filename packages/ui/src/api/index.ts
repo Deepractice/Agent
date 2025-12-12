@@ -19,6 +19,9 @@ export * from "~/components/layout";
 // Element Components (atomic UI)
 export * from "~/components/element";
 
+// Mobile Components
+export * from "~/components/mobile";
+
 // Typography Components
 export * from "~/components/typography";
 
