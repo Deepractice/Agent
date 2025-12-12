@@ -44,6 +44,7 @@ import * as React from "react";
 import { MessageAvatar } from "~/components/message/MessageAvatar";
 import { TextBlock } from "./blocks/TextBlock";
 import { ToolBlock } from "./blocks/ToolBlock";
+import { AssistantToolbar } from "./AssistantToolbar";
 import { cn } from "~/utils/utils";
 import type { AssistantConversationData, BlockData } from "./types";
 
@@ -60,6 +61,26 @@ export interface AssistantEntryProps {
    * Current streaming text block id
    */
   currentTextBlockId?: string | null;
+  /**
+   * Callback when stop is triggered
+   */
+  onStop?: () => void;
+  /**
+   * Callback when copy button is clicked
+   */
+  onCopy?: () => void;
+  /**
+   * Callback when regenerate button is clicked
+   */
+  onRegenerate?: () => void;
+  /**
+   * Callback when like button is clicked
+   */
+  onLike?: () => void;
+  /**
+   * Callback when dislike button is clicked
+   */
+  onDislike?: () => void;
   /**
    * Additional class name
    */
@@ -103,6 +124,11 @@ export const AssistantEntry: React.FC<AssistantEntryProps> = ({
   entry,
   streamingText = "",
   currentTextBlockId,
+  onStop,
+  onCopy,
+  onRegenerate,
+  onLike,
+  onDislike,
   className,
 }) => {
   const [dots, setDots] = React.useState("");
@@ -153,6 +179,9 @@ export const AssistantEntry: React.FC<AssistantEntryProps> = ({
     (entry.status === "queued" || entry.status === "processing" || entry.status === "thinking") &&
     !hasBlocks;
 
+  // Show toolbar if any callback is provided
+  const showToolbar = onStop || onCopy || onRegenerate || onLike || onDislike;
+
   return (
     <div className={cn("flex gap-3 py-2", className)}>
       <MessageAvatar role="assistant" />
@@ -162,6 +191,18 @@ export const AssistantEntry: React.FC<AssistantEntryProps> = ({
 
         {/* Render blocks in order */}
         {entry.blocks.map((block) => renderBlock(block, streamingText, currentTextBlockId))}
+
+        {/* Toolbar */}
+        {showToolbar && (
+          <AssistantToolbar
+            status={entry.status}
+            onStop={onStop}
+            onCopy={onCopy}
+            onRegenerate={onRegenerate}
+            onLike={onLike}
+            onDislike={onDislike}
+          />
+        )}
       </div>
     </div>
   );

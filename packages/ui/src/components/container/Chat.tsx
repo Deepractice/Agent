@@ -70,7 +70,8 @@ export interface ChatProps {
 function renderConversation(
   conversation: ConversationData,
   streamingText: string,
-  currentTextBlockId: string | null
+  currentTextBlockId: string | null,
+  onStop?: () => void
 ): React.ReactNode {
   switch (conversation.type) {
     case "user":
@@ -83,6 +84,7 @@ function renderConversation(
           entry={conversation}
           streamingText={streamingText}
           currentTextBlockId={currentTextBlockId}
+          onStop={onStop}
         />
       );
 
@@ -119,6 +121,19 @@ export function Chat({
     status === "responding" ||
     status === "planning_tool" ||
     status === "awaiting_tool_result";
+
+  // ESC key to interrupt
+  React.useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape" && isLoading) {
+        e.preventDefault();
+        interrupt();
+      }
+    };
+
+    document.addEventListener("keydown", handleKeyDown);
+    return () => document.removeEventListener("keydown", handleKeyDown);
+  }, [isLoading, interrupt]);
 
   // Toolbar items
   const toolbarItems: ToolBarItem[] = React.useMemo(
@@ -170,7 +185,9 @@ export function Chat({
       {/* Message area */}
       <div style={{ height: messageHeight }} className="min-h-0">
         <MessagePane>
-          {conversations.map((conv) => renderConversation(conv, streamingText, currentTextBlockId))}
+          {conversations.map((conv) =>
+            renderConversation(conv, streamingText, currentTextBlockId, interrupt)
+          )}
         </MessagePane>
       </div>
 

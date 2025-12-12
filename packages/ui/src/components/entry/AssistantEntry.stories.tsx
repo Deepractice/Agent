@@ -277,3 +277,118 @@ export const ConversationFlow: Story = {
     </div>
   ),
 };
+
+// Stories with Stop button
+const queuedEntry: AssistantConversationData = {
+  type: "assistant",
+  id: "msg_queued",
+  messageIds: [],
+  timestamp: Date.now(),
+  status: "queued",
+  blocks: [],
+};
+
+const thinkingEntry: AssistantConversationData = {
+  type: "assistant",
+  id: "msg_thinking",
+  messageIds: [],
+  timestamp: Date.now(),
+  status: "thinking",
+  blocks: [],
+};
+
+const processingEntry: AssistantConversationData = {
+  type: "assistant",
+  id: "msg_processing",
+  messageIds: [],
+  timestamp: Date.now(),
+  status: "processing",
+  blocks: [],
+};
+
+// Toolbar handlers
+const toolbarHandlers = {
+  onStop: () => console.log("Stop clicked"),
+  onCopy: () => console.log("Copy clicked"),
+  onRegenerate: () => console.log("Regenerate clicked"),
+  onLike: () => console.log("Like clicked"),
+  onDislike: () => console.log("Dislike clicked"),
+};
+
+export const WithToolbarStreaming: Story = {
+  args: {
+    entry: streamingEntry,
+    streamingText: "I'm generating a response for you. This might take a moment...",
+    currentTextBlockId: "text_001",
+    ...toolbarHandlers,
+  },
+};
+
+export const WithToolbarCompleted: Story = {
+  args: {
+    entry: completedEntry,
+    ...toolbarHandlers,
+  },
+};
+
+export const QueuedWithToolbar: Story = {
+  args: {
+    entry: queuedEntry,
+    ...toolbarHandlers,
+  },
+};
+
+export const ThinkingWithToolbar: Story = {
+  args: {
+    entry: thinkingEntry,
+    ...toolbarHandlers,
+  },
+};
+
+export const ToolbarStates: Story = {
+  render: () => (
+    <div className="space-y-6">
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+          Queued (shows: esc to stop)
+        </h3>
+        <AssistantEntry entry={queuedEntry} {...toolbarHandlers} />
+      </div>
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+          Processing (shows: esc to stop)
+        </h3>
+        <AssistantEntry entry={processingEntry} {...toolbarHandlers} />
+      </div>
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+          Thinking (shows: esc to stop)
+        </h3>
+        <AssistantEntry entry={thinkingEntry} {...toolbarHandlers} />
+      </div>
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+          Streaming (shows: esc to stop)
+        </h3>
+        <AssistantEntry
+          entry={streamingEntry}
+          streamingText="Let me help you with that question..."
+          currentTextBlockId="text_001"
+          {...toolbarHandlers}
+        />
+      </div>
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+          Completed (shows: copy, regenerate, like, dislike)
+        </h3>
+        <AssistantEntry entry={completedEntry} {...toolbarHandlers} />
+      </div>
+      <div>
+        <h3 className="text-sm font-medium text-muted-foreground mb-2">
+          Completed with long content
+        </h3>
+        <AssistantEntry entry={longContentEntry} {...toolbarHandlers} />
+      </div>
+    </div>
+  ),
+};
