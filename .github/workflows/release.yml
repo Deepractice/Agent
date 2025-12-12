@@ -46,7 +46,7 @@ jobs:
           # Collect all public package versions
           VERSIONS=""
 
-          for pkg in apps/portagent packages/types packages/common packages/agentx packages/node-runtime packages/ui; do
+          for pkg in packages/types packages/common packages/agent packages/network packages/runtime packages/agentx packages/ui apps/portagent; do
             if [ -f "$pkg/package.json" ]; then
               PRIVATE=$(jq -r '.private // false' "$pkg/package.json")
               if [ "$PRIVATE" != "true" ]; then

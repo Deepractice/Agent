@@ -13,6 +13,9 @@ import { ConsoleLogger, type ConsoleLoggerOptions } from "./ConsoleLogger";
 // External factory injected via Runtime
 let externalFactory: LoggerFactory | null = null;
 
+// Version counter to invalidate cached real loggers
+let factoryVersion = 0;
+
 export interface LoggerFactoryConfig {
   defaultImplementation?: (name: string) => Logger;
   defaultLevel?: LogLevel;
@@ -50,14 +53,18 @@ export class LoggerFactoryImpl {
     this.loggers.clear();
     this.config = { defaultLevel: "info" };
     externalFactory = null;
+    factoryVersion++; // Invalidate all cached real loggers
   }
 
   private static createLazyLogger(name: string): Logger {
     let realLogger: Logger | null = null;
+    let loggerVersion = -1; // Track which factory version created this logger
 
     const getRealLogger = (): Logger => {
-      if (!realLogger) {
+      // Recreate logger if factory version changed (setLoggerFactory was called)
+      if (!realLogger || loggerVersion !== factoryVersion) {
         realLogger = this.createLogger(name);
+        loggerVersion = factoryVersion;
       }
       return realLogger;
     };

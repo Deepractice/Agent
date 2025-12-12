@@ -1,29 +1,38 @@
 /**
- * ToolMessage - Tool call message handler and component
+ * ToolMessage - Tool call message component
  *
- * Handler: Processes messages with subtype "tool-call"
- * Component: Displays tool call and result with ToolCard
+ * Displays tool call with embedded result using ToolCard.
+ * Result is directly embedded in props (not via metadata).
  */
 
 import * as React from "react";
-import type { Message, ToolCallMessage, ToolResultMessage } from "agentxjs";
-import { BaseMessageHandler } from "./MessageHandler";
 import { ToolCard, type ToolStatus } from "~/components/container/ToolCard";
+/**
+ * @deprecated Use ToolBlock from ~/components/entry instead
+ */
+interface EmbeddedToolResult {
+  output: unknown;
+  duration?: number;
+}
 import { cn } from "~/utils/utils";
-
-// ============================================================================
-// Component
-// ============================================================================
 
 export interface ToolMessageProps {
   /**
-   * Tool call message
+   * Tool call info
    */
-  toolCall: ToolCallMessage;
+  toolCall: {
+    id: string;
+    name: string;
+    input: unknown;
+  };
   /**
-   * Tool result message (optional, may not have arrived yet)
+   * Tool result (embedded, not separate message)
    */
-  toolResult?: ToolResultMessage;
+  toolResult?: EmbeddedToolResult;
+  /**
+   * Timestamp for calculating duration
+   */
+  timestamp: number;
   /**
    * Additional class name
    */
@@ -36,57 +45,30 @@ export interface ToolMessageProps {
 export const ToolMessage: React.FC<ToolMessageProps> = ({ toolCall, toolResult, className }) => {
   // Determine tool status
   let status: ToolStatus = "executing";
+  let isError = false;
+
   if (toolResult) {
     // Check if result indicates error
-    const outputType = toolResult.toolResult.output.type;
-    const isError =
+    const output = toolResult.output as { type?: string } | undefined;
+    const outputType = output?.type;
+    isError =
       outputType === "error-text" ||
       outputType === "error-json" ||
       outputType === "execution-denied";
     status = isError ? "error" : "success";
   }
 
-  // Calculate duration if result is available
-  const duration = toolResult ? (toolResult.timestamp - toolCall.timestamp) / 1000 : undefined;
-
   return (
     <div className={cn("py-2 ml-11 max-w-2xl", className)}>
       <ToolCard
-        name={toolCall.toolCall.name}
-        id={toolCall.toolCall.id}
+        name={toolCall.name}
+        id={toolCall.id}
         status={status}
-        input={toolCall.toolCall.input}
-        output={toolResult?.toolResult.output}
-        isError={status === "error"}
-        duration={duration}
+        input={toolCall.input as Record<string, unknown>}
+        output={toolResult?.output}
+        isError={isError}
+        duration={toolResult?.duration}
       />
     </div>
   );
 };
-
-// ============================================================================
-// Handler
-// ============================================================================
-
-/**
- * Extended message type with tool result attached
- * Chat component attaches tool-result to tool-call via metadata
- */
-interface ToolCallWithResult extends ToolCallMessage {
-  metadata?: {
-    toolResult?: ToolResultMessage;
-  };
-}
-
-export class ToolMessageHandler extends BaseMessageHandler {
-  canHandle(message: Message): boolean {
-    return message.subtype === "tool-call";
-  }
-
-  protected renderMessage(message: Message): React.ReactNode {
-    const toolCallMessage = message as ToolCallWithResult;
-    const toolResult = toolCallMessage.metadata?.toolResult;
-
-    return <ToolMessage toolCall={toolCallMessage} toolResult={toolResult} />;
-  }
-}

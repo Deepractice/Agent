@@ -27,6 +27,9 @@
     "test:watch": "vitest"
   },
   "dependencies": {
+    "@agentxjs/agent": "workspace:*",
+    "@agentxjs/common": "workspace:*",
+    "@agentxjs/types": "workspace:*",
     "@anthropic-ai/claude-agent-sdk": "^0.1.30",
     "better-sqlite3": "^11.7.0",
     "db0": "^0.3.4",
@@ -34,9 +37,6 @@
     "unstorage": "^1.14.4"
   },
   "devDependencies": {
-    "@agentxjs/agent": "workspace:*",
-    "@agentxjs/common": "workspace:*",
-    "@agentxjs/types": "workspace:*",
     "@types/better-sqlite3": "^7.6.12",
     "@types/node": "^24.9.2",
     "tsup": "^8.3.5",

@@ -8,6 +8,9 @@
 import type { AgentX, LocalConfig } from "@agentxjs/types/agentx";
 import type { SystemEvent } from "@agentxjs/types/event";
 import { WebSocketServer } from "@agentxjs/network";
+import { createLogger } from "@agentxjs/common";
+
+const logger = createLogger("agentx/LocalAgentX");
 
 export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
   // Apply logger configuration
@@ -65,6 +68,10 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
     connection.onMessage((message) => {
       try {
         const event = JSON.parse(message) as SystemEvent;
+        logger.debug("Received client message", {
+          type: event.type,
+          category: event.category,
+        });
         runtime.emit(event);
       } catch {
         // Ignore parse errors
@@ -78,6 +85,16 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
     if ((event as any).broadcastable === false) {
       return;
     }
+
+    // Log event for debugging
+    logger.debug("Broadcasting event", {
+      type: event.type,
+      category: event.category,
+      source: event.source,
+      context: event.context,
+      data: event.data,
+    });
+
     wsServer.broadcast(JSON.stringify(event));
   });
 

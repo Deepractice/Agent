@@ -1,49 +1,119 @@
 /**
  * Types for useAgent hook
+ *
+ * Conversation-first design: directly produces ConversationData for UI rendering.
+ * Block-based content: all AssistantConversation content is stored in blocks.
  */
 
-import type { Message, AgentState } from "agentxjs";
+import type { Message, AgentState, ToolCallMessage, ToolResultMessage } from "agentxjs";
+import type {
+  ConversationData,
+  UserConversationData,
+  AssistantConversationData,
+  ErrorConversationData,
+  BlockData,
+  TextBlockData,
+  ToolBlockData,
+  UserConversationStatus,
+  AssistantConversationStatus,
+} from "~/components/entry/types";
+
+// Re-export conversation types for convenience
+export type {
+  ConversationData,
+  UserConversationData,
+  AssistantConversationData,
+  ErrorConversationData,
+  BlockData,
+  TextBlockData,
+  ToolBlockData,
+  UserConversationStatus,
+  AssistantConversationStatus,
+};
+
+// ============================================================================
+// Status Types
+// ============================================================================
 
 /**
  * Agent status - use AgentState from agentxjs
  */
 export type AgentStatus = AgentState;
 
-/**
- * Status for user messages
- */
-export type UserMessageStatus = "pending" | "success" | "error" | "interrupted";
+// ============================================================================
+// Conversation State
+// ============================================================================
 
 /**
- * Status for assistant messages
+ * Conversation state managed by reducer
+ *
+ * ID Design:
+ * - conversation.id: frontend instance ID, never changes (used for React key, internal tracking)
+ * - conversation.messageIds: backend message IDs, accumulated from message_start events
+ *
+ * Block Design:
+ * - All AssistantConversation content is stored in blocks array
+ * - TextBlock: streaming/completed text content
+ * - ToolBlock: tool calls with results
+ * - currentTextBlockId tracks which TextBlock is receiving streaming text
  */
-export type AssistantMessageStatus = "queued" | "thinking" | "responding" | "success";
+export interface ConversationState {
+  /** Ordered list of conversations */
+  conversations: ConversationData[];
 
-/**
- * Combined message status type
- */
-export type MessageStatus = UserMessageStatus | AssistantMessageStatus;
+  /** Set of conversation IDs for deduplication */
+  conversationIds: Set<string>;
 
-/**
- * UI-specific metadata for messages
- */
-export interface UIMessageMetadata {
-  /** Status for messages */
-  status?: MessageStatus;
-  /** Error code if status is error */
-  errorCode?: string;
-  /** Timestamp when status changed */
-  statusChangedAt?: number;
+  /** Map of toolCallId -> parent conversation id for pairing tool results */
+  pendingToolCalls: Map<string, string>;
+
+  /** Current streaming assistant conversation id (if any) */
+  streamingConversationId: string | null;
+
+  /** Current streaming text block id (if any) */
+  currentTextBlockId: string | null;
+
+  /** Accumulated streaming text for current TextBlock */
+  streamingText: string;
+
+  /** Errors */
+  errors: UIError[];
+
+  /** Agent status */
+  agentStatus: AgentStatus;
 }
 
 /**
- * Message for UI display
- *
- * Intersection of Message with optional UI-specific metadata.
+ * Actions for conversation reducer
  */
-export type UIMessage = Message & {
-  metadata?: UIMessageMetadata;
-};
+export type ConversationAction =
+  | { type: "LOAD_HISTORY"; messages: Message[] }
+  | { type: "RESET" }
+  // User conversation actions
+  | { type: "USER_CONVERSATION_ADD"; conversation: UserConversationData }
+  | { type: "USER_CONVERSATION_STATUS"; status: UserConversationStatus; errorCode?: string }
+  // Assistant conversation actions
+  | { type: "ASSISTANT_CONVERSATION_START"; id: string }
+  | { type: "ASSISTANT_CONVERSATION_STATUS"; status: AssistantConversationStatus }
+  | { type: "ASSISTANT_CONVERSATION_MESSAGE_START"; messageId: string }
+  | { type: "ASSISTANT_CONVERSATION_FINISH" }
+  // Text block actions
+  | { type: "TEXT_BLOCK_DELTA"; text: string }
+  | { type: "TEXT_BLOCK_FINISH" }
+  // Tool block actions
+  | { type: "TOOL_BLOCK_PLANNING"; toolCallId: string; toolName: string }
+  | { type: "TOOL_BLOCK_ADD"; message: ToolCallMessage }
+  | { type: "TOOL_BLOCK_RESULT"; message: ToolResultMessage }
+  // Error actions
+  | { type: "ERROR_CONVERSATION_ADD"; message: Message }
+  | { type: "ERROR_ADD"; error: UIError }
+  | { type: "ERRORS_CLEAR" }
+  // Agent status
+  | { type: "AGENT_STATUS"; status: AgentStatus };
+
+// ============================================================================
+// Error Types
+// ============================================================================
 
 /**
  * Error info for UI
@@ -54,58 +124,45 @@ export interface UIError {
   recoverable: boolean;
 }
 
+// ============================================================================
+// Hook Types
+// ============================================================================
+
 /**
  * Return type of useAgent hook
  */
 export interface UseAgentResult {
-  /**
-   * All messages in the conversation
-   */
-  messages: UIMessage[];
+  /** All conversations (user, assistant, error) */
+  conversations: ConversationData[];
 
-  /**
-   * Current streaming text (accumulates during response)
-   */
-  streaming: string;
+  /** Current streaming text (for streaming TextBlock) */
+  streamingText: string;
 
-  /**
-   * Current agent status
-   */
+  /** Current streaming text block id */
+  currentTextBlockId: string | null;
+
+  /** Agent status */
   status: AgentStatus;
 
-  /**
-   * Errors received
-   */
+  /** Errors */
   errors: UIError[];
 
-  /**
-   * Send a message to the agent
-   */
+  /** Send a message */
   send: (text: string) => void;
 
-  /**
-   * Interrupt the current response
-   */
+  /** Interrupt current response */
   interrupt: () => void;
 
-  /**
-   * Whether the agent is currently processing
-   */
+  /** Whether agent is processing */
   isLoading: boolean;
 
-  /**
-   * Clear all messages
-   */
-  clearMessages: () => void;
+  /** Clear all conversations */
+  clearConversations: () => void;
 
-  /**
-   * Clear all errors
-   */
+  /** Clear all errors */
   clearErrors: () => void;
 
-  /**
-   * Current agent ID (if running)
-   */
+  /** Current agent ID */
   agentId: string | null;
 }
 
@@ -113,25 +170,7 @@ export interface UseAgentResult {
  * Options for useAgent hook
  */
 export interface UseAgentOptions {
-  /**
-   * Callback when a message is sent
-   */
   onSend?: (text: string) => void;
-
-  /**
-   * Callback when an error occurs
-   */
   onError?: (error: UIError) => void;
-
-  /**
-   * Callback when status changes
-   */
   onStatusChange?: (status: AgentStatus) => void;
 }
-
-/**
- * Legacy support - keep AgentIdentifier type for backwards compatibility
- */
-export type AgentIdentifier = {
-  imageId?: string;
-};

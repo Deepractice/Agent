@@ -1,59 +1,64 @@
 /**
  * useAgent - React hook for Agent event binding
  *
- * Image-First model:
- * - Use imageId to interact with conversations
- * - Agent is auto-activated when sending messages
- * - agentId is internal, used for event filtering
+ * Conversation-first, Block-based design:
+ * - Produces ConversationData[] for UI rendering
+ * - AssistantConversation contains blocks (TextBlock, ToolBlock, etc.)
+ * - Blocks are rendered in order
  *
  * @example
  * ```tsx
- * import { useAgent } from "@agentxjs/ui";
- *
  * function ChatPage({ agentx, imageId }) {
  *   const {
- *     messages,
- *     streaming,
+ *     conversations,
+ *     streamingText,
+ *     currentTextBlockId,
  *     status,
- *     errors,
  *     send,
- *     isLoading,
  *   } = useAgent(agentx, imageId);
  *
  *   return (
  *     <div>
- *       {messages.map(m => <Message key={m.id} {...m} />)}
- *       {streaming && <StreamingText text={streaming} />}
- *       <Input onSend={send} disabled={isLoading} />
+ *       {conversations.map(conv => {
+ *         switch (conv.type) {
+ *           case 'user':
+ *             return <UserEntry key={conv.id} entry={conv} />;
+ *           case 'assistant':
+ *             return (
+ *               <AssistantEntry
+ *                 key={conv.id}
+ *                 entry={conv}
+ *                 streamingText={streamingText}
+ *                 currentTextBlockId={currentTextBlockId}
+ *               />
+ *             );
+ *           case 'error':
+ *             return <ErrorEntry key={conv.id} entry={conv} />;
+ *         }
+ *       })}
  *     </div>
  *   );
  * }
  * ```
  */
 
-import { useState, useCallback, useRef, useMemo, useEffect } from "react";
+import { useReducer, useCallback, useRef, useEffect } from "react";
 import type { AgentX, Message } from "agentxjs";
 import { createLogger } from "@agentxjs/common";
-import type {
-  AgentStatus,
-  MessageStatus,
-  UIMessage,
-  UIError,
-  UseAgentResult,
-  UseAgentOptions,
-} from "./types";
-import { useMessageHistory } from "./useMessageHistory";
-import { useAgentEvents } from "./useAgentEvents";
+import type { UserConversationData, UseAgentResult, UseAgentOptions, UIError } from "./types";
+import { conversationReducer, initialConversationState } from "./conversationReducer";
 
 const logger = createLogger("ui/useAgent");
 
 /**
+ * Generate unique ID
+ */
+function generateId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
+
+/**
  * React hook for binding to Agent events via AgentX
- *
- * @param agentx - The AgentX instance
- * @param imageId - The image ID for the conversation
- * @param options - Optional configuration
- * @returns Reactive state and control functions
  */
 export function useAgent(
   agentx: AgentX | null,
@@ -62,215 +67,240 @@ export function useAgent(
 ): UseAgentResult {
   const { onSend, onError, onStatusChange } = options;
 
-  // State
-  const [messages, setMessages] = useState<UIMessage[]>([]);
-  const [streaming, setStreaming] = useState("");
-  const [status, setStatus] = useState<AgentStatus>("idle");
-  const [errors, setErrors] = useState<UIError[]>([]);
+  // Single reducer for all conversation state
+  const [state, dispatch] = useReducer(conversationReducer, initialConversationState);
 
-  // Track current agentId - use ref so event handlers always see latest value
+  // Track agent ID
   const agentIdRef = useRef<string | null>(null);
-  const [agentIdState, setAgentIdState] = useState<string | null>(null);
 
-  // Derive isLoading from status
+  // Derive isLoading from agent status
   const isLoading =
-    status === "thinking" ||
-    status === "responding" ||
-    status === "planning_tool" ||
-    status === "awaiting_tool_result";
-
-  // Message status update utility (stable function)
-  const updateLastUserMessageStatus = useCallback(
-    (messages: UIMessage[], newStatus: MessageStatus, errorCode?: string): UIMessage[] => {
-      return messages.map((m, idx) => {
-        // Update last user message with pending status
-        if (idx === messages.length - 1 && m.role === "user" && m.metadata?.status === "pending") {
-          return {
-            ...m,
-            metadata: {
-              ...m.metadata,
-              status: newStatus,
-              errorCode,
-              statusChangedAt: Date.now(),
-            },
-          };
-        }
-        return m;
-      });
-    },
-    []
-  );
-
-  // Update last assistant message status
-  const updateLastAssistantMessageStatus = useCallback(
-    (messages: UIMessage[], newStatus: MessageStatus): UIMessage[] => {
-      // Find last assistant message (iterate backwards)
-      for (let i = messages.length - 1; i >= 0; i--) {
-        if (messages[i].role === "assistant") {
-          return messages.map((m, idx) => {
-            if (idx === i) {
-              return {
-                ...m,
-                metadata: {
-                  ...m.metadata,
-                  status: newStatus,
-                  statusChangedAt: Date.now(),
-                },
-              };
-            }
-            return m;
-          });
-        }
-      }
-      return messages;
-    },
-    []
-  );
+    state.agentStatus === "thinking" ||
+    state.agentStatus === "responding" ||
+    state.agentStatus === "planning_tool" ||
+    state.agentStatus === "awaiting_tool_result";
 
   // Reset state when imageId changes
   useEffect(() => {
-    // When imageId changes, clear messages
-    // useMessageHistory will load the actual history for this image
-    setMessages([]);
-    setStreaming("");
-    setErrors([]);
-    setStatus("idle");
+    dispatch({ type: "RESET" });
     agentIdRef.current = null;
-    setAgentIdState(null);
   }, [imageId]);
 
   // Load message history
-  useMessageHistory({
-    agentx,
-    imageId,
-    onMessagesLoaded: useCallback((loadedMessages: UIMessage[]) => {
-      setMessages(loadedMessages);
-    }, []),
-  });
+  useEffect(() => {
+    if (!agentx || !imageId) return;
 
-  // Event handlers for useAgentEvents
-  const eventHandlers = useMemo(
-    () => ({
-      onTextDelta: (text: string) => {
-        setStreaming((prev) => prev + text);
-      },
-      onStatusChange: (newStatus: AgentStatus) => {
-        setStatus(newStatus);
-      },
-      onMessageReceived: (message: Message) => {
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === message.id)) return prev;
-          return [...prev, message];
-        });
-      },
-      onAssistantMessage: (message: Message) => {
-        setMessages((prev) => {
-          // Remove queued placeholder and add real assistant message with success status
-          const filtered = prev.filter(
-            (m) => !(m.role === "assistant" && m.metadata?.status !== "success")
-          );
-          return [
-            ...filtered,
-            {
-              ...message,
-              metadata: {
-                status: "success",
-                statusChangedAt: Date.now(),
-              },
-            } as UIMessage,
-          ];
-        });
-      },
-      onErrorMessage: (message: Message) => {
-        setMessages((prev) => {
-          if (prev.some((m) => m.id === message.id)) return prev;
-          return [...prev, message];
-        });
-      },
-      onError: (error: UIError) => {
-        setErrors((prev) => [...prev, error]);
-      },
-      updateLastUserMessageStatus: (status: MessageStatus, errorCode?: string) => {
-        setMessages((prev) => updateLastUserMessageStatus(prev, status, errorCode));
-      },
-      updateLastAssistantMessageStatus: (status: MessageStatus) => {
-        setMessages((prev) => updateLastAssistantMessageStatus(prev, status));
-      },
-      clearStreaming: () => {
-        setStreaming("");
-      },
-    }),
-    [updateLastUserMessageStatus, updateLastAssistantMessageStatus]
-  );
+    let mounted = true;
+
+    agentx
+      .request("image_messages_request", { imageId })
+      .then((response) => {
+        if (!mounted) return;
+        const data = response.data as unknown as { messages: Message[] };
+        if (data.messages && data.messages.length > 0) {
+          dispatch({ type: "LOAD_HISTORY", messages: data.messages });
+          logger.debug("Loaded messages from storage", { imageId, count: data.messages.length });
+        }
+      })
+      .catch((err) => {
+        logger.error("Failed to load messages", { imageId, error: err });
+      });
+
+    return () => {
+      mounted = false;
+    };
+  }, [agentx, imageId]);
 
   // Subscribe to agent events
-  useAgentEvents({
-    agentx,
-    imageId,
-    handlers: eventHandlers,
-    onStatusChangeCallback: onStatusChange,
-    onErrorCallback: onError,
-  });
+  useEffect(() => {
+    if (!agentx || !imageId) return;
+
+    const unsubscribes: Array<() => void> = [];
+
+    // Helper to check if event is for this image
+    const isForThisImage = (event: { context?: { imageId?: string } }): boolean => {
+      return event.context?.imageId === imageId;
+    };
+
+    // Stream events - message_start (add messageId to conversation)
+    unsubscribes.push(
+      agentx.on("message_start", (event) => {
+        if (!isForThisImage(event)) return;
+        const data = event.data as { messageId: string };
+        dispatch({ type: "ASSISTANT_CONVERSATION_MESSAGE_START", messageId: data.messageId });
+      })
+    );
+
+    // Stream events - text_delta (create/append to TextBlock)
+    unsubscribes.push(
+      agentx.on("text_delta", (event) => {
+        if (!isForThisImage(event)) return;
+        const data = event.data as { text: string };
+        dispatch({ type: "TEXT_BLOCK_DELTA", text: data.text });
+      })
+    );
+
+    // State events - conversation lifecycle
+    unsubscribes.push(
+      agentx.on("conversation_start", (event) => {
+        if (!isForThisImage(event)) return;
+        dispatch({ type: "AGENT_STATUS", status: "thinking" });
+        dispatch({ type: "ASSISTANT_CONVERSATION_STATUS", status: "processing" });
+        onStatusChange?.("thinking");
+      })
+    );
+
+    unsubscribes.push(
+      agentx.on("conversation_thinking", (event) => {
+        if (!isForThisImage(event)) return;
+        dispatch({ type: "AGENT_STATUS", status: "thinking" });
+        dispatch({ type: "ASSISTANT_CONVERSATION_STATUS", status: "thinking" });
+        onStatusChange?.("thinking");
+      })
+    );
+
+    unsubscribes.push(
+      agentx.on("conversation_responding", (event) => {
+        if (!isForThisImage(event)) return;
+        dispatch({ type: "AGENT_STATUS", status: "responding" });
+        dispatch({ type: "ASSISTANT_CONVERSATION_STATUS", status: "streaming" });
+        onStatusChange?.("responding");
+      })
+    );
+
+    unsubscribes.push(
+      agentx.on("conversation_end", (event) => {
+        if (!isForThisImage(event)) return;
+        // Finish the conversation - marks text block complete and conversation complete
+        dispatch({ type: "ASSISTANT_CONVERSATION_FINISH" });
+        dispatch({ type: "AGENT_STATUS", status: "idle" });
+        onStatusChange?.("idle");
+      })
+    );
+
+    unsubscribes.push(
+      agentx.on("tool_executing", (event) => {
+        if (!isForThisImage(event)) return;
+        dispatch({ type: "AGENT_STATUS", status: "planning_tool" });
+        onStatusChange?.("planning_tool");
+      })
+    );
+
+    // Stream events - tool_use_start (create planning ToolBlock)
+    unsubscribes.push(
+      agentx.on("tool_use_start", (event) => {
+        if (!isForThisImage(event)) return;
+        const data = event.data as { toolCallId: string; toolName: string };
+        dispatch({
+          type: "TOOL_BLOCK_PLANNING",
+          toolCallId: data.toolCallId,
+          toolName: data.toolName,
+        });
+      })
+    );
+
+    // Message events - assistant_message finishes current TextBlock
+    unsubscribes.push(
+      agentx.on("assistant_message", (event) => {
+        if (!isForThisImage(event)) return;
+        // Finish current text block (content was accumulated via text_delta)
+        dispatch({ type: "TEXT_BLOCK_FINISH" });
+      })
+    );
+
+    unsubscribes.push(
+      agentx.on("tool_call_message", (event) => {
+        if (!isForThisImage(event)) return;
+        const message = event.data as Message;
+        dispatch({
+          type: "TOOL_BLOCK_ADD",
+          message: message as import("agentxjs").ToolCallMessage,
+        });
+      })
+    );
+
+    unsubscribes.push(
+      agentx.on("tool_result_message", (event) => {
+        if (!isForThisImage(event)) return;
+        const message = event.data as Message;
+        dispatch({
+          type: "TOOL_BLOCK_RESULT",
+          message: message as import("agentxjs").ToolResultMessage,
+        });
+      })
+    );
+
+    unsubscribes.push(
+      agentx.on("error_message", (event) => {
+        if (!isForThisImage(event)) return;
+        const message = event.data as Message;
+        dispatch({ type: "ERROR_CONVERSATION_ADD", message });
+      })
+    );
+
+    // Error events
+    unsubscribes.push(
+      agentx.on("error_occurred", (event) => {
+        if (!isForThisImage(event)) return;
+        const error = event.data as UIError;
+        dispatch({ type: "ERROR_ADD", error });
+        dispatch({ type: "AGENT_STATUS", status: "error" });
+        dispatch({ type: "USER_CONVERSATION_STATUS", status: "error", errorCode: error.code });
+        onError?.(error);
+        onStatusChange?.("error");
+      })
+    );
+
+    logger.debug("Subscribed to agent events", { imageId });
+
+    return () => {
+      unsubscribes.forEach((unsub) => unsub());
+      logger.debug("Unsubscribed from agent events", { imageId });
+    };
+  }, [agentx, imageId, onStatusChange, onError]);
 
   // Send message
   const send = useCallback(
     async (text: string) => {
       if (!agentx || !imageId) return;
 
-      // Clear errors on new message
-      setErrors([]);
+      // Clear errors
+      dispatch({ type: "ERRORS_CLEAR" });
       onSend?.(text);
 
-      // Add user message to local state immediately with pending status
-      const userMessage: UIMessage = {
-        id: `msg_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-        role: "user",
-        subtype: "user",
+      // Add user conversation immediately
+      const userConversation: UserConversationData = {
+        type: "user",
+        id: generateId("user"),
         content: text,
         timestamp: Date.now(),
-        metadata: {
-          status: "pending",
-          statusChangedAt: Date.now(),
-        },
+        status: "pending",
       };
-      setMessages((prev) => [...prev, userMessage]);
+      dispatch({ type: "USER_CONVERSATION_ADD", conversation: userConversation });
 
       try {
-        // Send to agent via request - use imageId, agent auto-activates
+        // Send to agent
         const response = await agentx.request("message_send_request", {
           imageId,
           content: text,
         });
 
-        // Update agentId from response (for event filtering)
-        // IMPORTANT: Set ref immediately so event handlers can use it
+        // Update agent ID
         if (response.data.agentId) {
           agentIdRef.current = response.data.agentId;
-          setAgentIdState(response.data.agentId);
           logger.debug("Agent activated", { imageId, agentId: response.data.agentId });
         }
 
-        // Mark as success immediately - message delivered to server
-        setMessages((prev) => updateLastUserMessageStatus(prev, "success"));
+        // Mark user conversation as success
+        dispatch({ type: "USER_CONVERSATION_STATUS", status: "success" });
 
-        // Add queued assistant message placeholder
-        const queuedAssistant: UIMessage = {
-          id: `msg_assistant_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`,
-          role: "assistant",
-          subtype: "assistant",
-          content: "",
-          timestamp: Date.now(),
-          metadata: {
-            status: "queued",
-            statusChangedAt: Date.now(),
-          },
-        };
-        setMessages((prev) => [...prev, queuedAssistant]);
+        // Create assistant conversation immediately (queued state)
+        const assistantConversationId = generateId("assistant");
+        dispatch({ type: "ASSISTANT_CONVERSATION_START", id: assistantConversationId });
       } catch (error) {
         logger.error("Failed to send message", { imageId, error });
-        // Mark as error - failed to send
-        setMessages((prev) => updateLastUserMessageStatus(prev, "error", "SEND_FAILED"));
-        setStatus("error");
+        dispatch({ type: "USER_CONVERSATION_STATUS", status: "error", errorCode: "SEND_FAILED" });
+        dispatch({ type: "AGENT_STATUS", status: "error" });
         onStatusChange?.("error");
       }
     },
@@ -281,47 +311,51 @@ export function useAgent(
   const interrupt = useCallback(() => {
     if (!agentx || !imageId) return;
 
-    // Update last pending user message to interrupted status
-    setMessages((prev) => updateLastUserMessageStatus(prev, "interrupted"));
+    dispatch({ type: "USER_CONVERSATION_STATUS", status: "interrupted" });
 
     agentx.request("agent_interrupt_request", { imageId }).catch((error) => {
       logger.error("Failed to interrupt agent", { imageId, error });
     });
-  }, [agentx, imageId, updateLastUserMessageStatus]);
+  }, [agentx, imageId]);
 
-  // Clear messages
-  const clearMessages = useCallback(() => {
-    setMessages([]);
-    setStreaming("");
+  // Clear conversations
+  const clearConversations = useCallback(() => {
+    dispatch({ type: "RESET" });
   }, []);
 
   // Clear errors
   const clearErrors = useCallback(() => {
-    setErrors([]);
+    dispatch({ type: "ERRORS_CLEAR" });
   }, []);
 
   return {
-    messages,
-    streaming,
-    status,
-    errors,
+    conversations: state.conversations,
+    streamingText: state.streamingText,
+    currentTextBlockId: state.currentTextBlockId,
+    status: state.agentStatus,
+    errors: state.errors,
     send,
     interrupt,
     isLoading,
-    clearMessages,
+    clearConversations,
     clearErrors,
-    agentId: agentIdState,
+    agentId: agentIdRef.current,
   };
 }
 
 // Re-export types
 export type {
   AgentStatus,
-  MessageStatus,
-  UIMessage,
-  UIMessageMetadata,
+  ConversationData,
+  UserConversationData,
+  AssistantConversationData,
+  ErrorConversationData,
+  BlockData,
+  TextBlockData,
+  ToolBlockData,
+  UserConversationStatus,
+  AssistantConversationStatus,
   UIError,
   UseAgentResult,
   UseAgentOptions,
-  AgentIdentifier,
 } from "./types";

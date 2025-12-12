@@ -331,6 +331,7 @@ function handleToolUseStop(
   };
 
   // Create ToolCallMessage (complete Message object)
+  // parentId links this tool call to its parent assistant message
   const messageId = generateId();
   const timestamp = Date.now();
   const toolCallMessage: ToolCallMessage = {
@@ -339,6 +340,7 @@ function handleToolUseStop(
     subtype: "tool-call",
     toolCall,
     timestamp,
+    parentId: state.currentMessageId || undefined,
   };
 
   // Emit tool_call_message event - data is complete Message object

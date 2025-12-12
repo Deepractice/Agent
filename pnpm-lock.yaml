@@ -208,6 +208,15 @@ importers:
 
   packages/agentx:
     dependencies:
+      '@agentxjs/common':
+        specifier: workspace:*
+        version: link:../common
+      '@agentxjs/network':
+        specifier: workspace:*
+        version: link:../network
+      '@agentxjs/types':
+        specifier: workspace:*
+        version: link:../types
       reconnecting-websocket:
         specifier: ^4.4.0
         version: 4.4.0
@@ -215,18 +224,9 @@ importers:
         specifier: ^8.18.0
         version: 8.18.3
     devDependencies:
-      '@agentxjs/common':
-        specifier: workspace:*
-        version: link:../common
-      '@agentxjs/network':
-        specifier: workspace:*
-        version: link:../network
       '@agentxjs/runtime':
         specifier: workspace:*
         version: link:../runtime
-      '@agentxjs/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/node':
         specifier: ^24.9.2
         version: 24.9.2
@@ -289,6 +289,15 @@ importers:
 
   packages/runtime:
     dependencies:
+      '@agentxjs/agent':
+        specifier: workspace:*
+        version: link:../agent
+      '@agentxjs/common':
+        specifier: workspace:*
+        version: link:../common
+      '@agentxjs/types':
+        specifier: workspace:*
+        version: link:../types
       '@anthropic-ai/claude-agent-sdk':
         specifier: ^0.1.30
         version: 0.1.30(zod@4.1.12)
@@ -305,15 +314,6 @@ importers:
         specifier: ^1.14.4
         version: 1.17.3(db0@0.3.4(better-sqlite3@11.10.0))
     devDependencies:
-      '@agentxjs/agent':
-        specifier: workspace:*
-        version: link:../agent
-      '@agentxjs/common':
-        specifier: workspace:*
-        version: link:../common
-      '@agentxjs/types':
-        specifier: workspace:*
-        version: link:../types
       '@types/better-sqlite3':
         specifier: ^7.6.12
         version: 7.6.13
@@ -344,6 +344,9 @@ importers:
 
   packages/ui:
     dependencies:
+      '@agentxjs/common':
+        specifier: workspace:*
+        version: link:../common
       '@emoji-mart/data':
         specifier: ^1.2.1
         version: 1.2.1
@@ -390,9 +393,6 @@ importers:
         specifier: ^5.0.2
         version: 5.0.8(@types/react@18.3.26)(react@18.3.1)
     devDependencies:
-      '@agentxjs/common':
-        specifier: workspace:*
-        version: link:../common
       '@agentxjs/runtime':
         specifier: workspace:*
         version: link:../runtime

@@ -1,76 +1,47 @@
 /**
- * Message Components - Chain of Responsibility Pattern
+ * Message Components
  *
- * Provides message rendering using extensible handler chains.
+ * Simple, direct message rendering without handler chains.
+ * Each component renders a specific message type.
  *
- * ## Architecture
+ * ## Components
  *
- * ```
- * MessageRenderer (entry point)
- *   → MessageHandler chain
- *     → UserMessageHandler → UserMessage
- *     → AssistantMessageHandler → AssistantMessage
- *     → ToolMessageHandler → ToolMessage
- *     → ErrorMessageHandler → ErrorMessage
- *     → (fallback) → UnknownMessage
- * ```
+ * - UserMessage: User messages with status indicator
+ * - AssistantMessage: Assistant messages with 4-state lifecycle
+ * - ToolMessage: Tool calls with embedded results
+ * - ErrorMessage: Error display
  *
  * ## Usage
  *
  * ```tsx
- * import { MessageRenderer } from "~/components/message";
+ * import { AssistantMessage, UserMessage, ToolMessage } from "~/components/message";
  *
- * // Render a message
- * <MessageRenderer message={message} />
- * ```
+ * // User message
+ * <UserMessage content="Hello" status="success" />
  *
- * ## Extension
+ * // Assistant message with 4-state lifecycle
+ * <AssistantMessage status="completed" content="Hi there!" />
+ * <AssistantMessage status="responding" streaming="I'm thinking..." />
  *
- * ```tsx
- * import { createCustomMessageChain, BaseMessageHandler } from "~/components/message";
- *
- * class MyCustomHandler extends BaseMessageHandler {
- *   canHandle(message: Message): boolean {
- *     return message.subtype === "custom";
- *   }
- *
- *   protected renderMessage(message: Message): React.ReactNode {
- *     return <MyCustomMessage message={message} />;
- *   }
- * }
- *
- * const customChain = createCustomMessageChain([
- *   new MyCustomHandler(),
- *   // ... other handlers
- * ]);
- *
- * <MessageRenderer message={message} customChain={customChain} />
+ * // Tool message with embedded result
+ * <ToolMessage
+ *   toolCall={{ id: "1", name: "search", input: { query: "test" } }}
+ *   toolResult={{ output: "results", duration: 1.2 }}
+ *   timestamp={Date.now()}
+ * />
  * ```
  */
 
-// Main component
-export { MessageRenderer, type MessageRendererProps } from "./MessageRenderer";
-
-// Handler interface and base class
-export { BaseMessageHandler, type MessageHandler } from "./MessageHandler";
-
-// Message components with handlers
-export { UserMessage, UserMessageHandler, type UserMessageProps } from "./UserMessage";
+// Message components
+export { UserMessage, type UserMessageProps } from "./UserMessage";
 export {
   AssistantMessage,
-  AssistantMessageHandler,
   type AssistantMessageProps,
   type AssistantMessageStatus,
 } from "./AssistantMessage";
-export { ToolMessage, ToolMessageHandler, type ToolMessageProps } from "./ToolMessage";
-export { ErrorMessage, ErrorMessageHandler, type ErrorMessageProps } from "./ErrorMessage";
-
-// Special components (no handlers)
-export { UnknownMessage, type UnknownMessageProps } from "./UnknownMessage";
+export { ToolMessage, type ToolMessageProps } from "./ToolMessage";
+export { ErrorMessage, type ErrorMessageProps } from "./ErrorMessage";
 
 // Utility components
 export { MessageAvatar, type MessageAvatarProps } from "./MessageAvatar";
 export { MessageContent, type MessageContentProps } from "./MessageContent";
-
-// Factory functions
-export { createMessageChain, createCustomMessageChain } from "./createMessageChain";

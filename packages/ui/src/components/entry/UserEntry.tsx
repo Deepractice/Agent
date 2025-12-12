@@ -1,30 +1,34 @@
 /**
- * UserMessage - User message component
+ * UserEntry - User message entry
  *
- * Displays user message with right-aligned layout and status indicator.
+ * Displays user's message with right-aligned layout and status indicator.
+ *
+ * @example
+ * ```tsx
+ * <UserEntryComponent
+ *   entry={{
+ *     type: "user",
+ *     id: "msg_123",
+ *     content: "Hello, can you help me?",
+ *     timestamp: Date.now(),
+ *     status: "success",
+ *   }}
+ * />
+ * ```
  */
 
 import * as React from "react";
 import { Loader2, Check, AlertCircle, PauseCircle } from "lucide-react";
-import { MessageAvatar } from "./MessageAvatar";
-import { MessageContent } from "./MessageContent";
+import { MessageAvatar } from "~/components/message/MessageAvatar";
+import { MessageContent } from "~/components/message/MessageContent";
 import { cn } from "~/utils/utils";
-import type { UserConversationStatus } from "~/hooks/useAgent";
+import type { UserConversationData, UserConversationStatus } from "./types";
 
-/**
- * @deprecated Use UserEntry from ~/components/entry instead
- */
-type UserMessageStatus = UserConversationStatus;
-
-export interface UserMessageProps {
+export interface UserEntryProps {
   /**
-   * Message content
+   * User conversation data
    */
-  content: string;
-  /**
-   * Message status
-   */
-  status: UserMessageStatus;
+  entry: UserConversationData;
   /**
    * Additional class name
    */
@@ -34,7 +38,7 @@ export interface UserMessageProps {
 /**
  * Status icon component
  */
-const StatusIcon: React.FC<{ status: UserMessageStatus }> = ({ status }) => {
+const StatusIcon: React.FC<{ status: UserConversationStatus }> = ({ status }) => {
   const iconClassName = "w-4 h-4 flex-shrink-0";
 
   switch (status) {
@@ -52,20 +56,22 @@ const StatusIcon: React.FC<{ status: UserMessageStatus }> = ({ status }) => {
 };
 
 /**
- * UserMessage Component
+ * UserEntry Component
  */
-export const UserMessage: React.FC<UserMessageProps> = ({ content, status, className }) => {
+export const UserEntry: React.FC<UserEntryProps> = ({ entry, className }) => {
   return (
     <div className={cn("flex gap-3 py-2 flex-row-reverse", className)}>
       <MessageAvatar role="user" />
       <div className="flex items-start gap-2 max-w-[80%]">
         <div className="rounded-lg px-4 py-2 bg-primary text-primary-foreground">
-          <MessageContent content={content} className="text-sm" />
+          <MessageContent content={entry.content} className="text-sm" />
         </div>
         <div className="flex items-center h-8">
-          <StatusIcon status={status} />
+          <StatusIcon status={entry.status} />
         </div>
       </div>
     </div>
   );
 };
+
+export default UserEntry;

@@ -35,6 +35,9 @@
     "test:ui": "vitest --ui"
   },
   "dependencies": {
+    "@agentxjs/common": "workspace:*",
+    "@agentxjs/network": "workspace:*",
+    "@agentxjs/types": "workspace:*",
     "reconnecting-websocket": "^4.4.0",
     "ws": "^8.18.0"
   },
@@ -47,10 +50,7 @@
     }
   },
   "devDependencies": {
-    "@agentxjs/common": "workspace:*",
-    "@agentxjs/network": "workspace:*",
     "@agentxjs/runtime": "workspace:*",
-    "@agentxjs/types": "workspace:*",
     "@types/node": "^24.9.2",
     "@types/ws": "^8.5.13",
     "tsup": "^8.3.5",

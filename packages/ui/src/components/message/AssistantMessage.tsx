@@ -1,42 +1,33 @@
 /**
- * AssistantMessage - Assistant message handler and component
+ * AssistantMessage - Assistant message component with 4-state lifecycle
  *
- * Handler: Processes messages with subtype "assistant"
- * Component: Displays assistant message with left-aligned layout
- *
- * Handles all assistant message lifecycle states:
+ * States:
  * - queued: Waiting to start processing
  * - thinking: AI is thinking (extended thinking block)
  * - responding: AI is streaming response
- * - success: Complete message
+ * - completed: Message is complete
  */
 
 import * as React from "react";
-import type { Message, AssistantMessage as AssistantMessageType } from "agentxjs";
-import { BaseMessageHandler } from "./MessageHandler";
 import { MessageAvatar } from "./MessageAvatar";
 import { MessageContent } from "./MessageContent";
 import { cn } from "~/utils/utils";
 
-// ============================================================================
-// Component
-// ============================================================================
-
-export type AssistantMessageStatus = "queued" | "thinking" | "responding" | "success";
+export type AssistantMessageStatus = "queued" | "thinking" | "responding" | "completed";
 
 export interface AssistantMessageProps {
   /**
-   * Assistant message data
-   */
-  message: AssistantMessageType;
-  /**
    * Message status (lifecycle state)
    */
-  status?: AssistantMessageStatus;
+  status: AssistantMessageStatus;
   /**
-   * Streaming text (when status === 'responding')
+   * Message content (for completed status)
    */
-  streamingText?: string;
+  content?: string;
+  /**
+   * Streaming text (for responding status)
+   */
+  streaming?: string;
   /**
    * Additional class name
    */
@@ -46,12 +37,12 @@ export interface AssistantMessageProps {
 /**
  * AssistantMessage Component
  *
- * Renders different content based on lifecycle status
+ * Single component handling all 4 lifecycle states
  */
 export const AssistantMessage: React.FC<AssistantMessageProps> = ({
-  message,
-  status = "success",
-  streamingText = "",
+  status,
+  content = "",
+  streaming = "",
   className,
 }) => {
   const [dots, setDots] = React.useState("");
@@ -66,43 +57,36 @@ export const AssistantMessage: React.FC<AssistantMessageProps> = ({
     }
   }, [status]);
 
+  const renderContent = () => {
+    switch (status) {
+      case "queued":
+        return <span className="text-muted-foreground">Queued{dots}</span>;
+
+      case "thinking":
+        return <span className="text-muted-foreground">Thinking{dots}</span>;
+
+      case "responding":
+        return (
+          <>
+            <MessageContent content={streaming} />
+            <span className="inline-block w-2 h-4 bg-foreground/50 animate-pulse ml-0.5 align-middle" />
+          </>
+        );
+
+      case "completed":
+        return <MessageContent content={content} />;
+
+      default:
+        return null;
+    }
+  };
+
   return (
     <div className={cn("flex gap-3 py-2", className)}>
       <MessageAvatar role="assistant" />
       <div className="rounded-lg px-4 py-2 bg-muted">
-        <div className="text-sm">
-          {/* Queued - waiting to start */}
-          {status === "queued" && <span className="text-muted-foreground">Queue{dots}</span>}
-
-          {/* Thinking - extended thinking block */}
-          {status === "thinking" && <span className="text-muted-foreground">Thinking{dots}</span>}
-
-          {/* Responding - streaming text with cursor */}
-          {status === "responding" && (
-            <>
-              <MessageContent content={streamingText} />
-              <span className="inline-block w-2 h-4 bg-foreground/50 animate-pulse ml-0.5 align-middle" />
-            </>
-          )}
-
-          {/* Success - complete message */}
-          {status === "success" && <MessageContent content={message.content} />}
-        </div>
+        <div className="text-sm">{renderContent()}</div>
       </div>
     </div>
   );
 };
-
-// ============================================================================
-// Handler
-// ============================================================================
-
-export class AssistantMessageHandler extends BaseMessageHandler {
-  canHandle(message: Message): boolean {
-    return message.subtype === "assistant";
-  }
-
-  protected renderMessage(message: Message): React.ReactNode {
-    return <AssistantMessage message={message as AssistantMessageType} />;
-  }
-}

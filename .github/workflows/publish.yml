@@ -41,6 +41,10 @@ jobs:
         run: |
           # Publish public packages in dependency order
           PACKAGES=(
+            "packages/types"
+            "packages/common"
+            "packages/agent"
+            "packages/network"
             "packages/runtime"
             "packages/agentx"
             "packages/ui"
@@ -69,7 +73,7 @@ jobs:
           echo "## ✅ NPM Packages Published" >> $GITHUB_STEP_SUMMARY
           echo "" >> $GITHUB_STEP_SUMMARY
 
-          for pkg in packages/runtime packages/agentx packages/ui apps/portagent; do
+          for pkg in packages/types packages/common packages/agent packages/network packages/runtime packages/agentx packages/ui apps/portagent; do
             if [ -f "$pkg/package.json" ]; then
               NAME=$(jq -r '.name' "$pkg/package.json")
               VERSION=$(jq -r '.version' "$pkg/package.json")

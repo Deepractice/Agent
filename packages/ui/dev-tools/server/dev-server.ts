@@ -22,6 +22,7 @@ async function startDevServer() {
   // Support both AGENT_API_KEY and ANTHROPIC_API_KEY
   const apiKey = process.env.AGENT_API_KEY || process.env.ANTHROPIC_API_KEY;
   const baseUrl = process.env.AGENT_BASE_URL || process.env.ANTHROPIC_BASE_URL;
+  const model = process.env.ANTHROPIC_MODEL || "claude-sonnet-4-20250514";
 
   if (!apiKey) {
     console.error("Error: API key is not set");
@@ -39,6 +40,7 @@ async function startDevServer() {
   console.log("Starting AgentX Development Server...\n");
   console.log("Configuration:");
   console.log(`  API Key: ${apiKey.substring(0, 15)}...`);
+  console.log(`  Model: ${model}`);
   if (baseUrl) {
     console.log(`  Base URL: ${baseUrl}`);
   }
@@ -56,6 +58,7 @@ async function startDevServer() {
     llm: {
       apiKey,
       baseUrl,
+      model,
     },
     logger: {
       level: "debug",
