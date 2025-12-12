@@ -4,9 +4,10 @@
  * Business component that combines MessagePane + InputPane with useAgent hook.
  * Displays conversations and handles sending/receiving.
  *
- * Uses Conversation-first design:
+ * Uses Conversation-first, Block-based design:
  * - conversations: all conversation entries (user, assistant, error)
- * - streamingText: current streaming text for assistant conversation
+ * - streamingText: current streaming text for active TextBlock
+ * - currentTextBlockId: id of the TextBlock receiving streaming text
  *
  * @example
  * ```tsx
@@ -68,7 +69,8 @@ export interface ChatProps {
  */
 function renderConversation(
   conversation: ConversationData,
-  streamingText: string
+  streamingText: string,
+  currentTextBlockId: string | null
 ): React.ReactNode {
   switch (conversation.type) {
     case "user":
@@ -79,14 +81,8 @@ function renderConversation(
         <AssistantEntry
           key={conversation.id}
           entry={conversation}
-          streamingText={
-            conversation.status === "streaming" ||
-            conversation.status === "thinking" ||
-            conversation.status === "processing" ||
-            conversation.status === "queued"
-              ? streamingText
-              : undefined
-          }
+          streamingText={streamingText}
+          currentTextBlockId={currentTextBlockId}
         />
       );
 
@@ -111,8 +107,8 @@ export function Chat({
   inputHeightRatio = 0.25,
   className,
 }: ChatProps) {
-  // Use Conversation-first state
-  const { conversations, streamingText, status, send, interrupt } = useAgent(
+  // Use Conversation-first, Block-based state
+  const { conversations, streamingText, currentTextBlockId, status, send, interrupt } = useAgent(
     agentx,
     imageId ?? null
   );
@@ -174,7 +170,7 @@ export function Chat({
       {/* Message area */}
       <div style={{ height: messageHeight }} className="min-h-0">
         <MessagePane>
-          {conversations.map((conv) => renderConversation(conv, streamingText))}
+          {conversations.map((conv) => renderConversation(conv, streamingText, currentTextBlockId))}
         </MessagePane>
       </div>
 

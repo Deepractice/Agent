@@ -1,8 +1,8 @@
 /**
  * Conversation Reducer
  *
- * Conversation-first state management.
- * All events flow through this reducer to produce ConversationData[].
+ * Conversation-first, Block-based state management.
+ * All AssistantConversation content is stored in blocks (TextBlock, ToolBlock, etc.)
  */
 
 import type {
@@ -20,8 +20,17 @@ import type {
   UserConversationData,
   AssistantConversationData,
   ErrorConversationData,
+  BlockData,
+  TextBlockData,
   ToolBlockData,
 } from "./types";
+
+/**
+ * Generate unique ID
+ */
+function generateId(prefix: string): string {
+  return `${prefix}_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`;
+}
 
 /**
  * Initial state
@@ -31,6 +40,7 @@ export const initialConversationState: ConversationState = {
   conversationIds: new Set(),
   pendingToolCalls: new Map(),
   streamingConversationId: null,
+  currentTextBlockId: null,
   streamingText: "",
   errors: [],
   agentStatus: "idle",
@@ -41,8 +51,7 @@ export const initialConversationState: ConversationState = {
 // ============================================================================
 
 /**
- * Convert history messages to conversations
- * Groups tool-call messages with their parent assistant message
+ * Convert history messages to conversations with blocks
  */
 function processHistoryMessages(messages: Message[]): {
   conversations: ConversationData[];
@@ -76,8 +85,7 @@ function processHistoryMessages(messages: Message[]): {
     }
   }
 
-  // Third pass: build conversations
-  // Group consecutive assistant messages into single conversation
+  // Third pass: build conversations with blocks
   let currentAssistantConversation: AssistantConversationData | null = null;
 
   for (const msg of messages) {
@@ -116,7 +124,7 @@ function processHistoryMessages(messages: Message[]): {
 
       case "assistant": {
         const assistantMsg = msg as AssistantMessage;
-        const content =
+        const textContent =
           typeof assistantMsg.content === "string"
             ? assistantMsg.content
             : assistantMsg.content
@@ -124,9 +132,20 @@ function processHistoryMessages(messages: Message[]): {
                 .map((part) => (part as { type: "text"; text: string }).text)
                 .join("");
 
-        // Get tool blocks for this message
+        // Create text block if there's content
+        const textBlock: TextBlockData | null = textContent
+          ? {
+              type: "text",
+              id: `text_${msg.id}`,
+              content: textContent,
+              timestamp: msg.timestamp,
+              status: "completed",
+            }
+          : null;
+
+        // Create tool blocks for this message
         const toolCalls = toolCallsByParent.get(msg.id) || [];
-        const blocks: ToolBlockData[] = toolCalls.map((tc) => {
+        const toolBlocks: ToolBlockData[] = toolCalls.map((tc) => {
           const result = toolResultMap.get(tc.toolCall.id);
           const hasResult = !!result;
           const isError =
@@ -137,35 +156,39 @@ function processHistoryMessages(messages: Message[]): {
             (result.toolResult.output as { type: string }).type === "error-text";
 
           return {
+            type: "tool",
             id: tc.id,
             toolCallId: tc.toolCall.id,
             name: tc.toolCall.name,
             input: tc.toolCall.input,
+            timestamp: tc.timestamp,
             status: hasResult ? (isError ? "error" : "success") : "executing",
             output: result?.toolResult.output,
             duration: result ? (result.timestamp - tc.timestamp) / 1000 : undefined,
           } as ToolBlockData;
         });
 
+        // Combine blocks: text first, then tools
+        const newBlocks: BlockData[] = [];
+        if (textBlock) newBlocks.push(textBlock);
+        newBlocks.push(...toolBlocks);
+
         // Accumulate into current conversation or create new one
         if (currentAssistantConversation !== null) {
-          // Accumulate content and blocks
           const existing: AssistantConversationData = currentAssistantConversation;
           currentAssistantConversation = {
             ...existing,
             messageIds: [...existing.messageIds, msg.id],
-            content: existing.content + (content ? "\n\n" + content : ""),
-            blocks: [...existing.blocks, ...blocks],
+            blocks: [...existing.blocks, ...newBlocks],
           };
         } else {
           currentAssistantConversation = {
             type: "assistant",
             id: `assistant_${msg.id}`,
             messageIds: [msg.id],
-            content,
             timestamp: msg.timestamp,
             status: "completed",
-            blocks,
+            blocks: newBlocks,
           };
         }
         break;
@@ -210,10 +233,12 @@ function processHistoryMessages(messages: Message[]): {
         (result.toolResult.output as { type: string }).type === "error-text";
 
       return {
+        type: "tool",
         id: tc.id,
         toolCallId: tc.toolCall.id,
         name: tc.toolCall.name,
         input: tc.toolCall.input,
+        timestamp: tc.timestamp,
         status: hasResult ? (isError ? "error" : "success") : "executing",
         output: result?.toolResult.output,
         duration: result ? (result.timestamp - tc.timestamp) / 1000 : undefined,
@@ -224,7 +249,6 @@ function processHistoryMessages(messages: Message[]): {
       type: "assistant",
       id: `assistant_orphan_${Date.now()}`,
       messageIds: [],
-      content: "",
       timestamp: orphanToolCalls[0].timestamp,
       status: "completed",
       blocks,
@@ -235,7 +259,7 @@ function processHistoryMessages(messages: Message[]): {
 }
 
 // ============================================================================
-// Reducer
+// Helper Functions
 // ============================================================================
 
 /**
@@ -247,6 +271,53 @@ function findStreamingConversationIndex(state: ConversationState): number {
     (c) => c.type === "assistant" && c.id === state.streamingConversationId
   );
 }
+
+/**
+ * Finish current text block (set content from streamingText and mark as completed)
+ */
+function finishCurrentTextBlock(state: ConversationState): ConversationState {
+  if (!state.currentTextBlockId || !state.streamingConversationId) {
+    return state;
+  }
+
+  const convIndex = findStreamingConversationIndex(state);
+  if (convIndex === -1) return state;
+
+  const conversations = [...state.conversations];
+  const conv = conversations[convIndex] as AssistantConversationData;
+
+  const blockIndex = conv.blocks.findIndex(
+    (b) => b.type === "text" && b.id === state.currentTextBlockId
+  );
+
+  if (blockIndex === -1) return state;
+
+  const textBlock = conv.blocks[blockIndex] as TextBlockData;
+  const updatedBlock: TextBlockData = {
+    ...textBlock,
+    content: state.streamingText,
+    status: "completed",
+  };
+
+  const newBlocks = [...conv.blocks];
+  newBlocks[blockIndex] = updatedBlock;
+
+  conversations[convIndex] = {
+    ...conv,
+    blocks: newBlocks,
+  };
+
+  return {
+    ...state,
+    conversations,
+    currentTextBlockId: null,
+    streamingText: "",
+  };
+}
+
+// ============================================================================
+// Reducer
+// ============================================================================
 
 /**
  * Conversation reducer
@@ -269,6 +340,7 @@ export function conversationReducer(
         conversationIds,
         pendingToolCalls,
         streamingConversationId: null,
+        currentTextBlockId: null,
         streamingText: "",
       };
     }
@@ -317,7 +389,6 @@ export function conversationReducer(
         type: "assistant",
         id: action.id,
         messageIds: [],
-        content: "",
         timestamp: Date.now(),
         status: "queued",
         blocks: [],
@@ -331,6 +402,7 @@ export function conversationReducer(
         conversations: [...state.conversations, newConversation],
         conversationIds: newConversationIds,
         streamingConversationId: action.id,
+        currentTextBlockId: null,
         streamingText: "",
       };
     }
@@ -346,15 +418,7 @@ export function conversationReducer(
       return { ...state, conversations };
     }
 
-    case "ASSISTANT_CONVERSATION_TEXT_DELTA": {
-      return {
-        ...state,
-        streamingText: state.streamingText + action.text,
-      };
-    }
-
     case "ASSISTANT_CONVERSATION_MESSAGE_START": {
-      // Add messageId to streaming conversation
       const index = findStreamingConversationIndex(state);
       if (index === -1) return state;
 
@@ -368,112 +432,90 @@ export function conversationReducer(
       return { ...state, conversations };
     }
 
-    case "ASSISTANT_CONVERSATION_CONTENT": {
-      // Accumulate content from assistant_message (don't end conversation!)
-      const msg = action.message as AssistantMessage;
+    case "ASSISTANT_CONVERSATION_FINISH": {
+      // First finish any current text block
+      let newState = finishCurrentTextBlock(state);
 
-      const extractedContent =
-        typeof msg.content === "string"
-          ? msg.content
-          : msg.content
-              .filter((part) => part.type === "text")
-              .map((part) => (part as { type: "text"; text: string }).text)
-              .join("");
+      const index = findStreamingConversationIndex(newState);
+      if (index === -1) return newState;
 
-      const index = findStreamingConversationIndex(state);
+      const conversations = [...newState.conversations];
+      const conv = conversations[index] as AssistantConversationData;
 
-      if (index !== -1) {
+      conversations[index] = {
+        ...conv,
+        status: "completed",
+      };
+
+      return {
+        ...newState,
+        conversations,
+        streamingConversationId: null,
+        currentTextBlockId: null,
+        streamingText: "",
+      };
+    }
+
+    // ========== Text Block ==========
+
+    case "TEXT_BLOCK_DELTA": {
+      const convIndex = findStreamingConversationIndex(state);
+      if (convIndex === -1) return state;
+
+      // If no current text block, create one
+      if (!state.currentTextBlockId) {
         const conversations = [...state.conversations];
-        const existingConv = conversations[index] as AssistantConversationData;
+        const conv = conversations[convIndex] as AssistantConversationData;
 
-        // Accumulate content (append with separator if existing content)
-        const newContent = existingConv.content
-          ? existingConv.content + "\n\n" + extractedContent
-          : extractedContent || state.streamingText;
+        const newTextBlock: TextBlockData = {
+          type: "text",
+          id: generateId("text"),
+          content: "",
+          timestamp: Date.now(),
+          status: "streaming",
+        };
 
-        conversations[index] = {
-          ...existingConv,
-          content: newContent,
-          // Don't change status - still streaming!
-          // Don't clear streamingConversationId - more content may come!
+        conversations[convIndex] = {
+          ...conv,
+          blocks: [...conv.blocks, newTextBlock],
         };
 
         return {
           ...state,
           conversations,
-          streamingText: "", // Reset streaming text after accumulating
-        };
-      } else {
-        // No streaming conversation, check for duplicates
-        const isDuplicate = state.conversations.some(
-          (c) =>
-            c.type === "assistant" && (c as AssistantConversationData).messageIds.includes(msg.id)
-        );
-        if (isDuplicate) {
-          return state;
-        }
-
-        // Create new conversation (late arrival from history)
-        const newConversation: AssistantConversationData = {
-          type: "assistant",
-          id: `assistant_${msg.id}`,
-          messageIds: [msg.id],
-          content: extractedContent,
-          timestamp: msg.timestamp,
-          status: "completed",
-          blocks: [],
-        };
-
-        const newConversationIds = new Set(state.conversationIds);
-        newConversationIds.add(newConversation.id);
-
-        return {
-          ...state,
-          conversations: [...state.conversations, newConversation],
-          conversationIds: newConversationIds,
+          currentTextBlockId: newTextBlock.id,
+          streamingText: action.text,
         };
       }
-    }
 
-    case "ASSISTANT_CONVERSATION_FINISH": {
-      // Called on conversation_end - now we can mark as completed
-      const index = findStreamingConversationIndex(state);
-      if (index === -1) return state;
-
-      const conversations = [...state.conversations];
-      const conv = conversations[index] as AssistantConversationData;
-
-      // If there's remaining streaming text, append it
-      const finalContent = state.streamingText
-        ? conv.content
-          ? conv.content + "\n\n" + state.streamingText
-          : state.streamingText
-        : conv.content;
-
-      conversations[index] = {
-        ...conv,
-        content: finalContent,
-        status: "completed",
-      };
-
+      // Append to existing streaming text
       return {
         ...state,
-        conversations,
-        streamingConversationId: null,
-        streamingText: "",
+        streamingText: state.streamingText + action.text,
       };
+    }
+
+    case "TEXT_BLOCK_FINISH": {
+      return finishCurrentTextBlock(state);
     }
 
     // ========== Tool Block ==========
 
     case "TOOL_BLOCK_ADD": {
       const msg = action.message;
+
+      // First, finish any current text block
+      let newState = state;
+      if (state.currentTextBlockId) {
+        newState = finishCurrentTextBlock(state);
+      }
+
       const parentMessageId = msg.parentId;
 
       // Find parent conversation by messageId
       let parentIndex = -1;
       if (parentMessageId) {
-        parentIndex = state.conversations.findIndex(
+        parentIndex = newState.conversations.findIndex(
           (c) =>
             c.type === "assistant" &&
             (c as AssistantConversationData).messageIds.includes(parentMessageId)
@@ -481,8 +523,8 @@ export function conversationReducer(
       }
 
       // If not found by messageId, try streaming conversation
-      if (parentIndex === -1 && state.streamingConversationId) {
-        parentIndex = findStreamingConversationIndex(state);
+      if (parentIndex === -1 && newState.streamingConversationId) {
+        parentIndex = findStreamingConversationIndex(newState);
       }
 
       if (parentIndex === -1) {
@@ -491,30 +533,31 @@ export function conversationReducer(
           type: "assistant",
           id: `assistant_for_${msg.id}`,
           messageIds: parentMessageId ? [parentMessageId] : [],
-          content: "",
           timestamp: msg.timestamp,
           status: "streaming",
           blocks: [
             {
+              type: "tool",
               id: msg.id,
               toolCallId: msg.toolCall.id,
               name: msg.toolCall.name,
               input: msg.toolCall.input,
+              timestamp: msg.timestamp,
               status: "executing",
               startTime: Date.now(),
-            },
+            } as ToolBlockData,
           ],
         };
 
-        const newConversationIds = new Set(state.conversationIds);
+        const newConversationIds = new Set(newState.conversationIds);
         newConversationIds.add(orphanConversation.id);
 
-        const newPendingToolCalls = new Map(state.pendingToolCalls);
+        const newPendingToolCalls = new Map(newState.pendingToolCalls);
         newPendingToolCalls.set(msg.toolCall.id, orphanConversation.id);
 
         return {
-          ...state,
-          conversations: [...state.conversations, orphanConversation],
+          ...newState,
+          conversations: [...newState.conversations, orphanConversation],
           conversationIds: newConversationIds,
           pendingToolCalls: newPendingToolCalls,
           streamingConversationId: orphanConversation.id,
@@ -522,14 +565,16 @@ export function conversationReducer(
       }
 
       // Add block to parent conversation
-      const conversations = [...state.conversations];
+      const conversations = [...newState.conversations];
       const parentConv = conversations[parentIndex] as AssistantConversationData;
 
       const newBlock: ToolBlockData = {
+        type: "tool",
         id: msg.id,
         toolCallId: msg.toolCall.id,
         name: msg.toolCall.name,
         input: msg.toolCall.input,
+        timestamp: msg.timestamp,
         status: "executing",
         startTime: Date.now(),
       };
@@ -539,11 +584,11 @@ export function conversationReducer(
         blocks: [...parentConv.blocks, newBlock],
       };
 
-      const newPendingToolCalls = new Map(state.pendingToolCalls);
+      const newPendingToolCalls = new Map(newState.pendingToolCalls);
       newPendingToolCalls.set(msg.toolCall.id, parentConv.id);
 
       return {
-        ...state,
+        ...newState,
         conversations,
         pendingToolCalls: newPendingToolCalls,
       };
@@ -568,13 +613,15 @@ export function conversationReducer(
       const conversations = [...state.conversations];
       const parentConv = conversations[parentIndex] as AssistantConversationData;
 
-      const blockIndex = parentConv.blocks.findIndex((b) => b.toolCallId === msg.toolCallId);
+      const blockIndex = parentConv.blocks.findIndex(
+        (b) => b.type === "tool" && (b as ToolBlockData).toolCallId === msg.toolCallId
+      );
 
       if (blockIndex === -1) {
         return state;
       }
 
-      const block = parentConv.blocks[blockIndex];
+      const block = parentConv.blocks[blockIndex] as ToolBlockData;
       const isError =
         typeof msg.toolResult.output === "object" &&
         msg.toolResult.output !== null &&
@@ -634,6 +681,7 @@ export function conversationReducer(
         conversations: [...state.conversations, newConversation],
         conversationIds: newConversationIds,
         streamingConversationId: null,
+        currentTextBlockId: null,
         streamingText: "",
       };
     }

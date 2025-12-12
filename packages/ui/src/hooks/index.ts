@@ -6,10 +6,10 @@
  * - Agent = transient runtime instance (auto-activated)
  * - Session = internal message storage (not exposed to UI)
  *
- * Conversation-First Design:
+ * Conversation-First, Block-Based Design:
  * - useAgent returns ConversationData[] directly for UI rendering
  * - Conversation = one party's complete utterance (user, assistant, error)
- * - Block = component within Conversation (e.g., ToolBlock inside AssistantConversation)
+ * - Block = content unit within AssistantConversation (TextBlock, ToolBlock, etc.)
  *
  * Hooks:
  * - useAgentX: Create and manage AgentX instance
@@ -28,7 +28,7 @@
  *   const { images, createImage, runImage, stopImage, deleteImage } = useImages(agentx);
  *
  *   // Current conversation - use imageId, agent auto-activates on first message
- *   const { conversations, streamingText, send, isLoading } = useAgent(agentx, currentImageId);
+ *   const { conversations, streamingText, currentTextBlockId, send, isLoading } = useAgent(agentx, currentImageId);
  *
  *   return (
  *     <div>
@@ -37,7 +37,14 @@
  *           case 'user':
  *             return <UserEntry key={conv.id} entry={conv} />;
  *           case 'assistant':
- *             return <AssistantEntry key={conv.id} entry={conv} streamingText={streamingText} />;
+ *             return (
+ *               <AssistantEntry
+ *                 key={conv.id}
+ *                 entry={conv}
+ *                 streamingText={streamingText}
+ *                 currentTextBlockId={currentTextBlockId}
+ *               />
+ *             );
  *           case 'error':
  *             return <ErrorEntry key={conv.id} entry={conv} />;
  *         }
@@ -57,6 +64,8 @@ export {
   type UserConversationData,
   type AssistantConversationData,
   type ErrorConversationData,
+  type BlockData,
+  type TextBlockData,
   type ToolBlockData,
   type UserConversationStatus,
   type AssistantConversationStatus,

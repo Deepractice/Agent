@@ -2,6 +2,7 @@
  * Types for useAgent hook
  *
  * Conversation-first design: directly produces ConversationData for UI rendering.
+ * Block-based content: all AssistantConversation content is stored in blocks.
  */
 
 import type { Message, AgentState, ToolCallMessage, ToolResultMessage } from "agentxjs";
@@ -10,6 +11,8 @@ import type {
   UserConversationData,
   AssistantConversationData,
   ErrorConversationData,
+  BlockData,
+  TextBlockData,
   ToolBlockData,
   UserConversationStatus,
   AssistantConversationStatus,
@@ -21,6 +24,8 @@ export type {
   UserConversationData,
   AssistantConversationData,
   ErrorConversationData,
+  BlockData,
+  TextBlockData,
   ToolBlockData,
   UserConversationStatus,
   AssistantConversationStatus,
@@ -45,6 +50,12 @@ export type AgentStatus = AgentState;
  * ID Design:
  * - conversation.id: frontend instance ID, never changes (used for React key, internal tracking)
  * - conversation.messageIds: backend message IDs, accumulated from message_start events
+ *
+ * Block Design:
+ * - All AssistantConversation content is stored in blocks array
+ * - TextBlock: streaming/completed text content
+ * - ToolBlock: tool calls with results
+ * - currentTextBlockId tracks which TextBlock is receiving streaming text
  */
 export interface ConversationState {
   /** Ordered list of conversations */
@@ -59,7 +70,10 @@ export interface ConversationState {
   /** Current streaming assistant conversation id (if any) */
   streamingConversationId: string | null;
 
-  /** Accumulated streaming text */
+  /** Current streaming text block id (if any) */
+  currentTextBlockId: string | null;
+
+  /** Accumulated streaming text for current TextBlock */
   streamingText: string;
 
   /** Errors */
@@ -81,10 +95,11 @@ export type ConversationAction =
   // Assistant conversation actions
   | { type: "ASSISTANT_CONVERSATION_START"; id: string }
   | { type: "ASSISTANT_CONVERSATION_STATUS"; status: AssistantConversationStatus }
-  | { type: "ASSISTANT_CONVERSATION_TEXT_DELTA"; text: string }
   | { type: "ASSISTANT_CONVERSATION_MESSAGE_START"; messageId: string }
-  | { type: "ASSISTANT_CONVERSATION_CONTENT"; message: Message }
   | { type: "ASSISTANT_CONVERSATION_FINISH" }
+  // Text block actions
+  | { type: "TEXT_BLOCK_DELTA"; text: string }
+  | { type: "TEXT_BLOCK_FINISH" }
   // Tool block actions
   | { type: "TOOL_BLOCK_ADD"; message: ToolCallMessage }
   | { type: "TOOL_BLOCK_RESULT"; message: ToolResultMessage }
@@ -119,8 +134,11 @@ export interface UseAgentResult {
   /** All conversations (user, assistant, error) */
   conversations: ConversationData[];
 
-  /** Current streaming text (for streaming assistant conversation) */
+  /** Current streaming text (for streaming TextBlock) */
   streamingText: string;
+
+  /** Current streaming text block id */
+  currentTextBlockId: string | null;
 
   /** Agent status */
   status: AgentStatus;

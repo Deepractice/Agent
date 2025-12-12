@@ -1,46 +1,51 @@
 /**
  * AssistantEntry - AI assistant response entry
  *
- * Displays assistant's text content with embedded tool blocks.
- * Supports streaming and completed states.
+ * Displays assistant's response with blocks (TextBlock, ToolBlock, etc.)
+ * rendered in order. Supports streaming and status indicators.
  *
  * @example
  * ```tsx
- * // Completed entry
- * <AssistantEntryComponent
+ * // Completed entry with text and tool blocks
+ * <AssistantEntry
  *   entry={{
  *     type: "assistant",
- *     id: "msg_123",
- *     content: "Let me check that for you.",
+ *     id: "conv_123",
+ *     messageIds: ["msg_1"],
  *     timestamp: Date.now(),
  *     status: "completed",
  *     blocks: [
- *       { id: "t1", toolCallId: "tc1", name: "Bash", input: {}, status: "success" }
+ *       { type: "text", id: "t1", content: "Let me check...", status: "completed" },
+ *       { type: "tool", id: "t2", toolCallId: "tc1", name: "Bash", ... },
+ *       { type: "text", id: "t3", content: "Done!", status: "completed" },
  *     ],
  *   }}
  * />
  *
  * // Streaming entry
- * <AssistantEntryComponent
+ * <AssistantEntry
  *   entry={{
  *     type: "assistant",
- *     id: "pending_123",
- *     content: "",
+ *     id: "conv_123",
+ *     messageIds: [],
  *     timestamp: Date.now(),
  *     status: "streaming",
- *     blocks: [],
+ *     blocks: [
+ *       { type: "text", id: "text_123", content: "", status: "streaming" },
+ *     ],
  *   }}
  *   streamingText="I'm thinking about..."
+ *   currentTextBlockId="text_123"
  * />
  * ```
  */
 
 import * as React from "react";
 import { MessageAvatar } from "~/components/message/MessageAvatar";
-import { MessageContent } from "~/components/message/MessageContent";
+import { TextBlock } from "./blocks/TextBlock";
 import { ToolBlock } from "./blocks/ToolBlock";
 import { cn } from "~/utils/utils";
-import type { AssistantConversationData } from "./types";
+import type { AssistantConversationData, BlockData } from "./types";
 
 export interface AssistantEntryProps {
   /**
@@ -48,13 +53,47 @@ export interface AssistantEntryProps {
    */
   entry: AssistantConversationData;
   /**
-   * Streaming text (for streaming status)
+   * Streaming text (for streaming TextBlock)
    */
   streamingText?: string;
+  /**
+   * Current streaming text block id
+   */
+  currentTextBlockId?: string | null;
   /**
    * Additional class name
    */
   className?: string;
+}
+
+/**
+ * Render a single block
+ */
+function renderBlock(
+  block: BlockData,
+  streamingText: string | undefined,
+  currentTextBlockId: string | null | undefined
+): React.ReactNode {
+  switch (block.type) {
+    case "text":
+      return (
+        <TextBlock
+          key={block.id}
+          block={block}
+          streamingText={block.id === currentTextBlockId ? streamingText : undefined}
+        />
+      );
+
+    case "tool":
+      return <ToolBlock key={block.id} block={block} />;
+
+    case "image":
+      // Future: ImageBlock component
+      return null;
+
+    default:
+      return null;
+  }
 }
 
 /**
@@ -63,6 +102,7 @@ export interface AssistantEntryProps {
 export const AssistantEntry: React.FC<AssistantEntryProps> = ({
   entry,
   streamingText = "",
+  currentTextBlockId,
   className,
 }) => {
   const [dots, setDots] = React.useState("");
@@ -79,60 +119,49 @@ export const AssistantEntry: React.FC<AssistantEntryProps> = ({
 
   const hasBlocks = entry.blocks.length > 0;
 
-  const renderTextContent = () => {
+  // Render status indicator for queued/processing/thinking
+  const renderStatusIndicator = () => {
     switch (entry.status) {
       case "queued":
-        return <span className="text-muted-foreground">Queued{dots}</span>;
-
-      case "processing":
-        return <span className="text-muted-foreground">Processing{dots}</span>;
-
-      case "thinking":
-        return <span className="text-muted-foreground">Thinking{dots}</span>;
-
-      case "streaming":
         return (
-          <>
-            <MessageContent content={streamingText} />
-            <span className="inline-block w-2 h-4 bg-foreground/50 animate-pulse ml-0.5 align-middle" />
-          </>
+          <div className="rounded-lg px-4 py-2 bg-muted inline-block">
+            <span className="text-sm text-muted-foreground">Queued{dots}</span>
+          </div>
         );
 
-      case "completed":
-        return <MessageContent content={entry.content} />;
+      case "processing":
+        return (
+          <div className="rounded-lg px-4 py-2 bg-muted inline-block">
+            <span className="text-sm text-muted-foreground">Processing{dots}</span>
+          </div>
+        );
+
+      case "thinking":
+        return (
+          <div className="rounded-lg px-4 py-2 bg-muted inline-block">
+            <span className="text-sm text-muted-foreground">Thinking{dots}</span>
+          </div>
+        );
 
       default:
         return null;
     }
   };
 
-  // Determine if we should show text content area
-  const shouldShowTextContent =
-    entry.status === "queued" ||
-    entry.status === "processing" ||
-    entry.status === "thinking" ||
-    entry.status === "streaming" ||
-    (entry.status === "completed" && entry.content.length > 0);
+  // Determine if we should show status indicator
+  const showStatusIndicator =
+    (entry.status === "queued" || entry.status === "processing" || entry.status === "thinking") &&
+    !hasBlocks;
 
   return (
     <div className={cn("flex gap-3 py-2", className)}>
       <MessageAvatar role="assistant" />
       <div className="flex-1 min-w-0 space-y-2">
-        {/* Text content */}
-        {shouldShowTextContent && (
-          <div className="rounded-lg px-4 py-2 bg-muted inline-block max-w-full">
-            <div className="text-sm">{renderTextContent()}</div>
-          </div>
-        )}
+        {/* Status indicator (when no blocks yet) */}
+        {showStatusIndicator && renderStatusIndicator()}
 
-        {/* Embedded tool blocks */}
-        {hasBlocks && (
-          <div className="space-y-2 max-w-2xl">
-            {entry.blocks.map((block) => (
-              <ToolBlock key={block.id} block={block} />
-            ))}
-          </div>
-        )}
+        {/* Render blocks in order */}
+        {entry.blocks.map((block) => renderBlock(block, streamingText, currentTextBlockId))}
       </div>
     </div>
   );

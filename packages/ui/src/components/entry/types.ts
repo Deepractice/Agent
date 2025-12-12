@@ -3,7 +3,7 @@
  *
  * Conversation-first design for chat UI rendering.
  * Conversation = one party's complete utterance in a turn.
- * Block = component within a Conversation (e.g., ToolBlock inside AssistantConversation).
+ * Block = content unit within a Conversation (TextBlock, ToolBlock, ImageBlock, etc.).
  *
  * Data flow:
  * Message (backend) → Conversation (UI layer) → Block (sub-components)
@@ -11,11 +11,38 @@
  * Terminology:
  * - Turn = UserConversation + AssistantConversation
  * - AssistantConversation may contain multiple backend messages (due to tool calls)
+ * - Blocks are rendered in order: text, tool, text, tool, ...
  */
 
 // ============================================================================
-// Block Types (子组件)
+// Block Types (内容单元)
 // ============================================================================
+
+/**
+ * Block base interface
+ */
+interface BlockBase {
+  /** Block id */
+  id: string;
+  /** Timestamp when block was created */
+  timestamp: number;
+}
+
+/**
+ * Text block status
+ */
+export type TextBlockStatus = "streaming" | "completed";
+
+/**
+ * Text block data - text content in AssistantConversation
+ */
+export interface TextBlockData extends BlockBase {
+  type: "text";
+  /** Text content */
+  content: string;
+  /** Block status */
+  status: TextBlockStatus;
+}
 
 /**
  * Tool block status
@@ -23,11 +50,10 @@
 export type ToolBlockStatus = "executing" | "success" | "error";
 
 /**
- * Tool block data - embedded in AssistantConversation
+ * Tool block data - tool call in AssistantConversation
  */
-export interface ToolBlockData {
-  /** Tool call message id */
-  id: string;
+export interface ToolBlockData extends BlockBase {
+  type: "tool";
   /** Tool call id (for matching result) */
   toolCallId: string;
   /** Tool name */
@@ -42,6 +68,38 @@ export interface ToolBlockData {
   startTime?: number;
   /** Execution duration in seconds */
   duration?: number;
+}
+
+/**
+ * Image block data - image content (future)
+ */
+export interface ImageBlockData extends BlockBase {
+  type: "image";
+  /** Image URL */
+  url: string;
+  /** Alt text */
+  alt?: string;
+}
+
+/**
+ * Union type for all block types
+ */
+export type BlockData = TextBlockData | ToolBlockData | ImageBlockData;
+
+// ============================================================================
+// Type Guards for Blocks
+// ============================================================================
+
+export function isTextBlock(block: BlockData): block is TextBlockData {
+  return block.type === "text";
+}
+
+export function isToolBlock(block: BlockData): block is ToolBlockData {
+  return block.type === "tool";
+}
+
+export function isImageBlock(block: BlockData): block is ImageBlockData {
+  return block.type === "image";
 }
 
 // ============================================================================
@@ -86,8 +144,9 @@ export type AssistantConversationStatus =
   | "completed";
 
 /**
- * Assistant conversation data - AI's response with embedded tool blocks
+ * Assistant conversation data - AI's response with blocks
  * One AssistantConversation may contain multiple backend messages (due to tool call loops)
+ * All content is stored in blocks array (TextBlock, ToolBlock, etc.)
  */
 export interface AssistantConversationData {
   type: "assistant";
@@ -95,14 +154,12 @@ export interface AssistantConversationData {
   id: string;
   /** Backend message ids - accumulated from multiple message_start events */
   messageIds: string[];
-  /** Text content - accumulated from multiple assistant_message events */
-  content: string;
   /** Timestamp */
   timestamp: number;
   /** Response status */
   status: AssistantConversationStatus;
-  /** Embedded tool blocks */
-  blocks: ToolBlockData[];
+  /** Content blocks - text, tools, images, etc. rendered in order */
+  blocks: BlockData[];
 }
 
 /**
@@ -129,7 +186,7 @@ export type ConversationData =
   | ErrorConversationData;
 
 // ============================================================================
-// Type Guards
+// Type Guards for Conversations
 // ============================================================================
 
 export function isUserConversation(

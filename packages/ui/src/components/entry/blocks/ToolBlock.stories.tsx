@@ -15,34 +15,41 @@ export default meta;
 type Story = StoryObj<typeof ToolBlock>;
 
 const executingBlock: ToolBlockData = {
+  type: "tool",
   id: "msg_001",
   toolCallId: "toolu_01ABC123",
   name: "Bash",
   input: { command: "ls -la /home/user" },
+  timestamp: Date.now(),
   status: "executing",
 };
 
 const successBlock: ToolBlockData = {
+  type: "tool",
   id: "msg_002",
   toolCallId: "toolu_02DEF456",
   name: "Bash",
   input: { command: "echo 'Hello World'" },
+  timestamp: Date.now(),
   status: "success",
   output: "Hello World",
   duration: 0.23,
 };
 
 const errorBlock: ToolBlockData = {
+  type: "tool",
   id: "msg_003",
   toolCallId: "toolu_03GHI789",
   name: "Bash",
   input: { command: "cat /nonexistent/file" },
+  timestamp: Date.now(),
   status: "error",
   output: "cat: /nonexistent/file: No such file or directory",
   duration: 0.05,
 };
 
 const complexInputBlock: ToolBlockData = {
+  type: "tool",
   id: "msg_004",
   toolCallId: "toolu_04JKL012",
   name: "WebSearch",
@@ -54,6 +61,7 @@ const complexInputBlock: ToolBlockData = {
       dateRange: "past_year",
     },
   },
+  timestamp: Date.now(),
   status: "success",
   output: {
     results: [

@@ -1,8 +1,10 @@
 /**
  * useAgent - React hook for Agent event binding
  *
- * Conversation-first design: directly produces ConversationData[] for UI rendering.
- * All events flow through a single reducer for consistent state.
+ * Conversation-first, Block-based design:
+ * - Produces ConversationData[] for UI rendering
+ * - AssistantConversation contains blocks (TextBlock, ToolBlock, etc.)
+ * - Blocks are rendered in order
  *
  * @example
  * ```tsx
@@ -10,6 +12,7 @@
  *   const {
  *     conversations,
  *     streamingText,
+ *     currentTextBlockId,
  *     status,
  *     send,
  *   } = useAgent(agentx, imageId);
@@ -19,17 +22,18 @@
  *       {conversations.map(conv => {
  *         switch (conv.type) {
  *           case 'user':
- *             return <UserConversation key={conv.id} conversation={conv} />;
+ *             return <UserEntry key={conv.id} entry={conv} />;
  *           case 'assistant':
  *             return (
- *               <AssistantConversation
+ *               <AssistantEntry
  *                 key={conv.id}
- *                 conversation={conv}
- *                 streamingText={conv.status === 'streaming' ? streamingText : undefined}
+ *                 entry={conv}
+ *                 streamingText={streamingText}
+ *                 currentTextBlockId={currentTextBlockId}
  *               />
  *             );
  *           case 'error':
- *             return <ErrorConversation key={conv.id} conversation={conv} />;
+ *             return <ErrorEntry key={conv.id} entry={conv} />;
  *         }
  *       })}
  *     </div>
@@ -127,12 +131,12 @@ export function useAgent(
       })
     );
 
-    // Stream events - text_delta
+    // Stream events - text_delta (create/append to TextBlock)
     unsubscribes.push(
       agentx.on("text_delta", (event) => {
         if (!isForThisImage(event)) return;
         const data = event.data as { text: string };
-        dispatch({ type: "ASSISTANT_CONVERSATION_TEXT_DELTA", text: data.text });
+        dispatch({ type: "TEXT_BLOCK_DELTA", text: data.text });
       })
     );
 
@@ -167,7 +171,7 @@ export function useAgent(
     unsubscribes.push(
       agentx.on("conversation_end", (event) => {
         if (!isForThisImage(event)) return;
-        // Finish the conversation - mark as completed and clear streaming state
+        // Finish the conversation - marks text block complete and conversation complete
         dispatch({ type: "ASSISTANT_CONVERSATION_FINISH" });
         dispatch({ type: "AGENT_STATUS", status: "idle" });
         onStatusChange?.("idle");
@@ -182,13 +186,12 @@ export function useAgent(
       })
     );
 
-    // Message events
+    // Message events - assistant_message finishes current TextBlock
     unsubscribes.push(
       agentx.on("assistant_message", (event) => {
         if (!isForThisImage(event)) return;
-        const message = event.data as Message;
-        // Accumulate content (don't end conversation - wait for conversation_end)
-        dispatch({ type: "ASSISTANT_CONVERSATION_CONTENT", message });
+        // Finish current text block (content was accumulated via text_delta)
+        dispatch({ type: "TEXT_BLOCK_FINISH" });
       })
     );
 
@@ -315,6 +318,7 @@ export function useAgent(
   return {
     conversations: state.conversations,
     streamingText: state.streamingText,
+    currentTextBlockId: state.currentTextBlockId,
     status: state.agentStatus,
     errors: state.errors,
     send,
@@ -333,6 +337,8 @@ export type {
   UserConversationData,
   AssistantConversationData,
   ErrorConversationData,
+  BlockData,
+  TextBlockData,
   ToolBlockData,
   UserConversationStatus,
   AssistantConversationStatus,
