@@ -78,53 +78,57 @@ AgentX 是一个基于事件驱动架构的 TypeScript 框架，用于构建 AI 
 **服务端（Node.js）**
 
 ```typescript
-import { createAgentX } from "agentxjs";
+import { createServer } from "http";
+import { createAgentX, defineAgent } from "agentxjs";
 
-// 创建 AgentX 实例和 WebSocket 服务器
+// 定义你的 Agent
+const MyAgent = defineAgent({
+  name: "MyAgent",
+  systemPrompt: "你是一个有帮助的助手。",
+  mcpServers: {
+    // 可选：添加 MCP 服务器以获取工具能力
+    filesystem: {
+      command: "npx",
+      args: ["-y", "@anthropic/mcp-server-filesystem", "/tmp"],
+    },
+  },
+});
+
+// 创建 HTTP 服务器
+const server = createServer();
+
+// 创建 AgentX 实例
 const agentx = await createAgentX({
   llm: {
-    apiKey: process.env.ANTHROPIC_API_KEY,
-    baseUrl: process.env.ANTHROPIC_BASE_URL,
+    apiKey: process.env.LLM_PROVIDER_KEY,
+    baseUrl: process.env.LLM_PROVIDER_URL,
   },
-  storage: { driver: "fs", path: "./data" },
+  agentxDir: "~/.agentx", // 自动配置 SQLite 存储
+  server, // 挂载 WebSocket 到 HTTP 服务器
+  defaultAgent: MyAgent, // 新对话的默认 Agent
 });
 
-// 创建容器
-await agentx.request("container_create_request", {
-  containerId: "default",
+// 启动服务器
+server.listen(5200, () => {
+  console.log("✓ 服务器运行在 http://localhost:5200");
+  console.log("✓ WebSocket 可用于 ws://localhost:5200/ws");
 });
-
-// 启动 WebSocket 服务器
-await agentx.listen(5200);
-console.log("✓ 服务器运行在 ws://localhost:5200");
 ```
 
 **客户端（浏览器/React）**
 
 ```typescript
-import { useAgentX } from "@agentxjs/ui";
+import { useAgentX, ResponsiveStudio } from "@agentxjs/ui";
+import "@agentxjs/ui/styles.css";
 
-function ChatApp() {
-  const agentx = useAgentX("ws://localhost:5200");
+function App() {
+  const agentx = useAgentX("ws://localhost:5200/ws");
 
   if (!agentx) return <div>连接中...</div>;
 
-  return <Studio agentx={agentx} />;
+  return <ResponsiveStudio agentx={agentx} />;
 }
 ```
-
-**UI 组件**
-
-```bash
-npm install @agentxjs/ui
-```
-
-生产就绪的 React 组件（Tailwind CSS）：
-
-- `<Studio>` - 完整聊天工作区（AgentList + Chat）
-- `<Chat>` - 聊天界面和消息历史
-- `<AgentList>` - Agent/会话列表（带搜索）
-- `useAgentX()` - 服务器连接 React hook
 
 👉 **[完整 AgentX 文档](./docs/README.md)** - 架构、API 参考、指南和示例
 

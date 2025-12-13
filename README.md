@@ -78,53 +78,57 @@ AgentX is a TypeScript framework for building AI Agent applications with event-d
 **Server-side (Node.js)**
 
 ```typescript
-import { createAgentX } from "agentxjs";
+import { createServer } from "http";
+import { createAgentX, defineAgent } from "agentxjs";
 
-// Create AgentX instance with WebSocket server
+// Define your Agent
+const MyAgent = defineAgent({
+  name: "MyAgent",
+  systemPrompt: "You are a helpful assistant.",
+  mcpServers: {
+    // Optional: Add MCP servers for tools
+    filesystem: {
+      command: "npx",
+      args: ["-y", "@anthropic/mcp-server-filesystem", "/tmp"],
+    },
+  },
+});
+
+// Create HTTP server
+const server = createServer();
+
+// Create AgentX instance
 const agentx = await createAgentX({
   llm: {
-    apiKey: process.env.ANTHROPIC_API_KEY,
-    baseUrl: process.env.ANTHROPIC_BASE_URL,
+    apiKey: process.env.LLM_PROVIDER_KEY,
+    baseUrl: process.env.LLM_PROVIDER_URL,
   },
-  storage: { driver: "fs", path: "./data" },
+  agentxDir: "~/.agentx", // Auto-configures SQLite storage
+  server, // Attach WebSocket to HTTP server
+  defaultAgent: MyAgent, // Default agent for new conversations
 });
 
-// Create container for agents
-await agentx.request("container_create_request", {
-  containerId: "default",
+// Start server
+server.listen(5200, () => {
+  console.log("✓ Server running at http://localhost:5200");
+  console.log("✓ WebSocket available at ws://localhost:5200/ws");
 });
-
-// Start WebSocket server
-await agentx.listen(5200);
-console.log("✓ Server running on ws://localhost:5200");
 ```
 
 **Client-side (Browser/React)**
 
 ```typescript
-import { useAgentX } from "@agentxjs/ui";
+import { useAgentX, ResponsiveStudio } from "@agentxjs/ui";
+import "@agentxjs/ui/styles.css";
 
-function ChatApp() {
-  const agentx = useAgentX("ws://localhost:5200");
+function App() {
+  const agentx = useAgentX("ws://localhost:5200/ws");
 
   if (!agentx) return <div>Connecting...</div>;
 
-  return <Studio agentx={agentx} />;
+  return <ResponsiveStudio agentx={agentx} />;
 }
 ```
-
-**UI Components**
-
-```bash
-npm install @agentxjs/ui
-```
-
-Production-ready React components with Tailwind CSS:
-
-- `<Studio>` - Complete chat workspace (AgentList + Chat)
-- `<Chat>` - Chat interface with message history
-- `<AgentList>` - Agent/session list with search
-- `useAgentX()` - React hook for server connection
 
 👉 **[Full AgentX Documentation](./docs/README.md)** - Architecture, API reference, guides, and examples
 
