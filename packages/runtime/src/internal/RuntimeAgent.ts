@@ -240,6 +240,7 @@ export class RuntimeAgent implements RuntimeAgentInterface {
       systemPrompt: config.config.systemPrompt,
       cwd: config.sandbox.workdir.path,
       resumeSessionId,
+      mcpServers: config.config.mcpServers,
       onSessionIdCaptured: (sdkSessionId) => {
         // Persist sdkSessionId to image metadata for future resume
         this.saveSessionId(sdkSessionId);

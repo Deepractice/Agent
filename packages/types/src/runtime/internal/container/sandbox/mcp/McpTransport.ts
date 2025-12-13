@@ -95,3 +95,56 @@ export type McpTransportConfig =
   | McpSseTransport
   | McpHttpTransport
   | McpSdkTransport;
+
+/**
+ * MCP Server Config (SDK Compatible)
+ *
+ * Configuration for MCP servers, compatible with Claude Agent SDK.
+ * Used in AgentConfig.mcpServers.
+ *
+ * Note: For stdio type, the 'type' field is optional (defaults to stdio).
+ */
+export type McpServerConfig =
+  | McpStdioServerConfig
+  | McpSseServerConfig
+  | McpHttpServerConfig
+  | McpSdkServerConfig;
+
+/**
+ * Stdio Server Config (SDK Compatible)
+ * Type is optional, defaults to stdio when omitted.
+ */
+export interface McpStdioServerConfig {
+  type?: "stdio";
+  command: string;
+  args?: string[];
+  env?: Record<string, string>;
+}
+
+/**
+ * SSE Server Config (SDK Compatible)
+ */
+export interface McpSseServerConfig {
+  type: "sse";
+  url: string;
+  headers?: Record<string, string>;
+}
+
+/**
+ * HTTP Server Config (SDK Compatible)
+ */
+export interface McpHttpServerConfig {
+  type: "http";
+  url: string;
+  headers?: Record<string, string>;
+}
+
+/**
+ * SDK Server Config (SDK Compatible)
+ * For in-process MCP servers.
+ */
+export interface McpSdkServerConfig {
+  type: "sdk";
+  name: string;
+  instance: unknown;
+}

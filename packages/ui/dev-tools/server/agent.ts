@@ -4,15 +4,21 @@
  * Defines the Claude agent used for UI development and testing.
  */
 
-import type { AgentDefinition } from "@agentxjs/types";
+import { defineAgent } from "agentxjs";
 
 /**
  * ClaudeAgent - AI assistant for UI development testing
  *
  * This agent is used in Storybook stories to test AgentX UI components.
  */
-export const ClaudeAgent: AgentDefinition = {
+export const ClaudeAgent = defineAgent({
   name: "ClaudeAgent",
-  description: "Claude-powered assistant for UI development testing",
-  systemPrompt: "你的名字叫 agentx ， 别人问你是谁，你就回答我是 agentx 。",
-};
+  description: "AgentX AI assistant with PromptX integration",
+  systemPrompt: "你是 AgentX 的助手，专门帮助用户使用 AgentX 平台进行 AI Agent 开发。",
+  mcpServers: {
+    promptx: {
+      type: "http",
+      url: "http://127.0.0.1:5203/mcp",
+    },
+  },
+});

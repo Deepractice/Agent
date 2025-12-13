@@ -9,6 +9,7 @@ import { config } from "dotenv";
 import { resolve, dirname } from "path";
 import { fileURLToPath } from "url";
 import { FileLoggerFactory } from "./FileLogger.js";
+import { ClaudeAgent } from "./agent.js";
 
 // Get __dirname equivalent in ES module
 const __filename = fileURLToPath(import.meta.url);
@@ -76,6 +77,25 @@ async function startDevServer() {
     console.log("✓ Default container created");
   } catch (error) {
     console.error("Failed to create default container:", error);
+    process.exit(1);
+  }
+
+  // Create default agent image with ClaudeAgent configuration
+  try {
+    console.log("Creating default agent image...");
+    const imageResponse = await agentx.request("image_create_request", {
+      containerId: "default",
+      config: ClaudeAgent,
+    });
+    if (imageResponse.data.error) {
+      throw new Error(imageResponse.data.error);
+    }
+    console.log(`✓ Default agent image created: ${ClaudeAgent.name}`);
+    console.log(
+      `  - MCP Servers: ${Object.keys(ClaudeAgent.mcpServers || {}).join(", ") || "none"}`
+    );
+  } catch (error) {
+    console.error("Failed to create default agent image:", error);
     process.exit(1);
   }
 

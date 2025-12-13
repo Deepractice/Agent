@@ -21,6 +21,12 @@ const logger = createLogger("ecosystem/ClaudeEffector");
 const DEFAULT_TIMEOUT = 30_000;
 
 /**
+ * MCP Server Config (SDK Compatible)
+ * Re-exported from types for convenience.
+ */
+export type { McpServerConfig } from "@agentxjs/types/runtime";
+
+/**
  * ClaudeEffector configuration
  */
 export interface ClaudeEffectorConfig {
@@ -36,6 +42,8 @@ export interface ClaudeEffectorConfig {
   onSessionIdCaptured?: (sessionId: string) => void;
   /** Request timeout in milliseconds (default: 30000) */
   timeout?: number;
+  /** MCP servers configuration */
+  mcpServers?: Record<string, import("@agentxjs/types/runtime").McpServerConfig>;
 }
 
 /**
@@ -191,6 +199,7 @@ export class ClaudeEffector implements Effector {
       systemPrompt: this.config.systemPrompt,
       cwd: this.config.cwd,
       resume: this.config.resumeSessionId,
+      mcpServers: this.config.mcpServers,
     };
 
     const sdkOptions = buildOptions(context, abortController);

@@ -56,6 +56,12 @@ export type {
   McpHttpTransport,
   McpSdkTransport,
   McpTransportConfig,
+  // SDK Compatible types
+  McpServerConfig,
+  McpStdioServerConfig,
+  McpSseServerConfig,
+  McpHttpServerConfig,
+  McpSdkServerConfig,
 } from "./McpTransport";
 
 // Request

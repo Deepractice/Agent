@@ -386,3 +386,78 @@ export interface AgentX {
  * ```
  */
 export declare function createAgentX(config?: AgentXConfig): Promise<AgentX>;
+
+// ============================================================================
+// Agent Definition
+// ============================================================================
+
+import type { McpServerConfig } from "~/runtime/internal/container/sandbox/mcp";
+
+/**
+ * AgentDefinition - Static template for defining an Agent
+ *
+ * Used to define agent behavior and capabilities before instantiation.
+ * This is the "application layer" configuration that describes what an agent does.
+ *
+ * @example
+ * ```typescript
+ * const MyAgent = defineAgent({
+ *   name: "Assistant",
+ *   description: "A helpful AI assistant",
+ *   systemPrompt: "You are a helpful assistant.",
+ *   mcpServers: {
+ *     filesystem: {
+ *       command: "npx",
+ *       args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"]
+ *     }
+ *   }
+ * });
+ * ```
+ */
+export interface AgentDefinition {
+  /**
+   * Agent name (required)
+   */
+  name: string;
+
+  /**
+   * Agent description
+   */
+  description?: string;
+
+  /**
+   * System prompt - controls agent behavior
+   */
+  systemPrompt?: string;
+
+  /**
+   * MCP servers configuration
+   *
+   * Key is server name, value is server configuration.
+   * Supports stdio, sse, http, and sdk transport types.
+   */
+  mcpServers?: Record<string, McpServerConfig>;
+}
+
+/**
+ * Define an Agent with type safety
+ *
+ * Helper function that provides type inference for AgentDefinition.
+ * The returned definition can be used with AgentX to create agent instances.
+ *
+ * Implementation is in `agentxjs` package.
+ *
+ * @example
+ * ```typescript
+ * import { defineAgent } from "agentxjs";
+ *
+ * export const MyAgent = defineAgent({
+ *   name: "MyAgent",
+ *   systemPrompt: "You are helpful.",
+ *   mcpServers: {
+ *     github: { type: "sse", url: "http://localhost:3000/sse" }
+ *   }
+ * });
+ * ```
+ */
+export declare function defineAgent<T extends AgentDefinition>(definition: T): T;

@@ -4,7 +4,7 @@
  * Converts environment configuration to Claude SDK Options format.
  */
 
-import type { Options } from "@anthropic-ai/claude-agent-sdk";
+import type { Options, McpServerConfig } from "@anthropic-ai/claude-agent-sdk";
 import { createLogger } from "@agentxjs/common";
 
 const logger = createLogger("environment/buildOptions");
@@ -22,6 +22,8 @@ export interface EnvironmentContext {
   resume?: string;
   maxTurns?: number;
   maxThinkingTokens?: number;
+  /** MCP servers configuration */
+  mcpServers?: Record<string, McpServerConfig>;
 }
 
 /**
@@ -70,6 +72,8 @@ export function buildOptions(
     model: context.model,
     permissionMode: context.permissionMode || "bypassPermissions",
     cwd: context.cwd,
+    systemPrompt: context.systemPrompt,
+    mcpServers: context.mcpServers ? Object.keys(context.mcpServers) : [],
   });
 
   // Capture stderr from SDK subprocess for debugging
@@ -89,6 +93,14 @@ export function buildOptions(
   // Session control
   if (context.resume) options.resume = context.resume;
 
+  // MCP servers
+  if (context.mcpServers) {
+    options.mcpServers = context.mcpServers;
+    logger.info("MCP servers configured", {
+      serverNames: Object.keys(context.mcpServers),
+    });
+  }
+
   // Permission system
   if (context.permissionMode) {
     options.permissionMode = context.permissionMode;
@@ -101,6 +113,17 @@ export function buildOptions(
     options.permissionMode = "bypassPermissions";
     options.allowDangerouslySkipPermissions = true;
   }
+
+  // Log final options (excluding functions and sensitive data)
+  logger.info("SDK Options built", {
+    model: options.model,
+    systemPrompt: options.systemPrompt,
+    permissionMode: options.permissionMode,
+    cwd: options.cwd,
+    resume: options.resume,
+    maxTurns: options.maxTurns,
+    mcpServers: options.mcpServers ? Object.keys(options.mcpServers) : [],
+  });
 
   return options;
 }

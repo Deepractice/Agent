@@ -44,9 +44,38 @@ export type {
   StorageConfig,
   StorageDriver,
   Unsubscribe,
+  AgentDefinition,
 } from "@agentxjs/types/agentx";
 
 export { isLocalConfig, isRemoteConfig } from "@agentxjs/types/agentx";
+
+// ============================================================================
+// defineAgent - Implementation
+// ============================================================================
+
+import type { AgentDefinition } from "@agentxjs/types/agentx";
+
+/**
+ * Define an Agent with type safety
+ *
+ * Helper function that provides type inference for AgentDefinition.
+ *
+ * @example
+ * ```typescript
+ * import { defineAgent } from "agentxjs";
+ *
+ * export const MyAgent = defineAgent({
+ *   name: "MyAgent",
+ *   systemPrompt: "You are helpful.",
+ *   mcpServers: {
+ *     filesystem: { command: "npx", args: ["-y", "@modelcontextprotocol/server-filesystem", "/tmp"] }
+ *   }
+ * });
+ * ```
+ */
+export function defineAgent<T extends AgentDefinition>(definition: T): T {
+  return definition;
+}
 
 // ============================================================================
 // Event Types - SystemEvent and all event categories

@@ -76,3 +76,6 @@ export type {
   ContainerRecord,
   SessionRecord,
 } from "./runtime/internal/persistence";
+
+// AgentDefinition type for defining agents
+export type { AgentDefinition } from "./agentx";

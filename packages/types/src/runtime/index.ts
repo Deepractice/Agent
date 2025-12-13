@@ -100,6 +100,9 @@ export type { Agent } from "./Agent";
 export type { AgentConfig } from "./AgentConfig";
 export type { AgentLifecycle } from "./AgentLifecycle";
 
+// MCP Server Config (SDK Compatible)
+export type { McpServerConfig } from "./internal/container/sandbox/mcp";
+
 // ============================================================================
 // Events (Re-exported from @agentxjs/types/event)
 // ============================================================================
