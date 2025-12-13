@@ -12,7 +12,7 @@
  * ```
  */
 
-import type { SystemBus } from "@agentxjs/types/runtime/internal";
+import type { SystemBus, McpServerConfig } from "@agentxjs/types/runtime/internal";
 import type { SystemEvent } from "@agentxjs/types/event";
 import type { Message } from "@agentxjs/types/agent";
 import { BaseEventHandler } from "./BaseEventHandler";
@@ -67,7 +67,12 @@ export interface RuntimeOperations {
   // Image operations (new model)
   createImage(
     containerId: string,
-    config: { name?: string; description?: string; systemPrompt?: string }
+    config: {
+      name?: string;
+      description?: string;
+      systemPrompt?: string;
+      mcpServers?: Record<string, McpServerConfig>;
+    }
   ): Promise<ImageListItemResult>;
   runImage(imageId: string): Promise<{ imageId: string; agentId: string; reused: boolean }>;
   stopImage(imageId: string): Promise<void>;
@@ -420,7 +425,12 @@ export class CommandHandler extends BaseEventHandler {
     data: {
       requestId: string;
       containerId: string;
-      config: { name?: string; description?: string; systemPrompt?: string };
+      config: {
+        name?: string;
+        description?: string;
+        systemPrompt?: string;
+        mcpServers?: Record<string, McpServerConfig>;
+      };
     };
   }): Promise<void> {
     const { requestId, containerId, config } = event.data;

@@ -149,15 +149,12 @@ export class RuntimeContainer implements Container {
     // Note: Don't call initialize() - session already exists in storage
 
     // Create RuntimeAgent with its own Environment
+    // RuntimeAgent reads name, systemPrompt, mcpServers from ImageRecord (single source of truth)
     const agent = new RuntimeAgent({
       agentId,
       imageId: image.imageId,
       containerId: this.containerId,
-      config: {
-        name: image.name,
-        description: image.description,
-        systemPrompt: image.systemPrompt,
-      },
+      config: {}, // Runtime-only config (ImageRecord is the source of truth)
       bus: this.context.bus,
       sandbox,
       session,

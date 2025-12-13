@@ -47,6 +47,7 @@ export type { Sandbox } from "./container/sandbox/Sandbox";
 export type { Workdir } from "./container/sandbox/workdir/Workdir";
 export type {
   McpServerInfo,
+  McpServerConfig,
   McpTool,
   McpResource,
   McpPrompt,

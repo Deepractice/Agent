@@ -177,6 +177,14 @@ export interface LocalConfig {
   logger?: LoggerConfig;
 
   /**
+   * Default agent definition
+   *
+   * When creating a new image without explicit config, these values are used.
+   * The definition is copied to ImageRecord at creation time.
+   */
+  defaultAgent?: AgentDefinition;
+
+  /**
    * AgentX base directory for runtime data (containers, workdirs, storage, logs)
    * @default "~/.agentx" (user's home directory)
    * @example "/var/lib/agentx"

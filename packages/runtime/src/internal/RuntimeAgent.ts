@@ -221,7 +221,8 @@ export class RuntimeAgent implements RuntimeAgentInterface {
   constructor(config: RuntimeAgentConfig) {
     this.agentId = config.agentId;
     this.imageId = config.imageId;
-    this.name = config.config.name ?? `agent-${config.agentId}`;
+    // Read name from ImageRecord (single source of truth)
+    this.name = config.image.name ?? `agent-${config.agentId}`;
     this.containerId = config.containerId;
     this.createdAt = Date.now();
     this.producer = config.bus.asProducer();
@@ -231,16 +232,17 @@ export class RuntimeAgent implements RuntimeAgentInterface {
 
     // Create this agent's own ClaudeEnvironment
     // Resume using stored sdkSessionId if available
+    // Read systemPrompt and mcpServers from ImageRecord (single source of truth)
     const resumeSessionId = config.image.metadata?.claudeSdkSessionId;
     this.environment = new ClaudeEnvironment({
       agentId: this.agentId,
       apiKey: config.llmConfig.apiKey,
       baseUrl: config.llmConfig.baseUrl,
       model: config.llmConfig.model,
-      systemPrompt: config.config.systemPrompt,
+      systemPrompt: config.image.systemPrompt,
       cwd: config.sandbox.workdir.path,
       resumeSessionId,
-      mcpServers: config.config.mcpServers,
+      mcpServers: config.image.mcpServers,
       onSessionIdCaptured: (sdkSessionId) => {
         // Persist sdkSessionId to image metadata for future resume
         this.saveSessionId(sdkSessionId);

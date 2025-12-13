@@ -14,6 +14,7 @@ import type {
   ImageRecord,
   ImageRepository,
   SessionRepository,
+  McpServerConfig,
 } from "@agentxjs/types/runtime/internal";
 import type { Message } from "@agentxjs/types/agent";
 import { createLogger } from "@agentxjs/common";
@@ -36,6 +37,7 @@ export interface ImageCreateConfig {
   name?: string;
   description?: string;
   systemPrompt?: string;
+  mcpServers?: Record<string, McpServerConfig>;
 }
 
 /**
@@ -73,6 +75,10 @@ export class RuntimeImage {
     return this.record.systemPrompt;
   }
 
+  get mcpServers(): Record<string, McpServerConfig> | undefined {
+    return this.record.mcpServers;
+  }
+
   get createdAt(): number {
     return this.record.createdAt;
   }
@@ -102,6 +108,7 @@ export class RuntimeImage {
       name: config.name ?? "New Conversation",
       description: config.description,
       systemPrompt: config.systemPrompt,
+      mcpServers: config.mcpServers,
       createdAt: now,
       updatedAt: now,
     };

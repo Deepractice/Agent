@@ -53,6 +53,7 @@ export async function createLocalAgentX(config: LocalConfig): Promise<AgentX> {
         model: config.llm?.model,
       }),
     },
+    defaultAgent: config.defaultAgent,
   });
 
   // Create WebSocket server

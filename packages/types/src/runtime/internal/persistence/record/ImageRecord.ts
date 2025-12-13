@@ -10,7 +10,13 @@
  * - image_stop / server restart → Agent destroyed, Image remains
  *
  * Messages are stored separately in Session (via sessionId).
+ *
+ * ImageRecord is the SINGLE SOURCE OF TRUTH for agent configuration.
+ * All static configuration (systemPrompt, mcpServers) is stored here,
+ * not in AgentConfig (which is for runtime-specific config only).
  */
+
+import type { McpServerConfig } from "~/runtime/internal/container/sandbox/mcp";
 
 /**
  * Image metadata for storing provider-specific data
@@ -62,6 +68,11 @@ export interface ImageRecord {
    * Parent image ID (for fork/branch feature)
    */
   parentImageId?: string;
+
+  /**
+   * MCP servers configuration
+   */
+  mcpServers?: Record<string, McpServerConfig>;
 
   /**
    * Provider-specific metadata (e.g., Claude SDK session ID)

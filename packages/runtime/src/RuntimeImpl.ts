@@ -23,6 +23,7 @@ import type {
   BusEventHandler,
   SubscribeOptions,
   Unsubscribe,
+  McpServerConfig,
 } from "@agentxjs/types/runtime/internal";
 import type {
   SystemEvent,
@@ -31,6 +32,7 @@ import type {
   ResponseEventFor,
   RequestDataFor,
 } from "@agentxjs/types/event";
+import type { AgentDefinition } from "@agentxjs/types/agentx";
 import type { RuntimeConfig } from "./createRuntime";
 import type { RuntimeImageContext, RuntimeContainerContext } from "./internal";
 import type { ImageListItemResult } from "./internal/CommandHandler";
@@ -57,6 +59,7 @@ export class RuntimeImpl implements Runtime {
   private readonly llmConfig: ClaudeLLMConfig;
   private readonly basePath: string;
   private readonly commandHandler: CommandHandler;
+  private readonly defaultAgent?: AgentDefinition;
 
   /** Container registry: containerId -> RuntimeContainer */
   private readonly containerRegistry = new Map<string, RuntimeContainer>();
@@ -66,6 +69,7 @@ export class RuntimeImpl implements Runtime {
     this.persistence = config.persistence;
     this.llmProvider = config.llmProvider;
     this.basePath = config.basePath;
+    this.defaultAgent = config.defaultAgent;
 
     // Create SystemBus
     logger.info("Creating SystemBus");
@@ -282,17 +286,35 @@ export class RuntimeImpl implements Runtime {
       // Image operations (new model)
       createImage: async (
         containerId: string,
-        config: { name?: string; description?: string; systemPrompt?: string }
+        config: {
+          name?: string;
+          description?: string;
+          systemPrompt?: string;
+          mcpServers?: Record<string, McpServerConfig>;
+        }
       ) => {
         logger.debug("Creating image", { containerId, name: config.name });
         // Ensure container exists
         await this.getOrCreateContainer(containerId);
 
+        // Merge defaultAgent with incoming config (incoming takes precedence)
+        const mergedConfig = {
+          containerId,
+          name: config.name ?? this.defaultAgent?.name,
+          description: config.description ?? this.defaultAgent?.description,
+          systemPrompt: config.systemPrompt ?? this.defaultAgent?.systemPrompt,
+          mcpServers: config.mcpServers ?? this.defaultAgent?.mcpServers,
+        };
+
+        logger.debug("Merged config for image creation", {
+          containerId,
+          name: mergedConfig.name,
+          hasSystemPrompt: !!mergedConfig.systemPrompt,
+          mcpServers: mergedConfig.mcpServers ? Object.keys(mergedConfig.mcpServers) : [],
+        });
+
         // Create image
-        const image = await RuntimeImage.create(
-          { containerId, ...config },
-          this.createImageContext()
-        );
+        const image = await RuntimeImage.create(mergedConfig, this.createImageContext());
 
         logger.info("Image created via RuntimeOps", { imageId: image.imageId, containerId });
         return this.toImageListItemResult(image.toRecord(), false);

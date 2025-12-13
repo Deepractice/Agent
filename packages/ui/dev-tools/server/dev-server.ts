@@ -55,6 +55,7 @@ async function startDevServer() {
   const { createAgentX } = await import("agentxjs");
 
   // Storage is auto-configured: SQLite at {agentxDir}/data/agentx.db
+  // defaultAgent is used as base config when creating new images
   const agentx = await createAgentX({
     llm: {
       apiKey,
@@ -66,6 +67,7 @@ async function startDevServer() {
       factory: new FileLoggerFactory("debug", LOG_DIR),
     },
     agentxDir: AGENTX_DIR,
+    defaultAgent: ClaudeAgent,
   });
 
   // Create default container for Studio (single-tenant mode)
@@ -80,12 +82,12 @@ async function startDevServer() {
     process.exit(1);
   }
 
-  // Create default agent image with ClaudeAgent configuration
+  // Create default agent image (uses defaultAgent configuration from createAgentX)
   try {
     console.log("Creating default agent image...");
     const imageResponse = await agentx.request("image_create_request", {
       containerId: "default",
-      config: ClaudeAgent,
+      config: {}, // Empty config - defaultAgent provides name, systemPrompt, mcpServers
     });
     if (imageResponse.data.error) {
       throw new Error(imageResponse.data.error);
