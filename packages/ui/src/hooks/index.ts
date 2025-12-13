@@ -75,3 +75,5 @@ export {
 export { useAgentX } from "./useAgentX";
 
 export { useImages, type UseImagesResult, type UseImagesOptions } from "./useImages";
+
+export { useIsMobile, MOBILE_BREAKPOINT } from "./useIsMobile";

@@ -7,7 +7,7 @@
 import { useState, useEffect } from "react";
 import type { AgentX } from "agentxjs";
 import { createAgentX } from "agentxjs";
-import { Studio } from "@agentxjs/ui";
+import { ResponsiveStudio, useIsMobile } from "@agentxjs/ui";
 
 import { useAuth, getAuthToken } from "../hooks/useAuth";
 
@@ -77,6 +77,7 @@ export function ChatPage() {
   const [agentx, setAgentx] = useState<AgentX | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [isConnecting, setIsConnecting] = useState(true);
+  const isMobile = useIsMobile();
 
   // Initialize AgentX connection
   useEffect(() => {
@@ -160,9 +161,10 @@ export function ChatPage() {
 
   return (
     <div className="h-screen flex flex-col bg-background">
-      <Header onLogout={logout} />
+      {/* Hide header on mobile - MobileStudio has its own header */}
+      {!isMobile && <Header onLogout={logout} />}
       <div className="flex-1 overflow-hidden">
-        <Studio agentx={agentx} containerId={user.containerId} />
+        <ResponsiveStudio agentx={agentx} containerId={user.containerId} />
       </div>
     </div>
   );

@@ -15,3 +15,9 @@
 
 export { Studio } from "./Studio";
 export type { StudioProps } from "./Studio";
+
+export { MobileStudio } from "./MobileStudio";
+export type { MobileStudioProps } from "./MobileStudio";
+
+export { ResponsiveStudio } from "./ResponsiveStudio";
+export type { ResponsiveStudioProps } from "./ResponsiveStudio";

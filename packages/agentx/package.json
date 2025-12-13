@@ -41,14 +41,6 @@
     "reconnecting-websocket": "^4.4.0",
     "ws": "^8.18.0"
   },
-  "peerDependencies": {
-    "@agentxjs/runtime": ">=1.0.2"
-  },
-  "peerDependenciesMeta": {
-    "@agentxjs/runtime": {
-      "optional": true
-    }
-  },
   "devDependencies": {
     "@agentxjs/runtime": "workspace:*",
     "@types/node": "^24.9.2",
