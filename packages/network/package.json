@@ -1,6 +1,6 @@
 {
   "name": "@agentxjs/network",
-  "version": "1.1.4",
+  "version": "1.2.0",
   "description": "Network layer abstraction for AgentX platform - WebSocket client/server with heartbeat and auto-reconnect",
   "keywords": [
     "agentx",
