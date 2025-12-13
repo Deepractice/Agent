@@ -1,5 +1,29 @@
 # @agentxjs/portagent
 
+## 1.1.0
+
+### Patch Changes
+
+- 47092ae: Add mobile responsive support with separate mobile components
+
+  **@agentxjs/ui:**
+  - Add mobile components: MobileDrawer, MobileHeader, MobileMessagePane, MobileInputPane, MobileChat, MobileAgentList
+  - Add MobileStudio for full mobile experience with drawer navigation
+  - Add ResponsiveStudio for automatic mobile/desktop switching at 768px breakpoint
+  - Add useIsMobile hook for viewport detection
+  - Mobile design follows Claude App's minimalist style
+
+  **@agentxjs/portagent:**
+  - Use ResponsiveStudio for automatic mobile/desktop layout switching
+
+- Updated dependencies [da7e950]
+- Updated dependencies [47092ae]
+- Updated dependencies [5749112]
+- Updated dependencies [f20f020]
+  - @agentxjs/ui@1.1.0
+  - @agentxjs/runtime@1.1.0
+  - agentxjs@1.1.0
+
 ## 1.0.2
 
 ### Patch Changes
