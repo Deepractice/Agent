@@ -1,5 +1,12 @@
 # @agentxjs/ui
 
+## 1.1.1
+
+### Patch Changes
+
+- ef1e304: Sync package versions
+  - agentxjs@1.1.1
+
 ## 1.1.0
 
 ### Minor Changes
