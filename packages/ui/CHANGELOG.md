@@ -1,5 +1,79 @@
 # @agentxjs/ui
 
+## 1.1.0
+
+### Minor Changes
+
+- da7e950: Add interrupt functionality with ESC key support and AssistantToolbar
+  - Add AssistantToolbar component with action buttons (copy, regenerate, like, dislike)
+  - Show "esc to stop" hint during streaming/thinking states
+  - Show action buttons when conversation is completed
+  - Add ESC key listener in Chat component to interrupt ongoing conversations
+  - Pass onStop callback to AssistantEntry for toolbar click handling
+
+- 47092ae: Add mobile responsive support with separate mobile components
+
+  **@agentxjs/ui:**
+  - Add mobile components: MobileDrawer, MobileHeader, MobileMessagePane, MobileInputPane, MobileChat, MobileAgentList
+  - Add MobileStudio for full mobile experience with drawer navigation
+  - Add ResponsiveStudio for automatic mobile/desktop switching at 768px breakpoint
+  - Add useIsMobile hook for viewport detection
+  - Mobile design follows Claude App's minimalist style
+
+  **@agentxjs/portagent:**
+  - Use ResponsiveStudio for automatic mobile/desktop layout switching
+
+- 5749112: refactor(ui): unify assistant message lifecycle with single component
+
+  **Major Changes:**
+  - Consolidated `ThinkingMessage` and `StreamingMessage` into a single `AssistantMessage` component that handles all lifecycle states
+  - Added message-level status types: `UserMessageStatus` and `AssistantMessageStatus`
+  - Implemented complete status flow: `queued → thinking → responding → success`
+  - Created comprehensive Stories for `AssistantMessage` and `ToolMessage` components
+
+  **Technical Improvements:**
+  - Applied single responsibility principle - one component manages all assistant message states
+  - Added `useAgent` hook to manage assistant message status transitions automatically
+  - Improved Chat component with unified message rendering logic
+  - Fixed `RuntimeOperations.getImageMessages` type signature to use proper `Message[]` type
+
+  **UI Enhancements:**
+  - `queued` state: "Queue..." with animated dots
+  - `thinking` state: "Thinking..." with animated dots
+  - `responding` state: Streaming text with cursor animation
+  - `success` state: Complete rendered message
+
+  This refactoring significantly improves code maintainability and provides a clearer mental model for message lifecycle management.
+
+- f20f020: Refactor UI to conversation-first, block-based architecture
+
+  **Breaking Changes:**
+  - Removed `MessageRenderer`, `MessageHandler`, `createMessageChain`
+  - Removed individual message stories (AssistantMessage, UserMessage, ToolMessage, UnknownMessage)
+  - `useAgent` hook now returns `conversations` instead of `messages`
+
+  **New Architecture:**
+  - **Conversation-first design**: User/Assistant/Error conversations as top-level units
+  - **Block-based content**: AssistantConversation contains blocks (TextBlock, ToolBlock, ImageBlock)
+  - **Unified state management**: Single reducer pattern with stable IDs
+
+  **New Components:**
+  - `UserEntry`, `AssistantEntry`, `ErrorEntry` - conversation-level components
+  - `TextBlock`, `ToolBlock` - content block components
+
+  **New Features:**
+  - Tool planning status: Shows "Planning..." when AI is generating tool input
+  - Proper text preservation: Text no longer disappears when tool calls start
+  - Streaming text block support with cursor animation
+
+  **Bug Fixes:**
+  - Fixed text disappearing during tool call loops
+  - Fixed history messages being overwritten by new messages
+
+### Patch Changes
+
+- agentxjs@1.1.0
+
 ## 1.0.2
 
 ### Patch Changes
