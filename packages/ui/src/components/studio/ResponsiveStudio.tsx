@@ -1,9 +1,9 @@
 /**
  * ResponsiveStudio - Automatically switches between desktop and mobile layouts
  *
- * Uses viewport width to determine which layout to render:
- * - Desktop (>= 768px): Studio with sidebar
- * - Mobile (< 768px): MobileStudio with drawer
+ * Uses container width (not viewport) to determine which layout to render:
+ * - Desktop (>= breakpoint): Studio with sidebar
+ * - Mobile (< breakpoint): MobileStudio with drawer
  *
  * @example
  * ```tsx
@@ -16,10 +16,11 @@
  * ```
  */
 
+import * as React from "react";
 import type { AgentX } from "agentxjs";
 import { Studio } from "./Studio";
 import { MobileStudio } from "./MobileStudio";
-import { useIsMobile, MOBILE_BREAKPOINT } from "~/hooks/useIsMobile";
+import { MOBILE_BREAKPOINT } from "~/hooks/useIsMobile";
 
 export interface ResponsiveStudioProps {
   /**
@@ -32,7 +33,7 @@ export interface ResponsiveStudioProps {
    */
   containerId?: string;
   /**
-   * Breakpoint for mobile/desktop switch
+   * Breakpoint for mobile/desktop switch (based on container width)
    * @default 768
    */
   breakpoint?: number;
@@ -64,7 +65,8 @@ export interface ResponsiveStudioProps {
 /**
  * ResponsiveStudio Component
  *
- * Automatically renders Studio or MobileStudio based on viewport width.
+ * Automatically renders Studio or MobileStudio based on container width.
+ * Uses ResizeObserver to detect the component's own width, not viewport width.
  */
 export function ResponsiveStudio({
   agentx,
@@ -76,28 +78,58 @@ export function ResponsiveStudio({
   placeholder,
   className,
 }: ResponsiveStudioProps) {
-  const isMobile = useIsMobile(breakpoint);
+  const containerRef = React.useRef<HTMLDivElement>(null);
+  const [isMobile, setIsMobile] = React.useState(false);
 
-  if (isMobile) {
-    return (
-      <MobileStudio
-        agentx={agentx}
-        containerId={containerId}
-        searchable={searchable}
-        placeholder={placeholder}
-        className={className}
-      />
-    );
-  }
+  React.useEffect(() => {
+    const container = containerRef.current;
+    if (!container) return;
+
+    // Use window.ResizeObserver to avoid ESLint no-undef error
+    const Observer = window.ResizeObserver;
+    if (!Observer) {
+      // Fallback for older browsers
+      setIsMobile(container.offsetWidth < breakpoint);
+      return;
+    }
+
+    const resizeObserver = new Observer((entries) => {
+      for (const entry of entries) {
+        const width = entry.contentRect.width;
+        setIsMobile(width < breakpoint);
+      }
+    });
+
+    resizeObserver.observe(container);
+
+    // Initial check
+    setIsMobile(container.offsetWidth < breakpoint);
+
+    return () => {
+      resizeObserver.disconnect();
+    };
+  }, [breakpoint]);
 
   return (
-    <Studio
-      agentx={agentx}
-      containerId={containerId}
-      sidebarWidth={sidebarWidth}
-      searchable={searchable}
-      inputHeightRatio={inputHeightRatio}
-      className={className}
-    />
+    <div ref={containerRef} className="h-full w-full">
+      {isMobile ? (
+        <MobileStudio
+          agentx={agentx}
+          containerId={containerId}
+          searchable={searchable}
+          placeholder={placeholder}
+          className={className}
+        />
+      ) : (
+        <Studio
+          agentx={agentx}
+          containerId={containerId}
+          sidebarWidth={sidebarWidth}
+          searchable={searchable}
+          inputHeightRatio={inputHeightRatio}
+          className={className}
+        />
+      )}
+    </div>
   );
 }

@@ -27,7 +27,7 @@
  */
 
 import * as React from "react";
-import { Plus, Trash2 } from "lucide-react";
+import { Plus, Trash2, ChevronsLeft } from "lucide-react";
 import { cn } from "~/utils/utils";
 import { ListItem } from "~/components/element/ListItem";
 import { SearchInput } from "~/components/element/SearchInput";
@@ -94,13 +94,22 @@ export interface ListPaneProps {
    */
   searchPlaceholder?: string;
   /**
-   * Show new item button in header
+   * Show new item button
    */
   showNewButton?: boolean;
   /**
    * Label for new button (tooltip)
    */
   newButtonLabel?: string;
+  /**
+   * Show collapse button in header
+   * @default false
+   */
+  showCollapseButton?: boolean;
+  /**
+   * Callback when collapse button is clicked
+   */
+  onCollapse?: () => void;
   /**
    * Empty state configuration
    */
@@ -163,6 +172,8 @@ export const ListPane = React.forwardRef<HTMLDivElement, ListPaneProps>(
       searchPlaceholder = "Search...",
       showNewButton = true,
       newButtonLabel = "New item",
+      showCollapseButton = false,
+      onCollapse,
       emptyState = {
         title: "No items",
         description: "Get started by creating a new item",
@@ -211,27 +222,40 @@ export const ListPane = React.forwardRef<HTMLDivElement, ListPaneProps>(
     return (
       <Sidebar ref={ref} className={cn("flex flex-col", className)}>
         {/* Header */}
-        <div className="flex items-center justify-between px-3 py-2 border-b border-border">
-          <h2 className="text-sm font-semibold text-foreground">{title}</h2>
-          {showNewButton && onNew && (
+        <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+          {showCollapseButton && onCollapse && (
             <button
               className="p-1 rounded hover:bg-accent transition-colors"
-              onClick={onNew}
-              title={newButtonLabel}
+              onClick={onCollapse}
+              title="Collapse sidebar"
             >
-              <Plus className="w-5 h-5 text-muted-foreground" />
+              <ChevronsLeft className="w-4 h-4 text-muted-foreground" />
             </button>
           )}
+          <h2 className="text-sm font-semibold text-foreground flex-1">{title}</h2>
         </div>
 
-        {/* Search */}
-        {searchable && (
-          <div className="px-3 py-2 border-b border-border">
-            <SearchInput
-              value={searchQuery}
-              onChange={setSearchQuery}
-              placeholder={searchPlaceholder}
-            />
+        {/* Search + New Button */}
+        {(searchable || showNewButton) && (
+          <div className="flex items-center gap-2 px-3 py-2 border-b border-border">
+            {searchable && (
+              <div className="flex-1">
+                <SearchInput
+                  value={searchQuery}
+                  onChange={setSearchQuery}
+                  placeholder={searchPlaceholder}
+                />
+              </div>
+            )}
+            {showNewButton && onNew && (
+              <button
+                className="p-1.5 rounded hover:bg-accent transition-colors flex-shrink-0"
+                onClick={onNew}
+                title={newButtonLabel}
+              >
+                <Plus className="w-5 h-5 text-muted-foreground" />
+              </button>
+            )}
           </div>
         )}
 

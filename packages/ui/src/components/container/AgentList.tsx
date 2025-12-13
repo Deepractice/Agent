@@ -66,6 +66,15 @@ export interface AgentListProps {
    */
   searchable?: boolean;
   /**
+   * Show collapse button in header
+   * @default false
+   */
+  showCollapseButton?: boolean;
+  /**
+   * Callback when collapse button is clicked
+   */
+  onCollapse?: () => void;
+  /**
    * Additional class name
    */
   className?: string;
@@ -82,6 +91,8 @@ export function AgentList({
   onNew,
   title = "Conversations",
   searchable = true,
+  showCollapseButton = false,
+  onCollapse,
   className,
 }: AgentListProps) {
   const { images, isLoading, createImage, runImage, deleteImage, refresh } = useImages(agentx, {
@@ -171,6 +182,8 @@ export function AgentList({
       searchPlaceholder="Search conversations..."
       showNewButton
       newButtonLabel="New conversation"
+      showCollapseButton={showCollapseButton}
+      onCollapse={onCollapse}
       emptyState={{
         icon: <MessageSquare className="w-6 h-6" />,
         title: "No conversations yet",

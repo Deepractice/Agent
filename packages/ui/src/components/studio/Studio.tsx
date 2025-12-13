@@ -37,6 +37,7 @@
 
 import * as React from "react";
 import type { AgentX } from "agentxjs";
+import { ChevronsRight } from "lucide-react";
 import { AgentList } from "~/components/container/AgentList";
 import { Chat } from "~/components/container/Chat";
 import { ToastContainer, useToast } from "~/components/element/Toast";
@@ -59,6 +60,11 @@ export interface StudioProps {
    * @default 280
    */
   sidebarWidth?: number;
+  /**
+   * Enable sidebar collapse functionality
+   * @default true
+   */
+  collapsible?: boolean;
   /**
    * Enable search in AgentList
    * @default true
@@ -87,6 +93,7 @@ export function Studio({
   agentx,
   containerId = "default",
   sidebarWidth = 280,
+  collapsible = true,
   searchable = true,
   showSaveButton = false, // Default to false in Image-First model
   inputHeightRatio = 0.25,
@@ -95,9 +102,19 @@ export function Studio({
   // State - only track imageId now (agentId is managed by useAgent)
   const [currentImageId, setCurrentImageId] = React.useState<string | null>(null);
   const [currentImageName, setCurrentImageName] = React.useState<string | undefined>(undefined);
+  const [sidebarCollapsed, setSidebarCollapsed] = React.useState(false);
 
   // Toast state
   const { toasts, showToast, dismissToast } = useToast();
+
+  // Handle sidebar collapse toggle
+  const handleCollapse = React.useCallback(() => {
+    setSidebarCollapsed(true);
+  }, []);
+
+  const handleExpand = React.useCallback(() => {
+    setSidebarCollapsed(false);
+  }, []);
 
   // Images hook - pass containerId for user isolation
   const { images } = useImages(agentx, { containerId, autoLoad: true });
@@ -140,17 +157,36 @@ export function Studio({
 
   return (
     <div className={cn("flex h-full bg-background", className)}>
-      {/* Sidebar - AgentList */}
-      <div style={{ width: sidebarWidth }} className="flex-shrink-0 border-r border-border">
-        <AgentList
-          agentx={agentx}
-          containerId={containerId}
-          selectedId={currentImageId}
-          onSelect={handleSelect}
-          onNew={handleNew}
-          searchable={searchable}
-        />
-      </div>
+      {/* Sidebar - AgentList or Collapsed Button */}
+      {sidebarCollapsed ? (
+        /* Collapsed state - show expand button */
+        <div className="flex-shrink-0 border-r border-border bg-muted/30">
+          <button
+            className="w-10 h-10 flex items-center justify-center hover:bg-accent transition-colors"
+            onClick={handleExpand}
+            title="Expand sidebar"
+          >
+            <ChevronsRight className="w-4 h-4 text-muted-foreground" />
+          </button>
+        </div>
+      ) : (
+        /* Expanded state - show AgentList */
+        <div
+          style={{ width: sidebarWidth }}
+          className="flex-shrink-0 border-r border-border transition-all duration-200"
+        >
+          <AgentList
+            agentx={agentx}
+            containerId={containerId}
+            selectedId={currentImageId}
+            onSelect={handleSelect}
+            onNew={handleNew}
+            searchable={searchable}
+            showCollapseButton={collapsible}
+            onCollapse={handleCollapse}
+          />
+        </div>
+      )}
 
       {/* Main area - Chat */}
       <div className="flex-1 min-w-0">
